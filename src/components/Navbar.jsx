@@ -51,7 +51,7 @@ const Navbar = ({ isLoggedIn, avatarUrl, currentPage = "home" }) => {
             </li>
             <li className="nav-item mx-2">
               <Link
-                className={`nav-link ${currentPage === "contact" ? "text-body-tertiary fw-bold" : "text-white"}`}
+                className={`nav-link ${currentPage === "blog" ? "text-body-tertiary fw-bold" : "text-white"}`}
                 to="/blog"
               >
                 Blog

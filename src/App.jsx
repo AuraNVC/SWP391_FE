@@ -18,6 +18,8 @@ function AppContent() {
   let currentPage = "home"
   if (location.pathname === "/about") currentPage = "about"
   else if (location.pathname === "/contact") currentPage = "contact"
+  else if (location.pathname === "/blog") currentPage = "blog"
+  else if (location.pathname === "/login") currentPage = "login"
 
   useEffect(() => {
     // Kiểm tra trạng thái đăng nhập từ localStorage
@@ -30,16 +32,16 @@ function AppContent() {
       console.log(`User role: ${role}`)
     }
   }
-  , [userRole])
+    , [userRole])
 
   return (
     <>
-      <Navbar
+      {currentPage !== "login" ? <Navbar
         isLoggedIn={isLoggedIn}
         avatarUrl={avatarUrl}
         currentPage={currentPage}
-      />
-      <div style={{ paddingTop: 80 }}>
+      /> : null}
+      <div style={currentPage !== "login" ? { paddingTop: 80 } : undefined}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/blog" element={<Blog />} />
@@ -49,7 +51,7 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
         </Routes>
       </div>
-      <Footer />
+      {currentPage !== "login" ? <Footer /> : null}
     </>
   )
 }
