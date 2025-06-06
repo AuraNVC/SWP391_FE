@@ -25,15 +25,24 @@ export default function Login() {
     } else {
       window.alert("Tên đăng nhập hoặc mật khẩu không đúng!");
     }
-    
+
     window.location.reload();
   };
 
   return (
     <div
       className="container-fluid bg-light min-vh-100 d-flex align-items-center justify-content-center"
-      style={{ paddingTop: 70 }} // Để tránh bị che bởi navbar fixed-top
+      style={{ paddingTop: 70 }}
     >
+      {/* Nút quay về Home */}
+      <button
+        type="button"
+        className="btn btn-link position-absolute top-0 start-0 m-3"
+        onClick={() => navigate("/")}
+        style={{ zIndex: 10 }}
+      >
+        &larr; Về trang chủ
+      </button>
       <div
         className="card shadow w-100 mx-auto"
         style={{ maxWidth: 400 }}

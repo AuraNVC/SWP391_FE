@@ -94,8 +94,13 @@ const Navbar = ({ isLoggedIn, avatarUrl, currentPage = "home" }) => {
               />
               {showMenu && (
                 <div
-                  className="position-absolute end-0 mt-2 p-2 bg-white shadow rounded"
-                  style={{ minWidth: 120, zIndex: 1000 }}
+                  className="position-absolute mt-2 p-2 bg-white shadow rounded"
+                  style={{
+                    minWidth: 120,
+                    zIndex: 1000,
+                    top: "70%",
+                    right: 60,
+                  }}
                 >
                   <button
                     className="dropdown-item text-danger"
