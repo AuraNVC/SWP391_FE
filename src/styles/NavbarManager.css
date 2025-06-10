@@ -1,0 +1,93 @@
+.navbar-manager {
+  width: 220px;
+  height: 100vh;
+  background: #fff;
+  border-right: 1px solid #e0e0e0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 100;
+}
+
+.navbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 24px 20px 16px 20px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  color: #1a2233;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.navbar-logo img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+
+.navbar-logo-icon {
+  font-size: 1.5rem;
+  color: #1a2233;
+}
+
+.navbar-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  flex: 1;
+}
+
+.navbar-menu li {
+  margin: 0;
+}
+
+.navbar-menu a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 24px;
+  color: #222;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: background 0.2s, color 0.2s;
+}
+
+.navbar-menu a:hover,
+.navbar-menu .active {
+  background: #f0f4fa;
+  color: #1976d2;
+}
+
+.navbar-logout {
+  margin-top: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.navbar-profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 20px;
+  border-top: 1px solid #e0e0e0;
+  background: #fafbfc;
+}
+
+.navbar-profile img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.navbar-profile-name {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.navbar-profile-link a {
+  font-size: 0.85rem;
+  color: #1976d2;
+  text-decoration: none;
+}

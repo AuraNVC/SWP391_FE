@@ -12,7 +12,7 @@ export default function Login() {
 
     if (username === "admin" && password === "admin") {
       localStorage.setItem("userRole", "manager");
-      navigate("/manager/dashboard");
+      navigate("/admin/dashboard");
     } else if (username === "nurse" && password === "nurse") {
       localStorage.setItem("userRole", "nurse");
       navigate("/nurse/dashboard");
