@@ -8,18 +8,25 @@ import Footer from './components/Footer'
 import Login from './pages/Login'
 import Blog from './pages/Blog'
 import BlogDetail from './pages/BlogDetail'
-import Manager from './pages/Manager'
+import NurseList from './pages/Nurse'
+import Dashborad from './pages/Dashborad'
+import StudentList from './pages/Student'
+import ParentList from './pages/Parent'
 
 function AdminDashboard() {
-  return <Manager/>
+  return <Dashborad/>
 }
 
-function AdminUsers() {
-  return <h2>Quản lý người dùng</h2>
+function AdminNurse() {
+  return <NurseList />
 }
 
-function AdminSettings() {
-  return <h2>Cài đặt Admin</h2>
+function AdminStudent() {
+  return <StudentList />
+}
+
+function AdminParent() {
+  return <ParentList />
 }
 
 function AppContent() {
@@ -66,8 +73,9 @@ console.log({ currentPage, userRole });
           <Route path="/login" element={<Login />} />
           {/* Admin routes */}
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route path="/admin/student" element={<AdminStudent />} />
+          <Route path="/admin/parent" element={<AdminParent />} />
+          <Route path="/admin/nurse" element={<AdminNurse />} />
         </Routes>
       </div>
       {currentPage !== "login" && currentPage !== "admin" ? <Footer /> : null}

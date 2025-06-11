@@ -9,7 +9,7 @@ const staffList = [
   { name: "John", position: "La Roche-Posay", email: "alice@example.com", phone: "0123456789", date: "2022-01-10" },
 ];
 
-const Manager = () => {
+const StudentList = () => {
   return (
     <div className="admin-main">
       <div className="admin-header">
@@ -53,4 +53,4 @@ const Manager = () => {
   );
 };
 
-export default Manager;
+export default StudentList;

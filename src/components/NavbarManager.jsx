@@ -1,7 +1,7 @@
 import React from "react";
 import {
     FaTachometerAlt, FaUser, FaUsers, FaUserTie, FaBook, FaClipboardList,
-    FaSignOutAlt, FaBlog, FaChalkboardTeacher
+    FaSignOutAlt, FaBlog
 } from "react-icons/fa";
 import "../styles/NavbarManager.css";
 import { useNavigate } from "react-router-dom";
@@ -24,9 +24,9 @@ const NavbarManager = () => {
             </div>
             <ul className="navbar-menu">
                 <li><a href="/admin/dashboard"><FaTachometerAlt /> Dashboard</a></li>
-                <li><a href="/admin/users"><FaUser /> User</a></li>
-                <li><a href="/admin/staff"><FaUsers /> Staff</a></li>
-                <li><a href="/admin/consultant"><FaUserTie /> Consultant</a></li>
+                <li><a href="/admin/student"><FaUser /> Student</a></li>
+                <li><a href="/admin/parent"><FaUsers /> Parent</a></li>
+                <li><a href="/admin/nurse"><FaUserTie /> Nurse</a></li>
                 <li><a href="/admin/blog"><FaBlog /> Blog</a></li>
                 <li><a href="/admin/course"><FaBook /> Course</a></li>
                 <li><a href="/admin/log"><FaClipboardList /> Log</a></li>
