@@ -79,7 +79,7 @@ export default function Login({ setNotif, setNotifVisible }) {
         });
         if (data) {
           localStorage.setItem("userRole", role);
-          redirectPath = "/";
+          redirectPath = "/parent";
           valid = true;
         }
       }

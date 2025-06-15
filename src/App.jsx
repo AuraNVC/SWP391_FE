@@ -12,6 +12,8 @@ import NurseList from './pages/Nurse'
 import Dashborad from './pages/Dashborad'
 import StudentList from './pages/Student'
 import ParentList from './pages/Parent'
+import ParentHome from './pages/ParentHome'
+import ParentBlog from './pages/ParentBlog'
 import Notification from './components/Notification'
 import { UserRoleProvider, useUserRole } from "./contexts/UserRoleContext";
 
@@ -46,6 +48,7 @@ function AppContent() {
   // Xác định currentPage dựa trên đường dẫn
   let currentPage = "home"
   if (location.pathname.startsWith("/manager")) currentPage = "manager"
+  else if (location.pathname.startsWith("/parent")) currentPage = "parent"
   else if (location.pathname === "/about") currentPage = "about"
   else if (location.pathname === "/contact") currentPage = "contact"
   else if (location.pathname === "/blog") currentPage = "blog"
@@ -57,7 +60,9 @@ function AppContent() {
     if (loggedIn) {
       localStorage.getItem("userRole")
     }
-  }, [userRole])
+    console.log("Current userRole:", userRole);
+    console.log("Current page:", currentPage);
+  }, [userRole, currentPage])
 
   return (
     <>
@@ -73,6 +78,8 @@ function AppContent() {
       )}
       {currentPage === "manager" && String(userRole) === "manager" ? (
         <NavbarManager />
+      ) : currentPage === "parent" && String(userRole) === "parent" ? (
+        null // ParentNavbar is included in ParentHome and ParentBlog components
       ) : currentPage !== "login" ? (
         <Navbar
           isLoggedIn={isLoggedIn}
@@ -98,9 +105,12 @@ function AppContent() {
           <Route path="/manager/student" element={<AdminStudent />} />
           <Route path="/manager/parent" element={<AdminParent />} />
           <Route path="/manager/nurse" element={<AdminNurse />} />
+          {/* Parent routes */}
+          <Route path="/parent" element={<ParentHome />} />
+          <Route path="/parent/blog" element={<ParentBlog />} />
         </Routes>
       </div>
-      {currentPage !== "login" && currentPage !== "manager" ? <Footer /> : null}
+      {currentPage !== "login" && currentPage !== "manager" && currentPage !== "parent" ? <Footer /> : null}
     </>
   )
 }
