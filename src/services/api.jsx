@@ -5,10 +5,10 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API = {
     BLOG_LIST: `${API_BASE_URL}/blogs`,
     BLOG_DETAIL: (id) => `${API_BASE_URL}/Blog/GetById?id=${id}`,
-    LOGIN_MANAGER: `${API_BASE_URL}/auth/login`,
-    LOGIN_STUDENT: `${API_BASE_URL}/Student/Login`,
-    LOGIN_NURSE: `${API_BASE_URL}/auth/login`,
-    LOGIN_PARENT: `${API_BASE_URL}/auth/login`,
+    LOGIN_MANAGER: `${API_BASE_URL}/manager/authorize`,
+    LOGIN_STUDENT: `${API_BASE_URL}/student/login`,
+    LOGIN_NURSE: `${API_BASE_URL}/nurse/login`,
+    LOGIN_PARENT: `${API_BASE_URL}/parent/login`,
     LOGOUT: `${API_BASE_URL}/auth/logout`,
     USER_PROFILE: `${API_BASE_URL}/user/profile`,
     DOCUMENT_LIST: `${API_BASE_URL}/documents`,
@@ -39,5 +39,27 @@ export const API_SERVICE = {
         getById: (id) => callApi(API.DOCUMENT_DETAIL(id)),
         // Thêm các hàm khác nếu cần
     },
+    login:{
+        manager: (data) => callApi(API.LOGIN_MANAGER, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+        }),
+        student: (data) => callApi(API.LOGIN_STUDENT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+        }),
+        nurse: (data) => callApi(API.LOGIN_NURSE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+        }),
+        parent: (data) => callApi(API.LOGIN_PARENT, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+        }),
+    }
     // Thêm các nhóm API khác nếu cần
 };

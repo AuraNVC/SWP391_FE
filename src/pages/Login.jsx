@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "../contexts/UserRoleContext";
 import logoSchoolCare from "../assets/logoSchoolCare.png";
+import { API_SERVICE } from "../services/api";
 
 export default function Login({ setNotif, setNotifVisible }) {
   const [username, setUsername] = useState("");
@@ -16,14 +17,11 @@ export default function Login({ setNotif, setNotifVisible }) {
   const navigate = useNavigate();
   const { login } = useUserRole();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-
-    // Reset lỗi
     setUsernameError("");
     setPasswordError("");
     setRoleError("");
-
     let hasError = false;
 
     if (!username) {
@@ -38,45 +36,60 @@ export default function Login({ setNotif, setNotifVisible }) {
       setRoleError("Vui lòng chọn vai trò.");
       hasError = true;
     }
-
     if (hasError) return;
 
     let valid = false;
     let redirectPath = "/";
-    if (role === "manager" && username === "manager" && password === "manager") {
-      localStorage.setItem("userRole", "manager");
-      redirectPath = "/manager/dashboard";
-      valid = true;
-    } else if (role === "nurse" && username === "nurse" && password === "nurse") {
-      localStorage.setItem("userRole", "nurse");
-      redirectPath = "/nurse/dashboard";
-      valid = true;
-    } else if (role === "parent" && username === "parent" && password === "parent") {
-      localStorage.setItem("userRole", "parent");
-      redirectPath = "/";
-      valid = true;
-    } else if (role === "student" && username === "student" && password === "student") {
-      localStorage.setItem("userRole", "student");
-      redirectPath = "/";
-      valid = true;
-    }
+    try {
+      let data;
+      if (role === "manager") {
+        data = await API_SERVICE.login.manager({
+          email: username,
+          password,
+        });
+        if (data) {
+          localStorage.setItem("userRole", role);
+          redirectPath = "/manager/dashboard";
+          valid = true;
+        }
+      } else if (role === "student") {
+        data = await API_SERVICE.login.student({
+          studentNumber: username,
+          password,
+        });
+        if (data) {
+          localStorage.setItem("userRole", role);
+          redirectPath = "/";
+          valid = true;
+        }
+      } else if (role === "nurse") {
+        data = await API_SERVICE.login.nurse({
+          email: username,
+          password,
+        });
+        if (data) {
+          localStorage.setItem("userRole", role);
+          redirectPath = "/";
+          valid = true;
+        }
+      } else if (role === "parent") {
+        data = await API_SERVICE.login.parent({
+          email: username,
+          password,
+        });
+        if (data) {
+          localStorage.setItem("userRole", role);
+          redirectPath = "/";
+          valid = true;
+        }
+      }
 
-    if (valid) {
-      login(role); // Cập nhật context và localStorage
-      setNotif({
-        message: "Đăng nhập thành công!",
-        type: "success",
-      });
-      setNotifVisible(true);
-      navigate(redirectPath); // Không reload, chỉ chuyển trang
-    } else {
-      // Xác định lỗi cụ thể
-      if (
-        (role === "manager" && (username !== "manager" || password !== "manager")) ||
-        (role === "nurse" && (username !== "nurse" || password !== "nurse")) ||
-        (role === "parent" && (username !== "parent" || password !== "parent")) ||
-        (role === "student" && (username !== "student" || password !== "student"))
-      ) {
+      if (valid) {
+        login(role);
+        setNotif({ message: "Đăng nhập thành công!", type: "success" });
+        setNotifVisible(true);
+        navigate(redirectPath);
+      } else {
         setUsernameError("Tên đăng nhập hoặc mật khẩu không đúng.");
         setPasswordError("Tên đăng nhập hoặc mật khẩu không đúng.");
         setNotif({
@@ -84,15 +97,16 @@ export default function Login({ setNotif, setNotifVisible }) {
           type: "error",
         });
         setNotifVisible(true);
-      } else if (!role) {
-        setRoleError("Vui lòng chọn vai trò.");
-      } else {
-        setNotif({
-          message: "Đã xảy ra lỗi không xác định.",
-          type: "error",
-        });
-        setNotifVisible(true);
       }
+    } catch {
+      // Nếu callApi throw error (ví dụ fetch trả về lỗi)
+      setUsernameError("Tên đăng nhập hoặc mật khẩu không đúng.");
+      setPasswordError("Tên đăng nhập hoặc mật khẩu không đúng.");
+      setNotif({
+        message: "Tên đăng nhập hoặc mật khẩu không đúng.",
+        type: "error",
+      });
+      setNotifVisible(true);
     }
   };
 
