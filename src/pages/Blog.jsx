@@ -4,16 +4,6 @@ import { API_SERVICE } from "../services/api";
 
 const blogPosts = [
     {
-        id: 1,
-        title: "Phòng tránh tay chân miệng",
-        category: "Bệnh truyền nhiễm",
-        date: "20/03/2025",
-        image: "../assets/blog-1.jpg",
-        excerpt: "Rửa tay thường xuyên, vệ sinh đồ chơi và dụng cụ học tập là những biện pháp quan trọng để phòng tránh bệnh tay chân miệng...",
-        link: "#",
-        tag: "benh-truyen-nhiem",
-    },
-    {
         id: 2,
         title: "Lợi ích tiêm chủng",
         category: "Tiêm chủng",
