@@ -2,12 +2,7 @@ import React from "react";
 import "../styles/Manager.css";
 import { FaCheck, FaTimes } from "react-icons/fa";
 
-const staffList = [
-  { name: "Alice", position: "Loreal", email: "alice@example.com", phone: "0123456789", date: "2020-03-11" },
-  { name: "Bob", position: "Olay", email: "alice@example.com", phone: "0123456789", date: "2020-03-22" },
-  { name: "Shouma", position: "Acnes", email: "alice@example.com", phone: "0123456789", date: "2019-07-30" },
-  { name: "John", position: "La Roche-Posay", email: "alice@example.com", phone: "0123456789", date: "2022-01-10" },
-];
+const staffList = [];
 
 const StudentList = () => {
   return (
