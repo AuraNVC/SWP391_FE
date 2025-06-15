@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import BlogCard from "../components/Card";
+import { API_SERVICE } from "../services/api";
 
 const blogPosts = [
     {
@@ -83,6 +84,7 @@ export default function Blog() {
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("");
     const [sort, setSort] = useState("");
+
 
     // Lọc bài viết theo search và category
     let filteredPosts = blogPosts.filter(

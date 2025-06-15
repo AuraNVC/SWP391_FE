@@ -23,13 +23,12 @@ const NavbarManager = () => {
                 <span className="navbar-logo-text">SchoolCare</span>
             </div>
             <ul className="navbar-menu">
-                <li><a href="/admin/dashboard"><FaTachometerAlt /> Dashboard</a></li>
-                <li><a href="/admin/student"><FaUser /> Student</a></li>
-                <li><a href="/admin/parent"><FaUsers /> Parent</a></li>
-                <li><a href="/admin/nurse"><FaUserTie /> Nurse</a></li>
-                <li><a href="/admin/blog"><FaBlog /> Blog</a></li>
-                <li><a href="/admin/course"><FaBook /> Course</a></li>
-                <li><a href="/admin/log"><FaClipboardList /> Log</a></li>
+                <li><a href="/manager/dashboard"><FaTachometerAlt /> Dashboard</a></li>
+                <li><a href="/manager/student"><FaUser /> Student</a></li>
+                <li><a href="/manager/parent"><FaUsers /> Parent</a></li>
+                <li><a href="/manager/nurse"><FaUserTie /> Nurse</a></li>
+                <li><a href="/manager/blog"><FaBlog /> Blog</a></li>
+                <li><a href="/manager/log"><FaClipboardList /> Log</a></li>
                 <li className="navbar-logout">
                     <a href="#" onClick={handleLogout}>
                         <FaSignOutAlt /> Logout

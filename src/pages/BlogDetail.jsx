@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
+import { API_SERVICE } from "../services/api";
 
 // Ví dụ dữ liệu blog, bạn nên import hoặc lấy từ API/thư mục chung
 const blogPosts = [
@@ -69,6 +70,20 @@ export default function BlogDetail() {
     const { id } = useParams();
     const blog = blogPosts.find((b) => b.id === Number(id));
 
+    
+    const [blogDetail, setBlogDetail] = useState("");
+    const [thumbnail,setThumbnail] = useState("");
+
+    useEffect(() => {
+        // Lấy chi tiết bài viết nếu có ID trong URL
+        const res = API_SERVICE.blogAPI.getById(id);
+        res.then((data) => {
+            setBlogDetail(data);
+            setThumbnail(`https://localhost:7024/files/blogs//${data.thumbnail}`);
+        })
+    },[]);
+    console.log(blogDetail);
+
     if (!blog) {
         return (
             <div className="container py-5">
@@ -88,14 +103,14 @@ export default function BlogDetail() {
             <div className="row justify-content-center">
                 <div className="col-12 col-md-10 col-lg-8">
                     <div className="card shadow">
-                        <img src={blog.image} alt={blog.title} className="card-img-top" style={{ maxHeight: 350, objectFit: "cover" }} />
+                        <img src={thumbnail} alt={blogDetail.title} className="card-img-top" style={{ maxHeight: 350, objectFit: "cover" }} />
                         <div className="card-body">
                             <div className="mb-2">
                                 <span className="badge bg-info text-dark me-2">{blog.category}</span>
-                                <span className="text-muted small">{blog.date}</span>
+                                <span className="text-muted small">{blogDetail.datePosted}</span>
                             </div>
-                            <h1 className="card-title mb-3">{blog.title}</h1>
-                            <div className="card-text fs-5"><p>{blog.content}</p></div>
+                            <h1 className="card-title mb-3">{blogDetail.title}</h1>
+                            <div className="card-text fs-5"><p>{blogDetail.content}</p></div>
                         </div>
                     </div>
                 </div>

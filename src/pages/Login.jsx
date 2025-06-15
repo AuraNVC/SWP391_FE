@@ -1,32 +1,99 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUserRole } from "../contexts/UserRoleContext";
 import logoSchoolCare from "../assets/logoSchoolCare.png";
 
-export default function Login() {
+export default function Login({ setNotif, setNotifVisible }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("student");
+
+  // Error states cho từng trường
+  const [usernameError, setUsernameError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [roleError, setRoleError] = useState("");
+
   const navigate = useNavigate();
+  const { login } = useUserRole();
 
   const handleLogin = (e) => {
     e.preventDefault();
 
-    if (username === "admin" && password === "admin") {
-      localStorage.setItem("userRole", "manager");
-      navigate("/admin/dashboard");
-    } else if (username === "nurse" && password === "nurse") {
-      localStorage.setItem("userRole", "nurse");
-      navigate("/nurse/dashboard");
-    } else if (username === "parent" && password === "parent") {
-      localStorage.setItem("userRole", "parent");
-      navigate("/");
-    } else if (username === "student" && password === "student") {
-      localStorage.setItem("userRole", "student");
-      navigate("/");
-    } else {
-      window.alert("Tên đăng nhập hoặc mật khẩu không đúng!");
+    // Reset lỗi
+    setUsernameError("");
+    setPasswordError("");
+    setRoleError("");
+
+    let hasError = false;
+
+    if (!username) {
+      setUsernameError("Vui lòng nhập tên đăng nhập.");
+      hasError = true;
+    }
+    if (!password) {
+      setPasswordError("Vui lòng nhập mật khẩu.");
+      hasError = true;
+    }
+    if (!role) {
+      setRoleError("Vui lòng chọn vai trò.");
+      hasError = true;
     }
 
-    window.location.reload();
+    if (hasError) return;
+
+    let valid = false;
+    let redirectPath = "/";
+    if (role === "manager" && username === "manager" && password === "manager") {
+      localStorage.setItem("userRole", "manager");
+      redirectPath = "/manager/dashboard";
+      valid = true;
+    } else if (role === "nurse" && username === "nurse" && password === "nurse") {
+      localStorage.setItem("userRole", "nurse");
+      redirectPath = "/nurse/dashboard";
+      valid = true;
+    } else if (role === "parent" && username === "parent" && password === "parent") {
+      localStorage.setItem("userRole", "parent");
+      redirectPath = "/";
+      valid = true;
+    } else if (role === "student" && username === "student" && password === "student") {
+      localStorage.setItem("userRole", "student");
+      redirectPath = "/";
+      valid = true;
+    }
+
+    if (valid) {
+      login(role); // Cập nhật context và localStorage
+      setNotif({
+        message: "Đăng nhập thành công!",
+        type: "success",
+      });
+      setNotifVisible(true);
+      navigate(redirectPath); // Không reload, chỉ chuyển trang
+    } else {
+      // Xác định lỗi cụ thể
+      if (
+        (role === "manager" && (username !== "manager" || password !== "manager")) ||
+        (role === "nurse" && (username !== "nurse" || password !== "nurse")) ||
+        (role === "parent" && (username !== "parent" || password !== "parent")) ||
+        (role === "student" && (username !== "student" || password !== "student"))
+      ) {
+        setUsernameError("Tên đăng nhập hoặc mật khẩu không đúng.");
+        setPasswordError("Tên đăng nhập hoặc mật khẩu không đúng.");
+        setNotif({
+          message: "Tên đăng nhập hoặc mật khẩu không đúng.",
+          type: "error",
+        });
+        setNotifVisible(true);
+      } else if (!role) {
+        setRoleError("Vui lòng chọn vai trò.");
+      } else {
+        setNotif({
+          message: "Đã xảy ra lỗi không xác định.",
+          type: "error",
+        });
+        setNotifVisible(true);
+      }
+    }
   };
 
   return (
@@ -68,12 +135,17 @@ export default function Login() {
                 name="username"
                 type="text"
                 required
-                className="form-control"
+                className={`form-control${usernameError ? " is-invalid" : ""}`}
                 placeholder="Tên đăng nhập"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 autoFocus
               />
+              {usernameError && (
+                <div className="invalid-feedback" style={{ display: "block" }}>
+                  {usernameError}
+                </div>
+              )}
             </div>
             <div className="mb-3">
               <label htmlFor="password" className="form-label">
@@ -84,11 +156,37 @@ export default function Login() {
                 name="password"
                 type="password"
                 required
-                className="form-control"
+                className={`form-control${passwordError ? " is-invalid" : ""}`}
                 placeholder="Mật khẩu"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              {passwordError && (
+                <div className="invalid-feedback" style={{ display: "block" }}>
+                  {passwordError}
+                </div>
+              )}
+            </div>
+            <div className="mb-3">
+              <label htmlFor="role" className="form-label">
+                Chọn vai trò
+              </label>
+              <select
+                id="role"
+                className={`form-select${roleError ? " is-invalid" : ""}`}
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+              >
+                <option value="manager">Quản trị viên</option>
+                <option value="nurse">Y tá</option>
+                <option value="parent">Phụ huynh</option>
+                <option value="student">Học sinh</option>
+              </select>
+              {roleError && (
+                <div className="invalid-feedback" style={{ display: "block" }}>
+                  {roleError}
+                </div>
+              )}
             </div>
             <div className="d-flex justify-content-between align-items-center mb-3">
               <div className="form-check">
