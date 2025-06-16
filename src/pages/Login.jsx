@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useUserRole } from "../contexts/UserRoleContext";
 import logoSchoolCare from "../assets/logoSchoolCare.png";
 import { API_SERVICE } from "../services/api";
 
-export default function Login({ setNotif, setNotifVisible }) {
+export default function Login({ setNotif }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("student");
@@ -15,7 +15,39 @@ export default function Login({ setNotif, setNotifVisible }) {
   const [roleError, setRoleError] = useState("");
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useUserRole();
+
+  useEffect(() => {
+    // Nếu đã đăng nhập, chuyển hướng tới trang dashboard tương ứng
+    const userRole = localStorage.getItem("userRole");
+    if (userRole) {
+      switch (userRole) {
+        case "manager":
+          navigate("/manager/dashboard");
+          break;
+        case "student":
+          navigate("/");
+          break;
+        case "nurse":
+          navigate("/");
+          break;
+        case "parent":
+          navigate("/");
+          break;
+        default:
+          break;
+      }
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    if (location.state && location.state.notif) {
+      setNotif(location.state.notif);
+      // Xóa state sau khi dùng để tránh lặp lại khi quay lại trang này
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, setNotif]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -46,7 +78,7 @@ export default function Login({ setNotif, setNotifVisible }) {
           email: username,
           password,
         });
-        if (!(data && data.accessToken && data.id)) {
+        if (!(data && data.user.accessToken && data.user.id)) {
           throw new Error();
         }
         redirectPath = "/manager/dashboard";
@@ -55,7 +87,7 @@ export default function Login({ setNotif, setNotifVisible }) {
           studentNumber: username,
           password,
         });
-        if (!(data && data.accessToken && data.id)) {
+        if (!(data && data.user.accessToken && data.user.id)) {
           throw new Error();
         }
         redirectPath = "/";
@@ -64,7 +96,7 @@ export default function Login({ setNotif, setNotifVisible }) {
           email: username,
           password,
         });
-        if (!(data && data.accessToken && data.id)) {
+        if (!(data && data.user.accessToken && data.user.id)) {
           throw new Error();
         }
         redirectPath = "/";
@@ -73,7 +105,7 @@ export default function Login({ setNotif, setNotifVisible }) {
           email: username,
           password,
         });
-        if (!(data && data.accessToken && data.id)) {
+        if (!(data && data.user.accessToken && data.user.id)) {
           throw new Error();
         }
         redirectPath = "/";
@@ -86,7 +118,6 @@ export default function Login({ setNotif, setNotifVisible }) {
         id: data.id,
       });
       setNotif({ message: "Đăng nhập thành công!", type: "success" });
-      setNotifVisible(true);
       navigate(redirectPath);
     } catch {
       setUsernameError("Tên đăng nhập hoặc mật khẩu không đúng.");
@@ -95,7 +126,6 @@ export default function Login({ setNotif, setNotifVisible }) {
         message: "Tên đăng nhập hoặc mật khẩu không đúng.",
         type: "error",
       });
-      setNotifVisible(true);
     }
   };
 
