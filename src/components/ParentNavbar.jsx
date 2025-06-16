@@ -15,6 +15,7 @@ export default function ParentNavbar() {
   const getCurrentPage = () => {
     if (location.pathname === "/parent") return "home";
     if (location.pathname === "/parent/blog") return "blog";
+    if (location.pathname === "/parent/notifications") return "notifications";
     return "";
   };
 
@@ -43,6 +44,14 @@ export default function ParentNavbar() {
                 to="/parent/blog"
               >
                 Blog
+              </Link>
+            </li>
+            <li className="nav-item mx-2">
+              <Link
+                className={`nav-link ${currentPage === "notifications" ? "text-body-tertiary fw-bold" : "text-white"}`}
+                to="/parent/notifications"
+              >
+                Thông báo
               </Link>
             </li>
           </ul>
