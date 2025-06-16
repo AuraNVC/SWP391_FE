@@ -77,8 +77,11 @@ export default function Login({ setNotif, setNotifVisible }) {
           email: username,
           password,
         });
-        if (data) {
+        console.log('Full login response:', data);
+        console.log('User data:', data.user);
+        if (data && data.success) {
           localStorage.setItem("userRole", role);
+          localStorage.setItem("userId", data.user.id);
           redirectPath = "/parent";
           valid = true;
         }
