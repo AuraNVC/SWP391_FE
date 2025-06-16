@@ -38,7 +38,6 @@ export default function Login({ setNotif, setNotifVisible }) {
     }
     if (hasError) return;
 
-    let valid = false;
     let redirectPath = "/";
     try {
       let data;
@@ -47,59 +46,49 @@ export default function Login({ setNotif, setNotifVisible }) {
           email: username,
           password,
         });
-        if (data) {
-          localStorage.setItem("userRole", role);
-          redirectPath = "/manager/dashboard";
-          valid = true;
+        if (!(data && data.accessToken && data.id)) {
+          throw new Error();
         }
+        redirectPath = "/manager/dashboard";
       } else if (role === "student") {
         data = await API_SERVICE.login.student({
           studentNumber: username,
           password,
         });
-        if (data) {
-          localStorage.setItem("userRole", role);
-          redirectPath = "/";
-          valid = true;
+        if (!(data && data.accessToken && data.id)) {
+          throw new Error();
         }
+        redirectPath = "/";
       } else if (role === "nurse") {
         data = await API_SERVICE.login.nurse({
           email: username,
           password,
         });
-        if (data) {
-          localStorage.setItem("userRole", role);
-          redirectPath = "/";
-          valid = true;
+        if (!(data && data.accessToken && data.id)) {
+          throw new Error();
         }
+        redirectPath = "/";
       } else if (role === "parent") {
         data = await API_SERVICE.login.parent({
           email: username,
           password,
         });
-        if (data) {
-          localStorage.setItem("userRole", role);
-          redirectPath = "/";
-          valid = true;
+        if (!(data && data.accessToken && data.id)) {
+          throw new Error();
         }
+        redirectPath = "/";
       }
 
-      if (valid) {
-        login(role);
-        setNotif({ message: "Đăng nhập thành công!", type: "success" });
-        setNotifVisible(true);
-        navigate(redirectPath);
-      } else {
-        setUsernameError("Tên đăng nhập hoặc mật khẩu không đúng.");
-        setPasswordError("Tên đăng nhập hoặc mật khẩu không đúng.");
-        setNotif({
-          message: "Tên đăng nhập hoặc mật khẩu không đúng.",
-          type: "error",
-        });
-        setNotifVisible(true);
-      }
+      // Nếu tới đây là đăng nhập thành công
+      login({
+        role,
+        token: data.accessToken,
+        id: data.id,
+      });
+      setNotif({ message: "Đăng nhập thành công!", type: "success" });
+      setNotifVisible(true);
+      navigate(redirectPath);
     } catch {
-      // Nếu callApi throw error (ví dụ fetch trả về lỗi)
       setUsernameError("Tên đăng nhập hoặc mật khẩu không đúng.");
       setPasswordError("Tên đăng nhập hoặc mật khẩu không đúng.");
       setNotif({
