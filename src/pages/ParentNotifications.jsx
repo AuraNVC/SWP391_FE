@@ -97,6 +97,10 @@ export default function ParentNotifications() {
         <div className="container">
           <div className="row justify-content-center">
             <div className="col-md-8">
+              <div className="text-center mb-5">
+                <h1 className="display-4 mb-3 fw-bold">Thông báo</h1>
+                <p className="lead text-muted">Thông tin về lịch khám sức khỏe và tiêm chủng của học sinh</p>
+              </div>
               {consentForms.length === 0 ? (
                 <div className="text-center text-muted">
                   <p>Không có biểu mẫu đồng ý nào</p>

@@ -15,6 +15,7 @@ import ParentList from './pages/Parent'
 import ParentHome from './pages/ParentHome'
 import ParentBlog from './pages/ParentBlog'
 import ParentNotifications from './pages/ParentNotifications'
+import ParentHealthProfile from './pages/ParentHealthProfile'
 import Notification from './components/Notification'
 import { UserRoleProvider, useUserRole } from "./contexts/UserRoleContext";
 
@@ -110,6 +111,7 @@ function AppContent() {
           <Route path="/parent" element={<ParentHome />} />
           <Route path="/parent/blog" element={<ParentBlog />} />
           <Route path="/parent/notifications" element={<ParentNotifications />} />
+          <Route path="/parent/health-profile" element={<ParentHealthProfile />} />
         </Routes>
       </div>
       {currentPage !== "login" && currentPage !== "manager" && currentPage !== "parent" ? <Footer /> : null}

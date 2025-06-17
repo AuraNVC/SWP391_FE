@@ -31,7 +31,7 @@ export default function ParentNavbar() {
         <div>
           <ul className="navbar-nav flex-row mb-0">
             <li className="nav-item mx-2">
-              <Link
+              <Link 
                 className={`nav-link ${currentPage === "home" ? "text-body-tertiary fw-bold" : "text-white"}`}
                 to="/parent"
               >
@@ -39,7 +39,7 @@ export default function ParentNavbar() {
               </Link>
             </li>
             <li className="nav-item mx-2">
-              <Link
+              <Link 
                 className={`nav-link ${currentPage === "blog" ? "text-body-tertiary fw-bold" : "text-white"}`}
                 to="/parent/blog"
               >
@@ -47,11 +47,19 @@ export default function ParentNavbar() {
               </Link>
             </li>
             <li className="nav-item mx-2">
-              <Link
+              <Link 
                 className={`nav-link ${currentPage === "notifications" ? "text-body-tertiary fw-bold" : "text-white"}`}
                 to="/parent/notifications"
               >
                 Thông báo
+              </Link>
+            </li>
+            <li className="nav-item mx-2">
+              <Link 
+                className={`nav-link ${currentPage === "health-profile" ? "text-body-tertiary fw-bold" : "text-white"}`}
+                to="/parent/health-profile"
+              >
+                Hồ sơ sức khỏe
               </Link>
             </li>
           </ul>
