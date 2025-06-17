@@ -7,22 +7,35 @@ export default function ParentNotifications() {
   const [consentForms, setConsentForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedForm, setSelectedForm] = useState(null);
   const { userRole } = useUserRole();
 
-  const fetchConsentFormDetails = async (formId) => {
+  const updateConsentFormStatus = async (consentFormId, isAccept) => {
     try {
-      console.log('Fetching details for form ID:', formId);
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/${formId}`);
+      console.log('Updating consent form:', { consentFormId, isAccept });
+      const endpoint = isAccept ? 'accept' : 'reject';
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/${endpoint}/${consentFormId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      console.log('Update response status:', response.status);
       if (!response.ok) {
-        throw new Error(`Failed to fetch consent form details: ${response.status}`);
+        throw new Error(`Failed to update consent form: ${response.status}`);
       }
-      const data = await response.json();
-      console.log('Consent form details:', data);
-      setSelectedForm(data);
+
+      // Refresh the consent forms list
+      const parentId = localStorage.getItem('userId');
+      const numericParentId = parseInt(parentId);
+      console.log('Refreshing list for parent:', numericParentId);
+      const updatedResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormForParent?parentId=${numericParentId}`);
+      const updatedData = await updatedResponse.json();
+      console.log('Updated consent forms:', updatedData);
+      setConsentForms(updatedData);
     } catch (err) {
-      console.error('Error fetching consent form details:', err);
-      setError('Failed to fetch consent form details. Please try again later.');
+      console.error('Error updating consent form:', err);
+      setError('Failed to update consent form. Please try again later.');
     }
   };
 
@@ -47,8 +60,8 @@ export default function ParentNotifications() {
           return;
         }
 
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`);
-        console.log('API URL:', `${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormForParent?parentId=${numericParentId}`);
+        console.log('API URL:', `${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormForParent?parentId=${numericParentId}`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch consent forms: ${response.status}`);
@@ -97,7 +110,16 @@ export default function ParentNotifications() {
                         <strong>Lớp:</strong> {form.form.className}
                       </p>
                       <p className="card-text">
-                        <strong>Trạng thái:</strong> {form.status}
+                        <strong>Trạng thái:</strong>{' '}
+                        <span className={`badge ${
+                          form.status === 'Pending' ? 'bg-warning' :
+                          form.status === 'Accepted' ? 'bg-success' :
+                          'bg-danger'
+                        }`}>
+                          {form.status === 'Pending' ? 'Chờ xác nhận' :
+                           form.status === 'Accepted' ? 'Đã đồng ý' :
+                           'Đã từ chối'}
+                        </span>
                       </p>
                       <p className="card-text">
                         <strong>Nội dung:</strong> {form.form.content}
@@ -105,57 +127,26 @@ export default function ParentNotifications() {
                       <p className="card-text">
                         <strong>Ngày gửi:</strong> {new Date(form.form.sentDate).toLocaleDateString('vi-VN')}
                       </p>
-                      <p className="card-text">
-                        <strong>Loại:</strong> {form.form.type}
-                      </p>
-                      <button 
-                        className="btn btn-primary"
-                        onClick={() => fetchConsentFormDetails(form.consentFormId)}
-                      >
-                        Xem chi tiết
-                      </button>
+                      <div className="d-flex gap-2">
+                        <button 
+                          className={`btn ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
+                          onClick={() => updateConsentFormStatus(form.consentFormId, true)}
+                        >
+                          Đồng ý
+                        </button>
+                        <button 
+                          className={`btn ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
+                          onClick={() => updateConsentFormStatus(form.consentFormId, false)}
+                        >
+                          Từ chối
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
               )}
             </div>
           </div>
-
-          {selectedForm && (
-            <div className="modal fade show d-flex align-items-center justify-content-center" 
-                 style={{ 
-                   display: 'block', 
-                   backgroundColor: 'rgba(0,0,0,0.5)',
-                   position: 'fixed',
-                   top: 0,
-                   left: 0,
-                   right: 0,
-                   bottom: 0,
-                   zIndex: 1050
-                 }} 
-                 tabIndex="-1">
-              <div className="modal-dialog modal-dialog-centered">
-                <div className="modal-content">
-                  <div className="modal-header">
-                    <h5 className="modal-title">{selectedForm.form.title}</h5>
-                    <button type="button" className="btn-close" onClick={() => setSelectedForm(null)}></button>
-                  </div>
-                  <div className="modal-body">
-                    <p><strong>Lớp:</strong> {selectedForm.form.className}</p>
-                    <p><strong>Trạng thái:</strong> {selectedForm.status}</p>
-                    <p><strong>Nội dung:</strong> {selectedForm.form.content}</p>
-                    <p><strong>Ngày gửi:</strong> {new Date(selectedForm.form.sentDate).toLocaleDateString('vi-VN')}</p>
-                    <p><strong>Ngày xác nhận:</strong> {selectedForm.confirmDate ? new Date(selectedForm.confirmDate).toLocaleDateString('vi-VN') : 'Chưa xác nhận'}</p>
-                    <p><strong>Loại:</strong> {selectedForm.form.type}</p>
-                    <p><strong>Ngày tạo:</strong> {new Date(selectedForm.form.createdAt).toLocaleDateString('vi-VN')}</p>
-                  </div>
-                  <div className="modal-footer">
-                    <button type="button" className="btn btn-secondary" onClick={() => setSelectedForm(null)}>Đóng</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </main>
       <ParentFooter />
