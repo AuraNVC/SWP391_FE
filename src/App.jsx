@@ -1,21 +1,23 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import './App.css'
-import Navbar from './components/Navbar'
-import NavbarManager from './components/NavbarManager'
 import Home from './pages/Home'
-import Footer from './components/Footer'
 import Login from './pages/Login'
 import Blog from './pages/Blog'
 import BlogDetail from './pages/BlogDetail'
-import NurseList from './pages/Nurse'
+import NurseList from './pages/NurseDashboard'
 import Dashborad from './pages/Dashborad'
-import StudentList from './pages/Student'
-import ParentList from './pages/Parent'
-import ParentHome from './pages/ParentHome'
-import ParentBlog from './pages/ParentBlog'
+import StudentList from './pages/StudentDashboard'
+import ParentList from './pages/ParentDashboard'
 import Notification from './components/Notification'
 import { UserRoleProvider, useUserRole } from "./contexts/UserRoleContext";
+import { NotificationProvider, useNotification } from "./contexts/NotificationContext";
+import MainLayout from "./layouts/MainLayout";
+import LoginLayout from "./layouts/LoginLayout";
+import AdminLayout from "./layouts/AdminLayout";
+import ProtectedRoute from "./contexts/ProtectedRoute";
+import BlogList from './pages/BlogDashboard'
+import StudentCreate from './pages/StudentCreate'
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -33,41 +35,32 @@ function AdminParent() {
   return <ParentList />
 }
 
+function AdminBlog() {
+  return <BlogList />
+}
+
+function AddStudent() {
+  return <StudentCreate />
+}
+
 function AppContent() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const avatarUrl = "https://i.pravatar.cc/40?img=3"
-  const location = useLocation()
   const { userRole } = useUserRole();
 
-  // Notification state
-  const [notif, setNotif] = useState({ message: "", type: "info" });
-  const [notifVisible, setNotifVisible] = useState(false);
-
-  const handleNotifClose = () => setNotifVisible(false);
-
-  // Xác định currentPage dựa trên đường dẫn
-  let currentPage = "home"
-  if (location.pathname.startsWith("/manager")) currentPage = "manager"
-  else if (location.pathname.startsWith("/parent")) currentPage = "parent"
-  else if (location.pathname === "/about") currentPage = "about"
-  else if (location.pathname === "/contact") currentPage = "contact"
-  else if (location.pathname === "/blog") currentPage = "blog"
-  else if (location.pathname === "/login") currentPage = "login"
+  // Sử dụng context notification
+  const { notif, setNotif } = useNotification();
 
   useEffect(() => {
-    const loggedIn = userRole !== null
-    setIsLoggedIn(loggedIn)
-    if (loggedIn) {
-      localStorage.getItem("userRole")
-    }
-    console.log("Current userRole:", userRole);
-    console.log("Current page:", currentPage);
-  }, [userRole, currentPage])
+    setIsLoggedIn(!!userRole)
+  }, [userRole])
+
+  const handleNotifClose = () => setNotif(null);
 
   return (
     <>
       {/* Notification hiển thị trên mọi trang */}
-      {notifVisible && (
+      {notif && notif.message && (
         <div style={{ position: "fixed", top: 20, left: 0, right: 0, display: "flex", justifyContent: "center", zIndex: 9999 }}>
           <Notification
             message={notif.message}
@@ -76,41 +69,35 @@ function AppContent() {
           />
         </div>
       )}
-      {currentPage === "manager" && String(userRole) === "manager" ? (
-        <NavbarManager />
-      ) : currentPage === "parent" && String(userRole) === "parent" ? (
-        null // ParentNavbar is included in ParentHome and ParentBlog components
-      ) : currentPage !== "login" ? (
-        <Navbar
-          isLoggedIn={isLoggedIn}
-          avatarUrl={avatarUrl}
-          currentPage={currentPage}
-        />
-      ) : null}
-      <div style={currentPage !== "login" ? { paddingTop: 80, marginLeft: currentPage === "admin" && userRole === "admin" ? 220 : 0 } : undefined}>
-        <Routes>
+      <Routes>
+        <Route element={<MainLayout isLoggedIn={isLoggedIn} avatarUrl={avatarUrl} />}>
           <Route path="/" element={<Home />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path="/about" element={<h2>Đây là Trang Giới thiệu</h2>} />
           <Route path="/contact" element={<h2>Đây là Trang Liên hệ</h2>} />
+        </Route>
+        <Route element={<LoginLayout />}>
           <Route path="/login" element={
             <Login
               setNotif={setNotif}
-              setNotifVisible={setNotifVisible}
             />
           } />
-          {/* Admin routes */}
+        </Route>
+        <Route element={
+          <ProtectedRoute roles={["manager"]} setNotif={setNotif}>
+            <AdminLayout />
+          </ProtectedRoute>
+        }>
           <Route path="/manager/dashboard" element={<AdminDashboard />} />
           <Route path="/manager/student" element={<AdminStudent />} />
+          <Route path="/manager/student/create" element={<AddStudent />} />
           <Route path="/manager/parent" element={<AdminParent />} />
           <Route path="/manager/nurse" element={<AdminNurse />} />
-          {/* Parent routes */}
-          <Route path="/parent" element={<ParentHome />} />
-          <Route path="/parent/blog" element={<ParentBlog />} />
-        </Routes>
-      </div>
-      {currentPage !== "login" && currentPage !== "manager" && currentPage !== "parent" ? <Footer /> : null}
+          <Route path="/manager/blog" element={<AdminBlog />} />
+
+        </Route>
+      </Routes>
     </>
   )
 }
@@ -118,9 +105,11 @@ function AppContent() {
 function App() {
   return (
     <UserRoleProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <NotificationProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </NotificationProvider>
     </UserRoleProvider>
   );
 }

@@ -1,19 +1,17 @@
 import React from "react";
-import {
-    FaTachometerAlt, FaUser, FaUsers, FaUserTie, FaBook, FaClipboardList,
-    FaSignOutAlt, FaBlog
-} from "react-icons/fa";
-import "../styles/NavbarManager.css";
+import { FaSignOutAlt } from "react-icons/fa";
+import "../styles/Sidebar.css";
 import { useNavigate } from "react-router-dom";
 import logoSchoolCare from "../assets/logoSchoolCare.png";
+import { useUserRole } from "../contexts/UserRoleContext"; // Thêm dòng này
 
-const NavbarManager = () => {
-
+const Sidebar = ({ extraLinks = [] }) => {
     const navigate = useNavigate();
+    const { logout } = useUserRole(); // Lấy hàm logout từ context
+
     const handleLogout = () => {
-        localStorage.removeItem("userRole");
+        logout(); // Xóa localStorage và cập nhật state
         navigate("/login");
-        window.location.reload();
     };
 
     return (
@@ -23,12 +21,9 @@ const NavbarManager = () => {
                 <span className="navbar-logo-text">SchoolCare</span>
             </div>
             <ul className="navbar-menu">
-                <li><a href="/manager/dashboard"><FaTachometerAlt /> Dashboard</a></li>
-                <li><a href="/manager/student"><FaUser /> Student</a></li>
-                <li><a href="/manager/parent"><FaUsers /> Parent</a></li>
-                <li><a href="/manager/nurse"><FaUserTie /> Nurse</a></li>
-                <li><a href="/manager/blog"><FaBlog /> Blog</a></li>
-                <li><a href="/manager/log"><FaClipboardList /> Log</a></li>
+                {extraLinks.map((item, idx) => (
+                    <li key={idx}>{item}</li>
+                ))}
                 <li className="navbar-logout">
                     <a href="#" onClick={handleLogout}>
                         <FaSignOutAlt /> Logout
@@ -46,4 +41,4 @@ const NavbarManager = () => {
     );
 };
 
-export default NavbarManager;
+export default Sidebar;

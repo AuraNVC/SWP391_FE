@@ -1,22 +1,24 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useUserRole } from "../contexts/UserRoleContext"; // Thêm dòng này
 
-const Navbar = ({ isLoggedIn, avatarUrl, currentPage = "home" }) => {
+const Navbar = ({ isLoggedIn, avatarUrl, currentPage = "home", extraLinks = [] }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const avatarRef = useRef(null);
+  const { logout } = useUserRole(); // Lấy hàm logout từ context
+
+  console.log(`Current page: ${currentPage}`)
 
   const handleLoginClick = () => {
     navigate("/login");
   };
   const handleLogout = () => {
-    localStorage.removeItem("userRole");
+    logout(); // Gọi hàm logout từ context
     setShowMenu(false);
     navigate("/login");
-    window.location.reload();
   };
 
-  // Đóng popup khi click ra ngoài
   useEffect(() => {
     function handleClickOutside(event) {
       if (avatarRef.current && !avatarRef.current.contains(event.target)) {
@@ -31,7 +33,6 @@ const Navbar = ({ isLoggedIn, avatarUrl, currentPage = "home" }) => {
     };
   }, [showMenu]);
 
-
   return (
     <nav className="navbar navbar-expand-lg navbar-dark shadow fixed-top" style={{ backgroundColor: "#0d9488" }}>
       <div className="container">
@@ -41,38 +42,11 @@ const Navbar = ({ isLoggedIn, avatarUrl, currentPage = "home" }) => {
         </Link>
         <div>
           <ul className="navbar-nav flex-row mb-0">
-            <li className="nav-item mx-2">
-              <Link
-                className={`nav-link ${currentPage === "home" ? "text-body-tertiary fw-bold" : "text-white"}`}
-                to="/"
-              >
-                Trang chủ
-              </Link>
-            </li>
-            <li className="nav-item mx-2">
-              <Link
-                className={`nav-link ${currentPage === "blog" ? "text-body-tertiary fw-bold" : "text-white"}`}
-                to="/blog"
-              >
-                Blog
-              </Link>
-            </li>
-            <li className="nav-item mx-2">
-              <Link
-                className={`nav-link ${currentPage === "contact" ? "text-body-tertiary fw-bold" : "text-white"}`}
-                to="/contact"
-              >
-                Liên hệ
-              </Link>
-            </li>
-            <li className="nav-item mx-2">
-              <Link
-                className={`nav-link ${currentPage === "about" ? "text-body-tertiary fw-bold" : "text-white"}`}
-                to="/about"
-              >
-                Giới thiệu
-              </Link>
-            </li>
+            {extraLinks.map((item, idx) => (
+              <li className="nav-item mx-2" key={idx}>
+                {item}
+              </li>
+            ))}
           </ul>
         </div>
         <div className="d-flex align-items-center">
@@ -91,6 +65,7 @@ const Navbar = ({ isLoggedIn, avatarUrl, currentPage = "home" }) => {
                 className="rounded-circle border border-white shadow"
                 style={{ width: 40, height: 40, cursor: "pointer" }}
                 onClick={() => setShowMenu((prev) => !prev)}
+                ref={avatarRef}
               />
               {showMenu && (
                 <div
