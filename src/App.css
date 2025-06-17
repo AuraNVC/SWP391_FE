@@ -46,3 +46,67 @@ body,
 .read-the-docs {
   color: #888;
 }
+
+/* Navbar styles */
+.navbar {
+  padding: 1rem 0;
+}
+
+.navbar-brand img {
+  height: 40px;
+}
+
+/* Hero section styles */
+.bg-primary {
+  background-color: #0d6efd !important;
+}
+
+/* Card styles */
+.card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+/* Footer styles */
+footer {
+  margin-top: auto;
+}
+
+footer .text-muted {
+  color: #6c757d !important;
+}
+
+footer a {
+  color: #6c757d;
+  text-decoration: none;
+  transition: color 0.2s ease-in-out;
+}
+
+footer a:hover {
+  color: #0d6efd;
+}
+
+/* Blog styles */
+.blog-post img {
+  height: 300px;
+  object-fit: cover;
+}
+
+.badge {
+  font-weight: 500;
+  padding: 0.5em 1em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .navbar-brand img {
+    height: 30px;
+  }
+  
+  .blog-post img {
+    height: 200px;
+  }
+}

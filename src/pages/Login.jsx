@@ -109,7 +109,7 @@ export default function Login({ setNotif }) {
           throw new Error();
         }
         redirectPath = "/";
-      }
+      } 
 
       // Nếu tới đây là đăng nhập thành công
       login({
