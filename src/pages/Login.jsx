@@ -114,8 +114,8 @@ export default function Login({ setNotif }) {
       // Nếu tới đây là đăng nhập thành công
       login({
         role,
-        token: data.accessToken,
-        id: data.id,
+        token: data.user.accessToken,
+        id: data.user.id,
       });
       setNotif({ message: "Đăng nhập thành công!", type: "success" });
       navigate(redirectPath);

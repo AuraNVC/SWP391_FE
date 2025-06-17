@@ -18,6 +18,7 @@ export function UserRoleProvider({ children }) {
   };
 
   const logout = () => {
+    console.log(userRole, accessToken, userId);
     localStorage.removeItem("userRole");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("userId");

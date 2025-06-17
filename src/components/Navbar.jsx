@@ -2,18 +2,17 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUserRole } from "../contexts/UserRoleContext"; // Thêm dòng này
 
-const Navbar = ({ isLoggedIn, avatarUrl, currentPage = "home", extraLinks = [] }) => {
+const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const avatarRef = useRef(null);
-  const { logout } = useUserRole(); // Lấy hàm logout từ context
-
-  console.log(`Current page: ${currentPage}`)
+  const { logout } = useUserRole();
 
   const handleLoginClick = () => {
     navigate("/login");
   };
   const handleLogout = () => {
+    console.log("logout")
     logout(); // Gọi hàm logout từ context
     setShowMenu(false);
     navigate("/login");
@@ -26,10 +25,10 @@ const Navbar = ({ isLoggedIn, avatarUrl, currentPage = "home", extraLinks = [] }
       }
     }
     if (showMenu) {
-      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("click", handleClickOutside);
     }
     return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("click", handleClickOutside);
     };
   }, [showMenu]);
 
@@ -64,7 +63,10 @@ const Navbar = ({ isLoggedIn, avatarUrl, currentPage = "home", extraLinks = [] }
                 alt="avatar"
                 className="rounded-circle border border-white shadow"
                 style={{ width: 40, height: 40, cursor: "pointer" }}
-                onClick={() => setShowMenu((prev) => !prev)}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setShowMenu((prev) => !prev);
+                }}
                 ref={avatarRef}
               />
               {showMenu && (
@@ -78,6 +80,7 @@ const Navbar = ({ isLoggedIn, avatarUrl, currentPage = "home", extraLinks = [] }
                   }}
                 >
                   <button
+                    type="button"
                     className="dropdown-item text-danger"
                     onClick={handleLogout}
                   >
