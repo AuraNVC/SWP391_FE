@@ -1,12 +1,35 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import HighlightSwiper from "../components/HighlightSwiper"; // import component mới
+
+const highlightPrograms = [
+    {
+        title: "Chương trình tiêm chủng mở rộng",
+        desc: "Đảm bảo mọi học sinh được tiêm chủng đầy đủ các loại vaccine phòng bệnh theo khuyến nghị của Bộ Y tế.",
+        image: "/images/vaccine-program.jpg"
+    },
+    {
+        title: "Khám sức khỏe định kỳ",
+        desc: "Tổ chức khám sức khỏe tổng quát cho học sinh mỗi học kỳ, phát hiện sớm các vấn đề sức khỏe.",
+        image: "/images/health-check.jpg"
+    },
+    {
+        title: "Tư vấn dinh dưỡng học đường",
+        desc: "Chuyên gia dinh dưỡng tư vấn chế độ ăn uống hợp lý, giúp học sinh phát triển toàn diện.",
+        image: "/images/nutrition.jpg"
+    },
+    {
+        title: "Phòng chống dịch bệnh học đường",
+        desc: "Triển khai các biện pháp phòng chống dịch bệnh, hướng dẫn vệ sinh cá nhân và môi trường lớp học.",
+        image: "/images/disease-prevention.jpg"
+    }
+];
 
 const Home = () => {
     const [blogs, setBlogs] = useState([]);
-
     const [documents, setDocuments] = useState([]);
-
     const [userRole] = useState(localStorage.getItem("userRole"));
+
     useEffect(() => {
         setBlogs([
             {
@@ -46,47 +69,10 @@ const Home = () => {
 
     return (
         <main className="container-fluid py-5 px-10">
-            {/* Giới thiệu */}
-            <div style={{ margin: "0 auto", padding: "0 10rem" }}>
-                <section className="mb-5">
-                    <h2 className="text-center fw-bold mb-4 fs-2">Giới Thiệu</h2>
-                    <div className="bg-white rounded shadow p-4">
-                        <p className="fs-5 text-secondary mb-4">
-                            Hệ thống Y tế Học đường là nền tảng quản lý toàn diện cho công tác y tế tại trường học,
-                            giúp kết nối phụ huynh, học sinh, nhân viên y tế và ban giám hiệu trong việc chăm sóc sức khỏe học đường.
-                        </p>
-                        <div className="row text-center mt-4 g-4">
-                            <div className="col-12 col-md-4">
-                                <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style={{ width: 64, height: 64 }}>
-                                    <svg width="32" height="32" fill="none" stroke="#14b8a6" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                                    </svg>
-                                </div>
-                                <h3 className="fs-5 fw-semibold mb-2">Quản Lý Hồ Sơ</h3>
-                                <p className="text-secondary">Theo dõi và quản lý hồ sơ sức khỏe học sinh</p>
-                            </div>
-                            <div className="col-12 col-md-4">
-                                <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style={{ width: 64, height: 64 }}>
-                                    <svg width="32" height="32" fill="none" stroke="#14b8a6" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                                    </svg>
-                                </div>
-                                <h3 className="fs-5 fw-semibold mb-2">Tiêm Chủng</h3>
-                                <p className="text-secondary">Quản lý lịch tiêm chủng và theo dõi sau tiêm</p>
-                            </div>
-                            <div className="col-12 col-md-4">
-                                <div className="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style={{ width: 64, height: 64 }}>
-                                    <svg width="32" height="32" fill="none" stroke="#14b8a6" strokeWidth="2" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                    </svg>
-                                </div>
-                                <h3 className="fs-5 fw-semibold mb-2">Khám Sức Khỏe</h3>
-                                <p className="text-secondary">Kiểm tra sức khỏe định kỳ và tư vấn y tế</p>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+            {/* Swiper giới thiệu các chương trình nổi bật */}
+            <HighlightSwiper items={highlightPrograms} title="Chương Trình Y Tế Đáng Chú Ý" />
 
+            <div style={{ margin: "0 auto", padding: "0 10rem" }}>
                 {/* Blog */}
                 <section className="mb-5">
                     <h2 className="text-center fw-bold mb-4 fs-2">Bài Viết Mới Nhất</h2>
