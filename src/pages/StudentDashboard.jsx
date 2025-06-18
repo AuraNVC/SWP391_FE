@@ -3,6 +3,7 @@ import "../styles/Manager.css";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { API_SERVICE } from "../services/api";
 import TableWithPaging from "../components/TableWithPaging";
+import { useNotification } from "../contexts/NotificationContext";
 
 const columns = [
   { title: "ID", dataIndex: "studentId" },
@@ -28,6 +29,8 @@ const StudentList = () => {
   const [studentList, setStudentList] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true); // Thêm loading
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const { setNotif } = useNotification();
 
   useEffect(() => {
     const fetchStudentList = async () => {
@@ -43,10 +46,50 @@ const StudentList = () => {
     fetchStudentList();
   }, []);
 
+  const handleViewDetail = (row) => {
+    alert(`View detail for student: ${row.fullName}`);
+  };
+
+  const handleEdit = (row) => {
+    alert(`Edit student: ${row.fullName}`);
+  };
+
+  const handleDelete = (row) => {
+    setDeleteTarget(row);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteTarget) {
+      try {
+        await API_SERVICE.studentAPI.delete(deleteTarget.studentId);
+        setStudentList((prev) => prev.filter(s => s.studentId !== deleteTarget.studentId));
+        setDeleteTarget(null);
+        setNotif({
+          message: "Xóa student thành công!",
+          type: "success",
+        });
+      } catch (error) {
+        setNotif({
+          message: "Xóa student thất bại!",
+          type: "error",
+        });
+        setDeleteTarget(null);
+      }
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteTarget(null);
+  };
+
   return (
     <div className="admin-main">
       <div className="admin-header">
-        <button className="admin-btn"><a href="/manager/student/create" style={{ textDecoration: "none" }}>+ Create New Staff</a></button>
+        <button className="admin-btn">
+          <a href="/manager/student/create" style={{ textDecoration: "none" }}>
+            + Create New Staff
+          </a>
+        </button>
         <input className="admin-search" type="text" placeholder="Search..." />
       </div>
       <div className="admin-table-container">
@@ -108,22 +151,48 @@ const StudentList = () => {
           />
         )}
       </div>
+      {/* Dialog xác nhận xóa */}
+      {deleteTarget && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              padding: 32,
+              borderRadius: 8,
+              minWidth: 320,
+              boxShadow: "0 2px 8px #888",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ marginBottom: 20 }}>
+              <strong>Bạn có chắc chắn muốn xóa student "{deleteTarget.fullName}"?</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+              <button className="admin-btn" style={{ background: "#dc3545" }} onClick={confirmDelete}>
+                Xóa
+              </button>
+              <button className="admin-btn" style={{ background: "#6c757d" }} onClick={cancelDelete}>
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-const handleViewDetail = (row) => {
-  alert(`View detail for student: ${row.fullName}`);
-};
-
-const handleEdit = (row) => {
-  alert(`Edit student: ${row.fullName}`);
-};
-
-const handleDelete = (row) => {
-  if (window.confirm(`Delete student: ${row.fullName}?`)) {
-    // Thực hiện xóa
-  }
 };
 
 export default StudentList;

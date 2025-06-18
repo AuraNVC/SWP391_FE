@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import TableWithPaging from "../components/TableWithPaging";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { API_SERVICE } from "../services/api";
+import { useNotification } from "../contexts/NotificationContext";
 
 const columns = [
   { title: "ID", dataIndex: "nurseId" },
@@ -20,33 +21,57 @@ const NurseList = () => {
   const [nurseList, setNurseList] = useState([]);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const { setNotif } = useNotification();
 
   useEffect(() => {
-    const fetchParentList = async () => {
+    const fetchNurseList = async () => {
       setLoading(true);
       try {
         const response = await API_SERVICE.nurseAPI.getAll({ keyword: "" });
         setNurseList(response);
       } catch (error) {
-        console.error("Error fetching student list:", error);
+        console.error("Error fetching nurse list:", error);
       }
       setLoading(false);
     };
-    fetchParentList();
+    fetchNurseList();
   }, []);
 
   const handleViewDetail = (row) => {
-    alert(`View detail for staff: ${row.name}`);
+    alert(`View detail for staff: ${row.fullName}`);
   };
 
   const handleEdit = (row) => {
-    alert(`Edit staff: ${row.name}`);
+    alert(`Edit staff: ${row.fullName}`);
   };
 
   const handleDelete = (row) => {
-    if (window.confirm(`Delete staff: ${row.name}?`)) {
-      // Thực hiện xóa
+    setDeleteTarget(row);
+  };
+
+  const confirmDelete = async () => {
+    if (deleteTarget) {
+      try {
+        await API_SERVICE.nurseAPI.delete(deleteTarget.nurseId);
+        setNurseList((prev) => prev.filter(n => n.nurseId !== deleteTarget.nurseId));
+        setDeleteTarget(null);
+        setNotif({
+          message: "Xóa staff thành công!",
+          type: "success",
+        });
+      } catch (error) {
+        setNotif({
+          message: `Xóa staff thất bại! ${error.message}`,
+          type: "error",
+        });
+        setDeleteTarget(null);
+      }
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteTarget(null);
   };
 
   return (
@@ -96,6 +121,46 @@ const NurseList = () => {
           />
         )}
       </div>
+      {/* Dialog xác nhận xóa */}
+      {deleteTarget && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(0,0,0,0.3)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              padding: 32,
+              borderRadius: 8,
+              minWidth: 320,
+              boxShadow: "0 2px 8px #888",
+              textAlign: "center",
+            }}
+          >
+            <div style={{ marginBottom: 20 }}>
+              <strong>Bạn có chắc chắn muốn xóa staff "{deleteTarget.fullName}"?</strong>
+            </div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
+              <button className="admin-btn" style={{ background: "#dc3545" }} onClick={confirmDelete}>
+                Xóa
+              </button>
+              <button className="admin-btn" style={{ background: "#6c757d" }} onClick={cancelDelete}>
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
