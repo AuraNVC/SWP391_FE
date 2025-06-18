@@ -1,0 +1,47 @@
+import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
+import { Outlet, Link, useLocation } from "react-router-dom";
+
+export default function MainLayout(props) {
+  const location = useLocation();
+  const currentPage = props.currentPage || (
+    location.pathname === "/" ? "home"
+    : location.pathname === "/blog" ? "blog"
+    : location.pathname === "/about" ? "about"
+    : location.pathname === "/contact" ? "contact"
+    : ""
+  );
+
+  const extraLinks = [
+    <Link
+      key="home"
+      className={`nav-link${currentPage === "home" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/"
+    >Trang chủ</Link>,
+    <Link
+      key="blog"
+      className={`nav-link${currentPage === "blog" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/blog"
+    >Blog</Link>,
+    <Link
+      key="contact"
+      className={`nav-link${currentPage === "contact" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/contact"
+    >Liên hệ</Link>,
+    <Link
+      key="about"
+      className={`nav-link${currentPage === "about" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/about"
+    >Giới thiệu</Link>,
+  ];
+
+  return (
+    <>
+      <Navbar {...props} extraLinks={extraLinks} currentPage={currentPage} />
+      <div style={{ paddingTop: 80 }}>
+        <Outlet />
+      </div>
+      <Footer />
+    </>
+  );
+}
