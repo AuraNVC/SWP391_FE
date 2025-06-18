@@ -5,6 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API = {
     BLOG_LIST: `${API_BASE_URL}/blog/search`,
     BLOG_DETAIL: (id) => `${API_BASE_URL}/blog/${id}`,
+    BLOG_DELETE: (id) => `${API_BASE_URL}/blog/${id}`,
     LOGIN_MANAGER: `${API_BASE_URL}/manager/authorize`,
     LOGIN_STUDENT: `${API_BASE_URL}/student/login`,
     LOGIN_NURSE: `${API_BASE_URL}/nurse/login`,
@@ -14,8 +15,14 @@ const API = {
     DOCUMENT_LIST: `${API_BASE_URL}/documents`,
     DOCUMENT_DETAIL: (id) => `${API_BASE_URL}/documents/${id}`,
     STUDENT_LIST: `${API_BASE_URL}/student/search`,
+    STUDENT_DELETE: (id) => `${API_BASE_URL}/student/${id}`,
     PARENT_LIST: `${API_BASE_URL}/parent/search`,
+    PARENT_DELETE: (id) => `${API_BASE_URL}/parent/${id}`,
     NURSE_LIST: `${API_BASE_URL}/nurse/search`,
+    NURSE_DELETE: (id) => `${API_BASE_URL}/nurse/${id}`,
+    FORM_LIST: `${API_BASE_URL}/form/search`,
+    FORM_CREATE: `${API_BASE_URL}/form/add`,
+    FORM_DELETE: (id) => `${API_BASE_URL}/form/${id}`,
     // Thêm các endpoint khác nếu cần
 };
 
@@ -23,7 +30,12 @@ const API = {
 async function callApi(url, options = {}) {
     const res = await fetch(url, options);
     if (!res.ok) throw new Error("Lỗi khi gọi API");
-    return res.json();
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+        return res.json();
+    }
+    // Nếu không có body (ví dụ DELETE trả về 204 No Content)
+    return null;
 }
 
 // Các hàm con sử dụng hàm cha
@@ -34,7 +46,14 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data),
         }),
-        getById: (id) => callApi(API.BLOG_DETAIL(id), { method: "GET", header: { "Content-Type": "application/json" } }),
+        getById: (id) => callApi(API.BLOG_DETAIL(id), {
+            method: "GET",
+            header: { "Content-Type": "application/json" }
+        }),
+        delete: (id) => callApi(API.BLOG_DELETE(id), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        }),
         // Thêm các hàm POST/PUT/DELETE nếu cần
     },
     userAPI: {
@@ -74,6 +93,10 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        delete: (id) => callApi(API.STUDENT_DELETE(id), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        }),
         // Thêm các hàm khác nếu cần
     },
     parentAPI: {
@@ -82,6 +105,10 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        delete: (id) => callApi(API.PARENT_DELETE(id), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        }),
         // Thêm các hàm khác nếu cần
     },
     nurseAPI: {
@@ -89,6 +116,27 @@ export const API_SERVICE = {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
+        }),
+        delete: (id) => callApi(API.NURSE_DELETE(id), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        }),
+        // Thêm các hàm khác nếu cần
+    },
+    formAPI: {
+        getAll: (data) => callApi(API.FORM_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        create: (data) => callApi(API.FORM_CREATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        delete: (id) => callApi(API.FORM_DELETE(id), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
         }),
         // Thêm các hàm khác nếu cần
     },
