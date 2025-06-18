@@ -2,7 +2,7 @@ import React from "react";
 
 export default function About() {
     return (
-        <main className="container-fluid py-5 px-10">
+        <main className="container-fluid py-5 px-4">
             <div style={{ margin: "0 auto", padding: "0 10rem" }}>
                 {/* Header */}
                 <section className="mb-5">

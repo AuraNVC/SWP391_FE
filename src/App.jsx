@@ -20,6 +20,8 @@ import AdminLayout from "./layouts/AdminLayout";
 import ProtectedRoute from "./contexts/ProtectedRoute";
 import BlogList from './pages/BlogDashboard'
 import StudentCreate from './pages/StudentCreate'
+import Contact from './pages/Contact'
+import About from './pages/About'
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -76,8 +78,8 @@ function AppContent() {
           <Route path="/" element={<Home />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:id" element={<BlogDetail />} />
-          <Route path="/about" element={<h2>Đây là Trang Giới thiệu</h2>} />
-          <Route path="/contact" element={<h2>Đây là Trang Liên hệ</h2>} />
+          <Route path="/about" element={<About />} />
+          <Route path="/contact" element={<Contact />} />
           {/* Parent routes */}
           <Route path="/parent/notifications" element={<ParentNotifications />} />
           <Route path="/parent/health-profile" element={<ParentHealthProfile />} />
