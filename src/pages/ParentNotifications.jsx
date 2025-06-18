@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from "react";
-import ParentNavbar from "../components/ParentNavbar";
-import ParentFooter from "../components/ParentFooter";
 import { useUserRole } from '../contexts/UserRoleContext';
 
 export default function ParentNotifications() {
@@ -114,7 +112,6 @@ export default function ParentNotifications() {
 
   return (
     <div className="min-vh-100 d-flex flex-column">
-      <ParentNavbar />
       <main className="container-fluid py-5 px-10 flex-grow-1" style={{ marginTop: "80px" }}>
         <div className="container">
           <div className="row justify-content-center">
@@ -210,7 +207,6 @@ export default function ParentNotifications() {
           </div>
         </div>
       </main>
-      <ParentFooter />
     </div>
   );
 } 

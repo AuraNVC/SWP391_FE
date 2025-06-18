@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import ParentNavbar from '../components/ParentNavbar';
-import ParentFooter from '../components/ParentFooter';
 
 const ParentHealthProfile = () => {
   const [students, setStudents] = useState([]);
@@ -97,7 +95,6 @@ const ParentHealthProfile = () => {
   if (loading) {
     return (
       <div className="min-vh-100 d-flex flex-column">
-        <ParentNavbar />
         <main className="container-fluid py-5 px-10 flex-grow-1" style={{ marginTop: "80px" }}>
           <div className="container">
             <div className="row justify-content-center">
@@ -115,7 +112,6 @@ const ParentHealthProfile = () => {
             </div>
           </div>
         </main>
-        <ParentFooter />
       </div>
     );
   }
@@ -123,7 +119,6 @@ const ParentHealthProfile = () => {
   if (error) {
     return (
       <div className="min-vh-100 d-flex flex-column">
-        <ParentNavbar />
         <main className="container-fluid py-5 px-10 flex-grow-1" style={{ marginTop: "80px" }}>
           <div className="container">
             <div className="row justify-content-center">
@@ -139,14 +134,12 @@ const ParentHealthProfile = () => {
             </div>
           </div>
         </main>
-        <ParentFooter />
       </div>
     );
   }
 
   return (
     <div className="min-vh-100 d-flex flex-column">
-      <ParentNavbar />
       <main className="container-fluid py-5 px-10 flex-grow-1" style={{ marginTop: "80px" }}>
         <div className="container">
           <div className="row justify-content-center">
@@ -224,7 +217,6 @@ const ParentHealthProfile = () => {
           </div>
         </div>
       </main>
-      <ParentFooter />
 
       {/* Update Modal */}
       {showModal && (

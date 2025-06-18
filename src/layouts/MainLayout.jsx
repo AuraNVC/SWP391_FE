@@ -6,10 +6,10 @@ export default function MainLayout(props) {
   const location = useLocation();
   const currentPage = props.currentPage || (
     location.pathname === "/" ? "home"
-    : location.pathname === "/blog" ? "blog"
-    : location.pathname === "/about" ? "about"
-    : location.pathname === "/contact" ? "contact"
-    : ""
+      : location.pathname === "/blog" ? "blog"
+        : location.pathname === "/about" ? "about"
+          : location.pathname === "/contact" ? "contact"
+            : ""
   );
 
   const extraLinks = [
@@ -35,9 +35,44 @@ export default function MainLayout(props) {
     >Giới thiệu</Link>,
   ];
 
+  const extraLinksParent = [
+    <Link
+      key="home"
+      className={`nav-link${currentPage === "home" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/"
+    >Trang chủ</Link>,
+    <Link
+      key="blog"
+      className={`nav-link${currentPage === "blog" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/blog"
+    >Blog</Link>,
+    <Link
+      key="contact"
+      className={`nav-link${currentPage === "contact" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/contact"
+    >Liên hệ</Link>,
+    <Link
+      key="about"
+      className={`nav-link${currentPage === "about" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/about"
+    >Giới thiệu</Link>,
+    <Link
+      key="notifications"
+      className={`nav-link${currentPage === "notifications" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/parent/notifications"
+    >Thông báo</Link>,
+    <Link
+      key="health-profile"
+      className={`nav-link${currentPage === "health-profile" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/parent/health-profile"
+    >Hồ sơ</Link>,
+  ];
+
+  const role = props.userRole;
+
   return (
     <>
-      <Navbar {...props} extraLinks={extraLinks} currentPage={currentPage} />
+      <Navbar {...props} extraLinks={role === 'parent' ? extraLinksParent : extraLinks} currentPage={currentPage} />
       <div style={{ paddingTop: 80 }}>
         <Outlet />
       </div>

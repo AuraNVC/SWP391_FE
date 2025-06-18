@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import ParentNavbar from '../components/ParentNavbar';
-import ParentFooter from '../components/ParentFooter';
 
 const ParentStudents = () => {
   const [students, setStudents] = useState([]);
@@ -36,7 +34,6 @@ const ParentStudents = () => {
   if (loading) {
     return (
       <>
-        <ParentNavbar />
         <div className="container mt-5">
           <div className="d-flex justify-content-center">
             <div className="spinner-border" role="status">
@@ -44,7 +41,6 @@ const ParentStudents = () => {
             </div>
           </div>
         </div>
-        <ParentFooter />
       </>
     );
   }
@@ -52,20 +48,17 @@ const ParentStudents = () => {
   if (error) {
     return (
       <>
-        <ParentNavbar />
         <div className="container mt-5">
           <div className="alert alert-danger" role="alert">
             {error}
           </div>
         </div>
-        <ParentFooter />
       </>
     );
   }
 
   return (
     <>
-      <ParentNavbar />
       <div className="container mt-5">
         <h2 className="mb-4">Danh sách học sinh</h2>
         {students.length === 0 ? (
@@ -93,7 +86,6 @@ const ParentStudents = () => {
           </div>
         )}
       </div>
-      <ParentFooter />
     </>
   );
 };
