@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useUserRole } from "../contexts/UserRoleContext"; // Thêm dòng này
+import { useUserRole } from "../contexts/UserRoleContext";
 
 const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
   const navigate = useNavigate();
@@ -14,60 +14,61 @@ const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
     navigate("/login");
   };
   const handleLogout = () => {
-    console.log("logout")
-    logout(); // Gọi hàm logout từ context
+    logout();
     setShowMenu(false);
     navigate("/login");
   };
 
-  // Fetch user info based on role
+  // Fetch user info based on role and userId
   useEffect(() => {
     if (isLoggedIn && userRole && userId) {
       setLoading(true);
       const fetchUserInfo = async () => {
         try {
+          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
           let endpoint = '';
           switch (userRole) {
             case 'manager':
-              endpoint = `api/manager/search?managerId=${userId}`;
+              endpoint = `${API_BASE_URL}/manager/${userId}`;
               break;
             case 'nurse':
-              endpoint = `api/nurse/search?nurseId=${userId}`;
+              endpoint = `${API_BASE_URL}/nurse/${userId}`;
               break;
             case 'parent':
-              endpoint = `api/parent/search?parentId=${userId}`;
+              endpoint = `${API_BASE_URL}/parent/${userId}`;
               break;
             case 'student':
-              endpoint = `api/student/search?studentId=${userId}`;
+              endpoint = `${API_BASE_URL}/student/${userId}`;
               break;
             default:
               return;
           }
 
-          const response = await fetch(endpoint);
+          const response = await fetch(endpoint, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          });
+
           if (response.ok) {
-            const data = await response.json();
-            if (data && data.length > 0) {
-              const user = data[0];
-              let name = '';
-              switch (userRole) {
-                case 'manager':
-                  name = user.managerName || 'Quản lý';
-                  break;
-                case 'nurse':
-                  name = user.nurseName || 'Y tá';
-                  break;
-                case 'parent':
-                  name = user.parentName || 'Phụ huynh';
-                  break;
-                case 'student':
-                  name = user.studentName || 'Học sinh';
-                  break;
-                default:
-                  name = 'Người dùng';
-              }
-              setUserInfo({ name });
+            const user = await response.json();
+            let fullName = '';
+            switch (userRole) {
+              case 'manager':
+                fullName = user.fullName || 'Quản lý';
+                break;
+              case 'nurse':
+                fullName = user.fullName || 'Y tá';
+                break;
+              case 'parent':
+                fullName = user.fullName || 'Phụ huynh';
+                break;
+              case 'student':
+                fullName = user.fullName || 'Học sinh';
+                break;
+              default:
+                fullName = 'Người dùng';
             }
+            setUserInfo({ fullName });
           }
         } catch (error) {
           console.error('Error fetching user info:', error);
@@ -75,7 +76,6 @@ const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
           setLoading(false);
         }
       };
-
       fetchUserInfo();
     }
   }, [isLoggedIn, userRole, userId]);
@@ -125,7 +125,7 @@ const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
                 {loading ? (
                   <span className="spinner-border spinner-border-sm me-2" role="status"></span>
                 ) : userInfo ? (
-                  <span className="fw-semibold">Xin chào, {userInfo.name}</span>
+                  <span className="fw-semibold">Xin chào, {userInfo.fullName}</span>
                 ) : (
                   <span className="fw-semibold">
                     Xin chào, {userRole === 'manager' ? 'Quản lý' : 
