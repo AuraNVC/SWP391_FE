@@ -1,69 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import BlogCard from "../components/Card";
 import { API_SERVICE } from "../services/api";
-
-const blogPosts = [
-    {
-        id: 1,
-        title: "Phòng tránh tay chân miệng",
-        category: "Bệnh truyền nhiễm",
-        date: "20/03/2025",
-        image: "../assets/blog-1.jpg",
-        excerpt: "Rửa tay thường xuyên, vệ sinh đồ chơi và dụng cụ học tập là những biện pháp quan trọng để phòng tránh bệnh tay chân miệng...",
-        link: "#",
-        tag: "benh-truyen-nhiem",
-    },
-    {
-        id: 2,
-        title: "Lợi ích tiêm chủng",
-        category: "Tiêm chủng",
-        date: "18/03/2025",
-        image: "../assets/blog-2.jpg",
-        excerpt: "Tiêm chủng giúp bảo vệ trẻ khỏi các bệnh truyền nhiễm nguy hiểm và tạo miễn dịch cộng đồng...",
-        link: "#",
-        tag: "tiem-chung",
-    },
-    {
-        id: 3,
-        title: "Bệnh mùa hè",
-        category: "Sức khỏe mùa hè",
-        date: "15/03/2025",
-        image: "../assets/blog-3.jpg",
-        excerpt: "Cách nhận biết và phòng tránh các bệnh thường gặp trong mùa hè như sốt xuất huyết, tiêu chảy...",
-        link: "#",
-        tag: "suc-khoe-mua-he",
-    },
-    {
-        id: 4,
-        title: "Dinh dưỡng học đường",
-        category: "Dinh dưỡng",
-        date: "12/03/2025",
-        image: "../assets/blog-4.jpg",
-        excerpt: "Xây dựng chế độ dinh dưỡng hợp lý cho học sinh để phát triển toàn diện về thể chất và trí tuệ...",
-        link: "#",
-        tag: "dinh-duong",
-    },
-    {
-        id: 5,
-        title: "Tâm lý học đường",
-        category: "Tâm lý",
-        date: "10/03/2025",
-        image: "../assets/blog-5.jpg",
-        excerpt: "Nhận biết và hỗ trợ học sinh gặp vấn đề về tâm lý trong môi trường học đường...",
-        link: "#",
-        tag: "tam-ly",
-    },
-    {
-        id: 6,
-        title: "Thể dục thể thao",
-        category: "Thể chất",
-        date: "08/03/2025",
-        image: "../assets/blog-6.jpg",
-        excerpt: "Vai trò của hoạt động thể dục thể thao trong việc phát triển thể chất và tinh thần cho học sinh...",
-        link: "#",
-        tag: "the-chat",
-    },
-];
 
 const categories = [
     { value: "", label: "Chọn chủ đề" },
@@ -84,22 +21,97 @@ export default function Blog() {
     const [search, setSearch] = useState("");
     const [category, setCategory] = useState("");
     const [sort, setSort] = useState("");
+    const [blogPosts, setBlogPosts] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
+    // Fetch blogs from API
+    useEffect(() => {
+        const fetchBlogs = async () => {
+            setLoading(true);
+            setError(null);
+            try {
+                const response = await API_SERVICE.blogAPI.getAll({ keyword: "" });
+                setBlogPosts(response);
+            } catch (err) {
+                console.error("Error fetching blogs:", err);
+                setError("Không thể tải danh sách bài viết. Vui lòng thử lại sau.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchBlogs();
+    }, []);
 
     // Lọc bài viết theo search và category
     let filteredPosts = blogPosts.filter(
         (post) =>
-            (category === "" || post.tag === category) &&
+            (category === "" || post.category === category) &&
             (search === "" ||
                 post.title.toLowerCase().includes(search.toLowerCase()) ||
-                post.excerpt.toLowerCase().includes(search.toLowerCase()))
+                post.content.toLowerCase().includes(search.toLowerCase()))
     );
 
     // Sắp xếp bài viết
     if (sort === "newest") {
-        filteredPosts = filteredPosts.sort((a, b) => b.date.localeCompare(a.date));
+        filteredPosts = filteredPosts.sort((a, b) => {
+            const dateA = new Date(a.datePosted);
+            const dateB = new Date(b.datePosted);
+            return dateB - dateA;
+        });
     } else if (sort === "oldest") {
-        filteredPosts = filteredPosts.sort((a, b) => a.date.localeCompare(b.date));
+        filteredPosts = filteredPosts.sort((a, b) => {
+            const dateA = new Date(a.datePosted);
+            const dateB = new Date(b.datePosted);
+            return dateA - dateB;
+        });
+    }
+
+    // Transform API data to match BlogCard component format
+    const transformedPosts = filteredPosts.map(post => ({
+        id: post.blogId,
+        title: post.title,
+        category: post.category,
+        date: post.datePosted ? new Date(post.datePosted).toLocaleDateString('vi-VN') : "N/A",
+        image: post.thumbnail ? `https://localhost:7024/files/blogs/${post.thumbnail}` : null,
+        excerpt: post.content ? (post.content.length > 150 ? post.content.substring(0, 150) + "..." : post.content) : "Không có nội dung",
+        link: `/blog/${post.blogId}`,
+        tag: post.category?.toLowerCase().replace(/\s+/g, '-'),
+    }));
+
+    if (loading) {
+        return (
+            <div className="bg-light min-vh-100">
+                <main className="container py-5">
+                    <div className="text-center mb-5">
+                        <h1 className="display-5 fw-bold mb-3">Blog Sức Khỏe Học Đường</h1>
+                        <p className="text-muted">Chia sẻ kiến thức và kinh nghiệm về chăm sóc sức khỏe học đường</p>
+                    </div>
+                    <div className="d-flex justify-content-center">
+                        <div className="spinner-border" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="bg-light min-vh-100">
+                <main className="container py-5">
+                    <div className="text-center mb-5">
+                        <h1 className="display-5 fw-bold mb-3">Blog Sức Khỏe Học Đường</h1>
+                        <p className="text-muted">Chia sẻ kiến thức và kinh nghiệm về chăm sóc sức khỏe học đường</p>
+                    </div>
+                    <div className="alert alert-danger" role="alert">
+                        {error}
+                    </div>
+                </main>
+            </div>
+        );
     }
 
     return (
@@ -149,33 +161,43 @@ export default function Blog() {
 
                 {/* Danh sách bài viết */}
                 <div className="row">
-                    {filteredPosts.map((post) => (
-                        <div className="col-12 col-md-6 col-lg-4 mb-4" key={post.id}>
-                            <BlogCard post={post} />
+                    {transformedPosts.length === 0 ? (
+                        <div className="col-12">
+                            <div className="alert alert-info text-center">
+                                Không tìm thấy bài viết nào phù hợp.
+                            </div>
                         </div>
-                    ))}
+                    ) : (
+                        transformedPosts.map((post) => (
+                            <div className="col-12 col-md-6 col-lg-4 mb-4" key={post.id}>
+                                <BlogCard post={post} />
+                            </div>
+                        ))
+                    )}
                 </div>
 
                 {/* Phân trang (tĩnh) */}
-                <nav className="d-flex justify-content-center mt-5">
-                    <ul className="pagination">
-                        <li className="page-item">
-                            <a className="page-link" href="#">Trước</a>
-                        </li>
-                        <li className="page-item active">
-                            <a className="page-link" href="#">1</a>
-                        </li>
-                        <li className="page-item">
-                            <a className="page-link" href="#">2</a>
-                        </li>
-                        <li className="page-item">
-                            <a className="page-link" href="#">3</a>
-                        </li>
-                        <li className="page-item">
-                            <a className="page-link" href="#">Sau</a>
-                        </li>
-                    </ul>
-                </nav>
+                {transformedPosts.length > 0 && (
+                    <nav className="d-flex justify-content-center mt-5">
+                        <ul className="pagination">
+                            <li className="page-item">
+                                <a className="page-link" href="#">Trước</a>
+                            </li>
+                            <li className="page-item active">
+                                <a className="page-link" href="#">1</a>
+                            </li>
+                            <li className="page-item">
+                                <a className="page-link" href="#">2</a>
+                            </li>
+                            <li className="page-item">
+                                <a className="page-link" href="#">3</a>
+                            </li>
+                            <li className="page-item">
+                                <a className="page-link" href="#">Sau</a>
+                            </li>
+                        </ul>
+                    </nav>
+                )}
             </main>
         </div>
     );

@@ -1,22 +1,84 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useUserRole } from "../contexts/UserRoleContext"; // Thêm dòng này
+import { useUserRole } from "../contexts/UserRoleContext";
 
 const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const avatarRef = useRef(null);
-  const { logout } = useUserRole();
+  const { logout, userRole, userId } = useUserRole();
+  const [userInfo, setUserInfo] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const handleLoginClick = () => {
     navigate("/login");
   };
   const handleLogout = () => {
-    console.log("logout")
-    logout(); // Gọi hàm logout từ context
+    logout();
     setShowMenu(false);
     navigate("/login");
   };
+
+  // Fetch user info based on role and userId
+  useEffect(() => {
+    if (isLoggedIn && userRole && userId) {
+      setLoading(true);
+      const fetchUserInfo = async () => {
+        try {
+          const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+          let endpoint = '';
+          switch (userRole) {
+            case 'manager':
+              endpoint = `${API_BASE_URL}/manager/${userId}`;
+              break;
+            case 'nurse':
+              endpoint = `${API_BASE_URL}/nurse/${userId}`;
+              break;
+            case 'parent':
+              endpoint = `${API_BASE_URL}/parent/${userId}`;
+              break;
+            case 'student':
+              endpoint = `${API_BASE_URL}/student/${userId}`;
+              break;
+            default:
+              return;
+          }
+
+          const response = await fetch(endpoint, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+          });
+
+          if (response.ok) {
+            const user = await response.json();
+            let fullName = '';
+            switch (userRole) {
+              case 'manager':
+                fullName = user.fullName || 'Quản lý';
+                break;
+              case 'nurse':
+                fullName = user.fullName || 'Y tá';
+                break;
+              case 'parent':
+                fullName = user.fullName || 'Phụ huynh';
+                break;
+              case 'student':
+                fullName = user.fullName || 'Học sinh';
+                break;
+              default:
+                fullName = 'Người dùng';
+            }
+            setUserInfo({ fullName });
+          }
+        } catch (error) {
+          console.error('Error fetching user info:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchUserInfo();
+    }
+  }, [isLoggedIn, userRole, userId]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -58,6 +120,21 @@ const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
             </button>
           ) : (
             <>
+              {/* Greeting */}
+              <div className="me-3 text-white">
+                {loading ? (
+                  <span className="spinner-border spinner-border-sm me-2" role="status"></span>
+                ) : userInfo ? (
+                  <span className="fw-semibold">Xin chào, {userInfo.fullName}</span>
+                ) : (
+                  <span className="fw-semibold">
+                    Xin chào, {userRole === 'manager' ? 'Quản lý' : 
+                              userRole === 'nurse' ? 'Y tá' : 
+                              userRole === 'parent' ? 'Phụ huynh' : 
+                              userRole === 'student' ? 'Học sinh' : 'Người dùng'}
+                  </span>
+                )}
+              </div>
               <img
                 src={avatarUrl}
                 alt="avatar"
