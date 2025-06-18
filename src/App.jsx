@@ -7,6 +7,8 @@ import Blog from './pages/Blog'
 import BlogDetail from './pages/BlogDetail'
 import NurseList from './pages/NurseDashboard'
 import Dashborad from './pages/Dashborad'
+import ParentNotifications from './pages/ParentNotifications'
+import ParentHealthProfile from './pages/ParentHealthProfile'
 import StudentList from './pages/StudentDashboard'
 import ParentList from './pages/ParentDashboard'
 import Notification from './components/Notification'
@@ -70,12 +72,15 @@ function AppContent() {
         </div>
       )}
       <Routes>
-        <Route element={<MainLayout isLoggedIn={isLoggedIn} avatarUrl={avatarUrl} />}>
+        <Route element={<MainLayout isLoggedIn={isLoggedIn} userRole={userRole} avatarUrl={avatarUrl} />}>
           <Route path="/" element={<Home />} />
           <Route path="/blog" element={<Blog />} />
           <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path="/about" element={<h2>Đây là Trang Giới thiệu</h2>} />
           <Route path="/contact" element={<h2>Đây là Trang Liên hệ</h2>} />
+          {/* Parent routes */}
+          <Route path="/parent/notifications" element={<ParentNotifications />} />
+          <Route path="/parent/health-profile" element={<ParentHealthProfile />} />
         </Route>
         <Route element={<LoginLayout />}>
           <Route path="/login" element={
@@ -95,7 +100,6 @@ function AppContent() {
           <Route path="/manager/parent" element={<AdminParent />} />
           <Route path="/manager/nurse" element={<AdminNurse />} />
           <Route path="/manager/blog" element={<AdminBlog />} />
-
         </Route>
       </Routes>
     </>
