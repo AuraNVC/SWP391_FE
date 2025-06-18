@@ -21,7 +21,7 @@ const ParentStudents = () => {
         const data = await response.json();
         setStudents(data);
       } catch (err) {
-        console.error('Error fetching students:', err);
+        console.error('Error fetching students: ', err);
         setError(err.message);
       } finally {
         setLoading(false);
