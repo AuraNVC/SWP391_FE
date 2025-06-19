@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import BlogCard from "../components/Card";
 import { API_SERVICE } from "../services/api";
 
+const PAGE_SIZE = 6; // Số bài viết mỗi trang
+
 const categories = [
     { value: "", label: "Chọn chủ đề" },
     { value: "dinh-duong", label: "Dinh dưỡng" },
@@ -24,6 +26,8 @@ export default function Blog() {
     const [blogPosts, setBlogPosts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [page, setPage] = useState(1);
+    const pageSize = PAGE_SIZE;
 
     // Fetch blogs from API
     useEffect(() => {
@@ -79,6 +83,10 @@ export default function Blog() {
         link: `/blog/${post.blogId}`,
         tag: post.category?.toLowerCase().replace(/\s+/g, '-'),
     }));
+
+    // Phân trang dữ liệu
+    const totalPages = Math.ceil(transformedPosts.length / pageSize);
+    const pagedPosts = transformedPosts.slice((page - 1) * pageSize, page * pageSize);
 
     if (loading) {
         return (
@@ -161,14 +169,14 @@ export default function Blog() {
 
                 {/* Danh sách bài viết */}
                 <div className="row">
-                    {transformedPosts.length === 0 ? (
+                    {pagedPosts.length === 0 ? (
                         <div className="col-12">
                             <div className="alert alert-info text-center">
                                 Không tìm thấy bài viết nào phù hợp.
                             </div>
                         </div>
                     ) : (
-                        transformedPosts.map((post) => (
+                        pagedPosts.map((post) => (
                             <div className="col-12 col-md-6 col-lg-4 mb-4" key={post.id}>
                                 <BlogCard post={post} />
                             </div>
@@ -176,24 +184,26 @@ export default function Blog() {
                     )}
                 </div>
 
-                {/* Phân trang (tĩnh) */}
-                {transformedPosts.length > 0 && (
+                {/* Phân trang động */}
+                {totalPages > 1 && (
                     <nav className="d-flex justify-content-center mt-5">
                         <ul className="pagination">
-                            <li className="page-item">
-                                <a className="page-link" href="#">Trước</a>
+                            <li className={`page-item${page === 1 ? " disabled" : ""}`}>
+                                <button className="page-link" onClick={() => setPage(page - 1)} disabled={page === 1}>
+                                    Trước
+                                </button>
                             </li>
-                            <li className="page-item active">
-                                <a className="page-link" href="#">1</a>
-                            </li>
-                            <li className="page-item">
-                                <a className="page-link" href="#">2</a>
-                            </li>
-                            <li className="page-item">
-                                <a className="page-link" href="#">3</a>
-                            </li>
-                            <li className="page-item">
-                                <a className="page-link" href="#">Sau</a>
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+                                <li key={num} className={`page-item${page === num ? " active" : ""}`}>
+                                    <button className="page-link" onClick={() => setPage(num)}>
+                                        {num}
+                                    </button>
+                                </li>
+                            ))}
+                            <li className={`page-item${page === totalPages ? " disabled" : ""}`}>
+                                <button className="page-link" onClick={() => setPage(page + 1)} disabled={page === totalPages}>
+                                    Sau
+                                </button>
                             </li>
                         </ul>
                     </nav>

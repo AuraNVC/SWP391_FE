@@ -14,7 +14,7 @@ export default function AdminLayout() {
         <a href="/manager/parent" className={current === "/manager/parent" ? "active" : ""}><FaUsers /> Parent</a>,
         <a href="/manager/nurse" className={current === "/manager/nurse" ? "active" : ""}><FaUserTie /> Nurse</a>,
         <a href="/manager/blog" className={current === "/manager/blog" ? "active" : ""}><FaBlog /> Blog</a>,
-        <a href="/manager/form" className={current === "/manager/blog" ? "active" : ""}><FaWpforms  /> Form</a>,
+        <a href="/manager/form" className={current === "/manager/form" ? "active" : ""}><FaWpforms  /> Form</a>,
     ];
 
     return (
