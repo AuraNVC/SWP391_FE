@@ -66,6 +66,11 @@ export default function MainLayout(props) {
       className={`nav-link${currentPage === "health-profile" ? " text-body-tertiary fw-bold" : " text-white"}`}
       to="/parent/health-profile"
     >Hồ sơ</Link>,
+    <Link
+      key="prescriptions"
+      className={`nav-link${currentPage === "prescriptions" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/parent/prescriptions"
+    >Đơn thuốc</Link>,
   ];
 
   const role = props.userRole;

@@ -1,0 +1,155 @@
+import React, { useState, useEffect } from "react";
+import { useUserRole } from '../contexts/UserRoleContext';
+
+export default function ParentPrescriptions() {
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [selectedPrescription, setSelectedPrescription] = useState(null);
+  const [medicals, setMedicals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMedicals, setLoadingMedicals] = useState(false);
+  const [error, setError] = useState(null);
+  const { userRole } = useUserRole();
+
+  // Lấy danh sách đơn thuốc của phụ huynh
+  useEffect(() => {
+    const fetchPrescriptions = async () => {
+      try {
+        const parentId = localStorage.getItem('userId');
+        if (!parentId) throw new Error('Parent ID not found');
+        let response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${parentId}`);
+        if (!response.ok) {
+          response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getByParent?parentId=${parentId}`);
+        }
+        if (!response.ok) {
+          response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getPrescriptionByParent?parentId=${parentId}`);
+        }
+        if (!response.ok) throw new Error('Không thể lấy danh sách đơn thuốc');
+        const data = await response.json();
+        setPrescriptions(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (userRole === 'parent') fetchPrescriptions();
+    else {
+      setLoading(false);
+      setError('Access denied. Parent role required.');
+    }
+  }, [userRole]);
+
+  // Lấy chi tiết thuốc theo đơn
+  const handleShowMedicals = async (prescriptionId) => {
+    setLoadingMedicals(true);
+    setSelectedPrescription(prescriptionId);
+    try {
+      let response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medication/getMedicalByPrescription?prescriptionId=${prescriptionId}`);
+      if (!response.ok) {
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getMedicalByPrescription?prescriptionId=${prescriptionId}`);
+      }
+      if (!response.ok) throw new Error('Không thể lấy chi tiết thuốc');
+      const data = await response.json();
+      setMedicals(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingMedicals(false);
+    }
+  };
+
+  // Hàm kiểm tra file là ảnh hay pdf
+  const renderPrescriptionFile = (fileUrl) => {
+    if (!fileUrl) return <span className="text-muted">Không có file</span>;
+    if (fileUrl.endsWith('.jpg') || fileUrl.endsWith('.jpeg') || fileUrl.endsWith('.png') || fileUrl.endsWith('.gif')) {
+      return <img src={fileUrl} alt="prescription" style={{ maxWidth: 200, maxHeight: 200 }} className="d-block mb-2" />;
+    }
+    if (fileUrl.endsWith('.pdf')) {
+      return <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm mb-2">Tải file PDF</a>;
+    }
+    return <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-secondary btn-sm mb-2">Tải file</a>;
+  };
+
+  if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  if (error) return <div className="text-red-500 text-center p-4">{error}</div>;
+
+  return (
+    <div className="min-vh-100 d-flex flex-column">
+      <main className="container-fluid py-5 px-10 flex-grow-1" style={{ marginTop: "80px" }}>
+        <div className="container">
+          <div className="row justify-content-center">
+            <div className="col-md-10">
+              <div className="text-center mb-5">
+                <h1 className="display-4 mb-3 fw-bold">Đơn thuốc</h1>
+                <p className="lead text-muted">Danh sách đơn thuốc của học sinh</p>
+              </div>
+              {prescriptions.length === 0 ? (
+                <div className="text-center text-muted">
+                  <p>Không có đơn thuốc nào</p>
+                </div>
+              ) : (
+                <div className="list-group">
+                  {prescriptions.map((pres) => (
+                    <div key={pres.prescriptionId} className="card mb-3">
+                      <div className="card-body">
+                        <h5 className="card-title">Đơn thuốc #{pres.prescriptionId}</h5>
+                        <p className="card-text"><strong>Ngày kê:</strong> {pres.submittedDate ? new Date(pres.submittedDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
+                        <p className="card-text"><strong>Lịch uống:</strong> {pres.schedule}</p>
+                        <p className="card-text"><strong>Ghi chú phụ huynh:</strong> {pres.parentNote}</p>
+                        <div className="mb-2">
+                          <strong>File đơn thuốc:</strong><br />
+                          {renderPrescriptionFile(pres.prescriptionFile)}
+                        </div>
+                        <div className="mb-2">
+                          {/* Đã bỏ hiển thị thông tin phụ huynh theo yêu cầu */}
+                        </div>
+                        <button
+                          className="btn btn-info"
+                          onClick={() => handleShowMedicals(pres.prescriptionId)}
+                          disabled={loadingMedicals && selectedPrescription === pres.prescriptionId}
+                        >
+                          {loadingMedicals && selectedPrescription === pres.prescriptionId ? "Đang tải..." : "Xem chi tiết thuốc"}
+                        </button>
+                        {selectedPrescription === pres.prescriptionId && (
+                          <div className="mt-3">
+                            <h6>Chi tiết thuốc:</h6>
+                            {medicals.length === 0 ? (
+                              <p>Không có thuốc nào trong đơn này.</p>
+                            ) : (
+                              <div className="table-responsive">
+                                <table className="table table-bordered">
+                                  <thead>
+                                    <tr>
+                                      <th>Tên thuốc</th>
+                                      <th>Liều dùng</th>
+                                      <th>Số lượng kê</th>
+                                      <th>Số lượng còn lại</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {medicals.map((med) => (
+                                      <tr key={med.medicationId}>
+                                        <td>{med.medicationName}</td>
+                                        <td>{med.dosage}</td>
+                                        <td>{med.quantity}</td>
+                                        <td>{med.remainingQuantity}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+} 

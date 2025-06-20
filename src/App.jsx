@@ -22,6 +22,7 @@ import BlogList from './pages/BlogDashboard'
 import StudentCreate from './pages/StudentCreate'
 import Contact from './pages/Contact'
 import About from './pages/About'
+import ParentPrescriptions from './pages/ParentPrescriptions'
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -83,6 +84,7 @@ function AppContent() {
           {/* Parent routes */}
           <Route path="/parent/notifications" element={<ParentNotifications />} />
           <Route path="/parent/health-profile" element={<ParentHealthProfile />} />
+          <Route path="/parent/prescriptions" element={<ParentPrescriptions />} />
         </Route>
         <Route element={<LoginLayout />}>
           <Route path="/login" element={
