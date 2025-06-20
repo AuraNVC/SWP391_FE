@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
-    FaTachometerAlt, FaUser, FaUsers, FaUserTie, FaClipboardList, FaBlog
+    FaTachometerAlt, FaUser, FaUsers, FaUserTie, FaWpforms  , FaBlog
 } from "react-icons/fa";
 
 export default function AdminLayout() {
@@ -14,6 +14,7 @@ export default function AdminLayout() {
         <a href="/manager/parent" className={current === "/manager/parent" ? "active" : ""}><FaUsers /> Parent</a>,
         <a href="/manager/nurse" className={current === "/manager/nurse" ? "active" : ""}><FaUserTie /> Nurse</a>,
         <a href="/manager/blog" className={current === "/manager/blog" ? "active" : ""}><FaBlog /> Blog</a>,
+        <a href="/manager/form" className={current === "/manager/blog" ? "active" : ""}><FaWpforms  /> Form</a>,
     ];
 
     return (

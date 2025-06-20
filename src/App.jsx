@@ -22,7 +22,6 @@ import BlogList from './pages/BlogDashboard'
 import StudentCreate from './pages/StudentCreate'
 import Contact from './pages/Contact'
 import About from './pages/About'
-import ParentPrescriptions from './pages/ParentPrescriptions'
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -46,6 +45,13 @@ function AdminBlog() {
 
 function AddStudent() {
   return <StudentCreate />
+}
+
+function AdminForm() {
+  return <FormDashboard />
+}
+function AddForm() {
+  return <FormCreate />
 }
 
 function AppContent() {
@@ -104,6 +110,8 @@ function AppContent() {
           <Route path="/manager/parent" element={<AdminParent />} />
           <Route path="/manager/nurse" element={<AdminNurse />} />
           <Route path="/manager/blog" element={<AdminBlog />} />
+          <Route path="/manager/form" element={<AdminForm />} />
+          <Route path="/manager/form/create" element={<AddForm />} />
         </Route>
       </Routes>
     </>
