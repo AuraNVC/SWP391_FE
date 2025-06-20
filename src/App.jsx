@@ -22,6 +22,7 @@ import BlogList from './pages/BlogDashboard'
 import StudentCreate from './pages/StudentCreate'
 import Contact from './pages/Contact'
 import About from './pages/About'
+import ParentPrescriptions from './pages/ParentPrescriptions'
 
 function AdminDashboard() {
   return <Dashborad/>
