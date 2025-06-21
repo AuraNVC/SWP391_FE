@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import './App.css'
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -22,8 +22,9 @@ import BlogList from './pages/BlogDashboard'
 import StudentCreate from './pages/StudentCreate'
 import Contact from './pages/Contact'
 import About from './pages/About'
-import FormDashboard from './pages/FormDashboard'
-import FormCreate from './pages/FormCreate'
+import ParentPrescriptions from './pages/ParentPrescriptions'
+import ParentStudents from './pages/ParentStudents'
+import ParentConsultations from './pages/ParentConsultations'
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -89,10 +90,22 @@ function AppContent() {
           <Route path="/blog/:id" element={<BlogDetail />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
-          {/* Parent routes */}
-          <Route path="/parent/notifications" element={<ParentNotifications />} />
-          <Route path="/parent/health-profile" element={<ParentHealthProfile />} />
         </Route>
+
+        {/* Parent routes */}
+        <Route element={
+            <ProtectedRoute requiredRole="parent">
+                <MainLayout isLoggedIn={isLoggedIn} userRole={userRole} avatarUrl={avatarUrl} />
+            </ProtectedRoute>
+        }>
+            <Route path="/parent" element={<Navigate to="/parent/students" replace />} />
+            <Route path="/parent/students" element={<ParentStudents />} />
+            <Route path="/parent/health-profile" element={<ParentHealthProfile />} />
+            <Route path="/parent/notifications" element={<ParentNotifications />} />
+            <Route path="/parent/consultations" element={<ParentConsultations />} />
+            <Route path="/parent/prescriptions" element={<ParentPrescriptions />} />
+        </Route>
+
         <Route element={<LoginLayout />}>
           <Route path="/login" element={
             <Login

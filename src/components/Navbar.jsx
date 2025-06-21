@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUserRole } from "../contexts/UserRoleContext";
+import logoSchoolCare from '../assets/logoSchoolCare.png';
 
 const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
   const navigate = useNavigate();
@@ -98,7 +99,7 @@ const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
     <nav className="navbar navbar-expand-lg navbar-dark shadow fixed-top" style={{ backgroundColor: "#0d9488" }}>
       <div className="container">
         <Link className="navbar-brand d-flex align-items-center" to="/">
-          <img src="src/assets/logoSchoolCare.png" alt="Logo Trường" height="40" className="me-2 " />
+          <img src={logoSchoolCare} alt="Logo Trường" height="40" className="me-2 " />
           <span className="fw-bold fs-5">School Care</span>
         </Link>
         <div>

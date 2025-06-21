@@ -40,7 +40,7 @@ export default function ParentNotifications() {
       const parentId = localStorage.getItem('userId');
       const numericParentId = parseInt(parentId);
       console.log('Refreshing list for parent:', numericParentId);
-      const updatedResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormForParent?parentId=${numericParentId}`);
+      const updatedResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`);
       const updatedData = await updatedResponse.json();
       console.log('Updated consent forms:', updatedData);
       setConsentForms(updatedData);
@@ -80,8 +80,8 @@ export default function ParentNotifications() {
           return;
         }
 
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormForParent?parentId=${numericParentId}`);
-        console.log('API URL:', `${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormForParent?parentId=${numericParentId}`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`);
+        console.log('API URL:', `${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`);
         
         if (!response.ok) {
           throw new Error(`Failed to fetch consent forms: ${response.status}`);
