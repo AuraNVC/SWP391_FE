@@ -146,7 +146,7 @@ export default function ParentConsultations() {
                           {form.consultationSchedule && (
                               <>
                                   <div className="col-md-6">
-                                      <p className="mb-2"><strong>Ngày tư vấn:</strong> {new Date(form.consultationSchedule.consultDate).toLocaleDateString('vi-VN')}</p>
+                                      <p className="mb-2"><strong>Ngày tư vấn:</strong> {new Date(form.consultationSchedule.consultDate).toLocaleDateString('vi-VN')} - {new Date(form.consultationSchedule.consultDate).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
                                   </div>
                                   <div className="col-md-12">
                                       <p className="mb-0"><strong>Địa điểm:</strong> {form.consultationSchedule.location}</p>
