@@ -11,6 +11,14 @@ const ParentHealthProfile = () => {
     bloodType: '',
     allergies: ''
   });
+  // State for health check results
+  const [healthResults, setHealthResults] = useState([]);
+  const [loadingResults, setLoadingResults] = useState(false);
+  const [selectedStudentForResults, setSelectedStudentForResults] = useState(null);
+  // State for vaccination results
+  const [vaccinationResults, setVaccinationResults] = useState([]);
+  const [loadingVaccination, setLoadingVaccination] = useState(false);
+  const [selectedStudentForVaccination, setSelectedStudentForVaccination] = useState(null);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -56,6 +64,116 @@ const ParentHealthProfile = () => {
       allergies: profile.allergies || ''
     });
     setShowModal(true);
+  };
+
+  const handleViewResultsClick = async (profile) => {
+    // Hide vaccination results when viewing health check results
+    setSelectedStudentForVaccination(null);
+    setVaccinationResults([]);
+
+    if (!profile || !profile.healthProfileId) {
+      alert('Không tìm thấy hồ sơ sức khỏe cho học sinh này.');
+      return;
+    }
+
+    if (selectedStudentForResults?.studentId === profile.studentId) {
+      // If the same student's results are already shown, hide them
+      setSelectedStudentForResults(null);
+      setHealthResults([]);
+      return;
+    }
+
+    setLoadingResults(true);
+    setSelectedStudentForResults(profile);
+    setError(null);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/healthCheckResult/getResultsByProfile${profile.healthProfileId}`);
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Không thể tải kết quả khám: ${errorData}`);
+      }
+      const results = await response.json();
+
+      // Fetch schedule details for each result
+      const enrichedResults = await Promise.all(
+        results.map(async (result) => {
+          if (result.healthCheckScheduleId) {
+            try {
+              const scheduleRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/healthCheckSchedule/${result.healthCheckScheduleId}`);
+              if (scheduleRes.ok) {
+                const scheduleData = await scheduleRes.json();
+                return { ...result, schedule: scheduleData };
+              }
+            } catch (scheduleErr) {
+              console.error(`Failed to fetch health schedule for result ${result.resultId}:`, scheduleErr);
+            }
+          }
+          return { ...result, schedule: null };
+        })
+      );
+      setHealthResults(enrichedResults);
+    } catch (err) {
+      console.error('Error fetching health results:', err);
+      setError(err.message);
+      setHealthResults([]);
+    } finally {
+      setLoadingResults(false);
+    }
+  };
+
+  const handleViewVaccinationResultsClick = async (profile) => {
+    // Hide health check results when viewing vaccination results
+    setSelectedStudentForResults(null);
+    setHealthResults([]);
+    
+    if (!profile || !profile.healthProfileId) {
+      alert('Không tìm thấy hồ sơ sức khỏe cho học sinh này.');
+      return;
+    }
+
+    if (selectedStudentForVaccination?.studentId === profile.studentId) {
+      setSelectedStudentForVaccination(null);
+      setVaccinationResults([]);
+      return;
+    }
+
+    setLoadingVaccination(true);
+    setSelectedStudentForVaccination(profile);
+    setError(null);
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/vaccinationResult/getResultsByProfile${profile.healthProfileId}`);
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Không thể tải lịch sử tiêm chủng: ${errorData}`);
+      }
+      const results = await response.json();
+      // Fetch schedule details for each result
+      const enrichedResults = await Promise.all(
+        results.map(async (result) => {
+          if (result.vaccinationScheduleId) {
+            try {
+              const scheduleRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/vaccinationSchedule/${result.vaccinationScheduleId}`);
+              if (scheduleRes.ok) {
+                const scheduleData = await scheduleRes.json();
+                return { ...result, schedule: scheduleData };
+              }
+            } catch (scheduleErr) {
+              console.error(`Failed to fetch vaccination schedule for result ${result.resultId}:`, scheduleErr);
+            }
+          }
+          return { ...result, schedule: null };
+        })
+      );
+      setVaccinationResults(enrichedResults);
+    } catch (err) {
+      console.error('Error fetching vaccination results:', err);
+      setError(err.message);
+      setVaccinationResults([]);
+    } finally {
+      setLoadingVaccination(false);
+    }
   };
 
   const handleUpdateSubmit = async (e) => {
@@ -183,7 +301,7 @@ const ParentHealthProfile = () => {
                             <div className="border-top pt-3">
                               <div className="d-flex justify-content-between align-items-center mb-3">
                                 <h6 className="text-success mb-0">Thông tin sức khỏe</h6>
-                                <button 
+                                <button
                                   className="btn btn-outline-primary btn-sm"
                                   onClick={() => handleUpdateClick(healthProfiles[student.studentId])}
                                 >
@@ -205,6 +323,91 @@ const ParentHealthProfile = () => {
                                   </p>
                                 </div>
                               </div>
+
+                              <hr className="my-3"/>
+                              
+                              <div className='d-flex gap-2 flex-wrap mb-3'>
+                                  <button
+                                    className="btn btn-outline-info btn-sm"
+                                    onClick={() => handleViewResultsClick(healthProfiles[student.studentId])}
+                                  >
+                                    <i className="bi bi-card-list me-1"></i>
+                                    Xem lịch sử khám
+                                  </button>
+                                  <button
+                                    className="btn btn-outline-warning btn-sm"
+                                    onClick={() => handleViewVaccinationResultsClick(healthProfiles[student.studentId])}
+                                    >
+                                    <i className="bi bi-shield-check me-1"></i>
+                                    Xem lịch sử tiêm chủng
+                                    </button>
+                              </div>
+
+                              {/* Health Check Results Section */}
+                              {selectedStudentForResults?.studentId === student.studentId && (
+                                <div className="mt-4 border-top pt-3">
+                                  <h6 className='text-info mb-3'>Lịch sử khám định kì</h6>
+                                  {loadingResults ? (
+                                    <div className="d-flex justify-content-center">
+                                      <div className="spinner-border spinner-border-sm" role="status">
+                                        <span className="visually-hidden">Loading...</span>
+                                      </div>
+                                    </div>
+                                  ) : healthResults.length > 0 ? (
+                                    <ul className="list-group" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+                                      {healthResults.map(result => (
+                                        <li key={result.healthCheckupRecordId} className="list-group-item">
+                                          {result.schedule && <h6 className='fw-bold text-primary'>{result.schedule.name}</h6>}
+                                          <p className='mb-1'><strong>Ngày khám:</strong> {result.schedule ? new Date(result.schedule.checkDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
+                                          <p className='mb-1'><strong>Địa điểm:</strong> {result.schedule?.location || 'Chưa cập nhật'}</p>
+                                          <p className='mb-1'><strong>Chiều cao:</strong> {result.height || 'N/A'} cm - <strong>Cân nặng:</strong> {result.weight || 'N/A'} kg</p>
+                                          <p className='mb-1'><strong>Thị lực:</strong> Mắt trái: {result.leftVision || 'N/A'} - Mắt phải: {result.rightVision || 'N/A'}</p>
+                                          <p className='mb-1'><strong>Kết luận:</strong> <span className='fw-bold'>{result.result || 'Chưa có'}</span></p>
+                                          {result.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {result.note}</p>}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    <div className="alert alert-light text-center">Không có kết quả khám nào.</div>
+                                  )}
+                                </div>
+                              )}
+                              {/* Vaccination Results Section */}
+                              {selectedStudentForVaccination?.studentId === student.studentId && (
+                                <div className="mt-4 border-top pt-3">
+                                  <h6 className='text-warning mb-3'>Lịch sử tiêm chủng</h6>
+                                  {loadingVaccination ? (
+                                    <div className="d-flex justify-content-center">
+                                      <div className="spinner-border spinner-border-sm text-warning" role="status">
+                                        <span className="visually-hidden">Loading...</span>
+                                      </div>
+                                    </div>
+                                  ) : vaccinationResults.length > 0 ? (
+                                    <ul className="list-group" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+                                      {vaccinationResults.map(result => (
+                                        <li key={result.vaccinationResultId} className="list-group-item">
+                                          {result.schedule && <h6 className='fw-bold text-primary'>{result.schedule.name}</h6>}
+                                          <p className='mb-1'><strong>Ngày tiêm:</strong> {result.schedule ? new Date(result.schedule.scheduleDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
+                                          <p className='mb-1'><strong>Địa điểm:</strong> {result.schedule?.location || 'Chưa cập nhật'}</p>
+                                          <p className='mb-1'>
+                                            <strong>Trạng thái:</strong>{' '}
+                                            <span className={`badge ${
+                                              result.status === 'Pending' ? 'bg-warning' :
+                                              result.status === 'Accepted' ? 'bg-success' :
+                                              'bg-danger'
+                                            }`}>
+                                              {result.status}
+                                            </span>
+                                          </p>
+                                          {result.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {result.note}</p>}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    <div className="alert alert-light text-center">Không có lịch sử tiêm chủng nào.</div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
