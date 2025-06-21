@@ -67,6 +67,11 @@ export default function MainLayout(props) {
       to="/parent/health-profile"
     >Hồ sơ</Link>,
     <Link
+      key="consultations"
+      className={`nav-link${currentPage === "consultations" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/parent/consultations"
+    >Lịch tư vấn</Link>,
+    <Link
       key="prescriptions"
       className={`nav-link${currentPage === "prescriptions" ? " text-body-tertiary fw-bold" : " text-white"}`}
       to="/parent/prescriptions"
