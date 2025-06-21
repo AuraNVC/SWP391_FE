@@ -250,7 +250,7 @@ export default function ParentPrescriptions() {
                     <div key={pres.prescriptionId} className="card mb-3">
                       <div className="card-body">
                         <h5 className="card-title">Đơn thuốc #{pres.prescriptionId}</h5>
-                        <p className="card-text"><strong>Ngày kê:</strong> {pres.submittedDate ? new Date(pres.submittedDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
+                        <p className="card-text"><strong>Ngày tạo:</strong> {pres.submittedDate ? new Date(pres.submittedDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
                         <p className="card-text"><strong>Lịch uống:</strong> {pres.schedule}</p>
                         <p className="card-text"><strong>Ghi chú phụ huynh:</strong> {pres.parentNote}</p>
                         <div className="mb-2">
