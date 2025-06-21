@@ -20,7 +20,7 @@ const ParentHealthProfile = () => {
           throw new Error('Parent ID not found');
         }
 
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/getStudentByParent${parentId}`);
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/getParent${parentId}`);
         if (!response.ok) {
           throw new Error('Failed to fetch students');
         }
@@ -38,9 +38,9 @@ const ParentHealthProfile = () => {
           }
         }
         setHealthProfiles(profiles);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError(err.message);
+      } catch (error) {
+        console.error(error);
+        setError(error.message);
       } finally {
         setLoading(false);
       }
