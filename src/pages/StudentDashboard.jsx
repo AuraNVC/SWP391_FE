@@ -70,7 +70,7 @@ const StudentList = () => {
         });
       } catch (error) {
         setNotif({
-          message: "Xóa student thất bại!",
+          message: `Xóa student thất bại! ${error.message}`,
           type: "error",
         });
         setDeleteTarget(null);
@@ -87,7 +87,7 @@ const StudentList = () => {
       <div className="admin-header">
         <button className="admin-btn">
           <a href="/manager/student/create" style={{ textDecoration: "none" }}>
-            + Create New Staff
+            + Create New Student
           </a>
         </button>
         <input className="admin-search" type="text" placeholder="Search..." />
