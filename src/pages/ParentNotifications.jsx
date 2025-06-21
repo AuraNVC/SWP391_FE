@@ -8,6 +8,8 @@ export default function ParentNotifications() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [updatingForms, setUpdatingForms] = useState(new Set());
   const { userRole } = useUserRole();
+  const [scheduleDates, setScheduleDates] = useState({});
+  const [students, setStudents] = useState([]);
 
   const updateConsentFormStatus = async (consentFormId, isAccept) => {
     // Prevent multiple clicks
@@ -60,47 +62,74 @@ export default function ParentNotifications() {
   };
 
   useEffect(() => {
-    const fetchConsentForms = async () => {
+    const fetchAllData = async () => {
       try {
+        setLoading(true);
         const parentId = localStorage.getItem('userId');
-        console.log('All localStorage items:', Object.entries(localStorage));
-        console.log('Parent ID from localStorage:', parentId);
-        console.log('Parent ID type:', typeof parentId);
-        
         if (!parentId) {
-          setError('Parent ID not found. Please login again.');
-          setLoading(false);
-          return;
+          throw new Error('Parent ID not found. Please login again.');
         }
-
         const numericParentId = parseInt(parentId);
         if (isNaN(numericParentId)) {
-          setError('Invalid Parent ID. Please login again.');
-          setLoading(false);
-          return;
+          throw new Error('Invalid Parent ID. Please login again.');
         }
+        
+        // Fetch all data concurrently
+        const [
+          consentFormsResponse,
+          healthSchedulesRes,
+          vaccinationSchedulesRes,
+          studentsRes
+        ] = await Promise.all([
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`),
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/healthCheckSchedule/search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ keyword: "" })
+          }),
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/vaccinationSchedule/search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ keyword: "" })
+          }),
+          fetch(`${import.meta.env.VITE_API_BASE_URL}/student/getParent${numericParentId}`)
+        ]);
 
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`);
-        console.log('API URL:', `${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`);
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch consent forms: ${response.status}`);
+        if (!consentFormsResponse.ok) {
+          throw new Error(`Failed to fetch consent forms: ${consentFormsResponse.status}`);
         }
-        
-        const data = await response.json();
-        console.log('Response data:', data);
-        console.log('First consent form structure:', data[0]); // Debug log to see structure
-        setConsentForms(data);
-        setLoading(false);
+        const forms = await consentFormsResponse.json();
+        setConsentForms(forms);
+
+        const healthSchedules = healthSchedulesRes.ok ? await healthSchedulesRes.json() : [];
+        const vaccinationSchedules = vaccinationSchedulesRes.ok ? await vaccinationSchedulesRes.json() : [];
+        const studentList = studentsRes.ok ? await studentsRes.json() : [];
+        setStudents(studentList);
+
+        // Map schedule dates by formId
+        const dateMap = {};
+        healthSchedules.forEach(schedule => {
+          if (schedule.formId) {
+            dateMap[schedule.formId] = schedule.checkDate;
+          }
+        });
+        vaccinationSchedules.forEach(schedule => {
+          if (schedule.formId) {
+            dateMap[schedule.formId] = schedule.scheduleDate;
+          }
+        });
+        setScheduleDates(dateMap);
+
       } catch (err) {
         console.error('Error details:', err);
-        setError('Failed to fetch consent forms. Please try again later.');
+        setError('Failed to fetch data. Please try again later.');
+      } finally {
         setLoading(false);
       }
     };
 
     if (userRole === 'parent') {
-      fetchConsentForms();
+      fetchAllData();
     } else {
       setLoading(false);
       setError('Access denied. Parent role required.');
@@ -138,10 +167,21 @@ export default function ParentNotifications() {
                   const isUpdating = updatingForms.has(form.consentFormId);
                   const isDecided = form.status === 'Accepted' || form.status === 'Rejected';
                   
+                  // Find matching students
+                  const matchingStudents = students.filter(student => 
+                    form.form.className === 'Tất cả' || student.className === form.form.className
+                  );
+                  
                   return (
                     <div key={form.consentFormId} className="card mb-3">
                       <div className="card-body">
                         <h5 className="card-title">{form.form.title}</h5>
+                        {matchingStudents.length > 0 && (
+                          <p className="card-text text-primary fw-bold">
+                            <i className="bi bi-person-check-fill me-2"></i>
+                            Dành cho học sinh: {matchingStudents.map(s => s.fullName).join(', ')}
+                          </p>
+                        )}
                         <p className="card-text">
                           <strong>Lớp:</strong> {form.form.className}
                         </p>
@@ -161,7 +201,7 @@ export default function ParentNotifications() {
                           <strong>Nội dung:</strong> {form.form.content}
                         </p>
                         <p className="card-text">
-                          <strong>Ngày gửi:</strong> {new Date(form.form.sentDate).toLocaleDateString('vi-VN')}
+                          <strong>Ngày diễn ra:</strong> {scheduleDates[form.form.formId] ? new Date(scheduleDates[form.form.formId]).toLocaleDateString('vi-VN') : 'Chưa có lịch'}
                         </p>
                         <div className="d-flex gap-2">
                           <button 
