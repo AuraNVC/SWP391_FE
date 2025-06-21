@@ -49,8 +49,15 @@ export default function ParentPrescriptions() {
     }
   }, [userRole]);
 
-  // Lấy chi tiết thuốc theo đơn
-  const handleShowMedicals = async (prescriptionId) => {
+  // Lấy và ẩn chi tiết thuốc theo đơn
+  const toggleShowMedicals = async (prescriptionId) => {
+    // Nếu click vào đơn đang mở, thì đóng lại
+    if (selectedPrescription === prescriptionId) {
+      setSelectedPrescription(null);
+      setMedicals([]);
+      return;
+    }
+    
     setLoadingMedicals(true);
     setSelectedPrescription(prescriptionId);
     try {
@@ -63,6 +70,7 @@ export default function ParentPrescriptions() {
       setMedicals(data);
     } catch (err) {
       setError(err.message);
+      setMedicals([]);
     } finally {
       setLoadingMedicals(false);
     }
@@ -249,15 +257,14 @@ export default function ParentPrescriptions() {
                           <strong>File đơn thuốc:</strong><br />
                           {renderPrescriptionFile(pres.prescriptionFile)}
                         </div>
-                        <div className="mb-2">
-                          {/* Đã bỏ hiển thị thông tin phụ huynh theo yêu cầu */}
-                        </div>
                         <button
-                          className="btn btn-info"
-                          onClick={() => handleShowMedicals(pres.prescriptionId)}
+                          className="btn btn-info btn-sm"
+                          onClick={() => toggleShowMedicals(pres.prescriptionId)}
                           disabled={loadingMedicals && selectedPrescription === pres.prescriptionId}
                         >
-                          {loadingMedicals && selectedPrescription === pres.prescriptionId ? "Đang tải..." : "Xem chi tiết thuốc"}
+                          {loadingMedicals && selectedPrescription === pres.prescriptionId 
+                            ? "Đang tải..." 
+                            : (selectedPrescription === pres.prescriptionId ? "Ẩn chi tiết thuốc" : "Xem chi tiết thuốc")}
                         </button>
                         {selectedPrescription === pres.prescriptionId && (
                           <div className="mt-3">
@@ -271,8 +278,7 @@ export default function ParentPrescriptions() {
                                     <tr>
                                       <th>Tên thuốc</th>
                                       <th>Liều dùng</th>
-                                      <th>Số lượng kê</th>
-                                      <th>Số lượng còn lại</th>
+                                      <th>Số lượng</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -281,7 +287,6 @@ export default function ParentPrescriptions() {
                                         <td>{med.medicationName}</td>
                                         <td>{med.dosage}</td>
                                         <td>{med.quantity}</td>
-                                        <td>{med.remainingQuantity}</td>
                                       </tr>
                                     ))}
                                   </tbody>
