@@ -8,7 +8,7 @@ export default function ParentNotifications() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [updatingForms, setUpdatingForms] = useState(new Set());
   const { userRole } = useUserRole();
-  const [scheduleDates, setScheduleDates] = useState({});
+  const [schedulesMap, setSchedulesMap] = useState({});
   const [students, setStudents] = useState([]);
 
   const updateConsentFormStatus = async (consentFormId, isAccept) => {
@@ -74,24 +74,9 @@ export default function ParentNotifications() {
           throw new Error('Invalid Parent ID. Please login again.');
         }
         
-        // Fetch all data concurrently
-        const [
-          consentFormsResponse,
-          healthSchedulesRes,
-          vaccinationSchedulesRes,
-          studentsRes
-        ] = await Promise.all([
+        // Step 1: Fetch consent forms and students
+        const [consentFormsResponse, studentsRes] = await Promise.all([
           fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`),
-          fetch(`${import.meta.env.VITE_API_BASE_URL}/healthCheckSchedule/search`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ keyword: "" })
-          }),
-          fetch(`${import.meta.env.VITE_API_BASE_URL}/vaccinationSchedule/search`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ keyword: "" })
-          }),
           fetch(`${import.meta.env.VITE_API_BASE_URL}/student/getParent${numericParentId}`)
         ]);
 
@@ -101,24 +86,40 @@ export default function ParentNotifications() {
         const forms = await consentFormsResponse.json();
         setConsentForms(forms);
 
-        const healthSchedules = healthSchedulesRes.ok ? await healthSchedulesRes.json() : [];
-        const vaccinationSchedules = vaccinationSchedulesRes.ok ? await vaccinationSchedulesRes.json() : [];
         const studentList = studentsRes.ok ? await studentsRes.json() : [];
         setStudents(studentList);
 
-        // Map schedule dates by formId
-        const dateMap = {};
-        healthSchedules.forEach(schedule => {
-          if (schedule.formId) {
-            dateMap[schedule.formId] = schedule.checkDate;
+        // Step 2: Based on forms, fetch their specific schedules
+        const schedulePromises = forms.map(consentForm => {
+          const formId = consentForm.form.formId;
+          const formType = consentForm.form.type;
+
+          let scheduleUrl = '';
+          if (formType === 'HealthCheck') {
+            scheduleUrl = `${import.meta.env.VITE_API_BASE_URL}/healthCheckSchedule/getByForm${formId}`;
+          } else if (formType === 'Vaccine' || formType === 'Vaccination') {
+            scheduleUrl = `${import.meta.env.VITE_API_BASE_URL}/vaccinationSchedule/getByForm${formId}`;
+          }
+
+          if (scheduleUrl) {
+            return fetch(scheduleUrl)
+              .then(res => (res.ok ? res.json() : []))
+              .catch(() => []);
+          }
+          return Promise.resolve([]);
+        });
+        
+        const schedulesPerForm = await Promise.all(schedulePromises);
+        const allSchedules = schedulesPerForm.flat();
+
+        // Step 3: Create the schedule map
+        const newSchedulesMap = {};
+        allSchedules.forEach(schedule => {
+          if (schedule && schedule.form && schedule.form.formId && !newSchedulesMap[schedule.form.formId]) {
+            newSchedulesMap[schedule.form.formId] = schedule;
           }
         });
-        vaccinationSchedules.forEach(schedule => {
-          if (schedule.formId) {
-            dateMap[schedule.formId] = schedule.scheduleDate;
-          }
-        });
-        setScheduleDates(dateMap);
+        setSchedulesMap(newSchedulesMap);
 
       } catch (err) {
         console.error('Error details:', err);
@@ -166,6 +167,7 @@ export default function ParentNotifications() {
                 consentForms.map((form) => {
                   const isUpdating = updatingForms.has(form.consentFormId);
                   const isDecided = form.status === 'Accepted' || form.status === 'Rejected';
+                  const schedule = schedulesMap[form.form.formId];
                   
                   // Find matching students
                   const matchingStudents = students.filter(student => 
@@ -200,9 +202,18 @@ export default function ParentNotifications() {
                         <p className="card-text">
                           <strong>Nội dung:</strong> {form.form.content}
                         </p>
-                        <p className="card-text">
-                          <strong>Ngày diễn ra:</strong> {scheduleDates[form.form.formId] ? new Date(scheduleDates[form.form.formId]).toLocaleDateString('vi-VN') : 'Chưa có lịch'}
-                        </p>
+                        
+                        {schedule && (
+                          <>
+                            <p className="card-text">
+                              <strong>Thời gian:</strong> {new Date(schedule.checkDate || schedule.scheduleDate).toLocaleDateString('vi-VN')} - {new Date(schedule.checkDate || schedule.scheduleDate).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            <p className="card-text">
+                              <strong>Địa điểm:</strong> {schedule.location}
+                            </p>
+                          </>
+                        )}
+
                         <div className="d-flex gap-2">
                           <button 
                             className={`btn ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
