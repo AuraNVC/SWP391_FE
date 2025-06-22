@@ -166,9 +166,23 @@ export default function ParentNotifications() {
               ) : (
                 consentForms.map((form) => {
                   const isUpdating = updatingForms.has(form.consentFormId);
-                  const isDecided = form.status === 'Accepted' || form.status === 'Rejected';
                   const schedule = schedulesMap[form.form.formId];
                   
+                  let isTooLateToChange = false;
+                  if (schedule) {
+                    const scheduleDate = (schedule.checkDate || schedule.scheduleDate).substring(0, 10); // YYYY-MM-DD
+                    
+                    const today = new Date();
+                    const year = today.getFullYear();
+                    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+                    const day = today.getDate().toString().padStart(2, '0');
+                    const todayString = `${year}-${month}-${day}`;
+                    
+                    if (scheduleDate <= todayString) {
+                      isTooLateToChange = true;
+                    }
+                  }
+
                   // Find matching students
                   const matchingStudents = students.filter(student => 
                     form.form.className === 'Tất cả' || student.className === form.form.className
@@ -214,41 +228,30 @@ export default function ParentNotifications() {
                           </>
                         )}
 
-                        <div className="d-flex gap-2">
-                          <button 
-                            className={`btn ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
-                            onClick={() => updateConsentFormStatus(form.consentFormId, true)}
-                            disabled={isUpdating}
-                          >
-                            {isUpdating ? (
-                              <>
-                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                Đang xử lý...
-                              </>
-                            ) : (
-                              'Đồng ý'
-                            )}
-                          </button>
-                          <button 
-                            className={`btn ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
-                            onClick={() => updateConsentFormStatus(form.consentFormId, false)}
-                            disabled={isUpdating}
-                          >
-                            {isUpdating ? (
-                              <>
-                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                Đang xử lý...
-                              </>
-                            ) : (
-                              'Từ chối'
-                            )}
-                          </button>
+                        {/* Action buttons */}
+                        <div className="d-flex justify-content-end mt-3">
+                          <div className="text-end">
+                            <button
+                              className={`btn btn-sm me-2 ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
+                              onClick={() => updateConsentFormStatus(form.consentFormId, true)}
+                              disabled={isTooLateToChange || isUpdating}
+                            >
+                              {isUpdating ? 'Đang xử lý...' : 'Đồng ý'}
+                            </button>
+                            <button
+                              className={`btn btn-sm ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
+                              onClick={() => updateConsentFormStatus(form.consentFormId, false)}
+                              disabled={isTooLateToChange || isUpdating}
+                            >
+                              {isUpdating ? 'Đang xử lý...' : 'Từ chối'}
+                            </button>
+                            <p className="text-muted fst-italic mt-1 mb-0">
+                              <small>
+                                {isTooLateToChange ? 'Đã hết hạn thay đổi.' : 'Có thể thay đổi đến trước ngày diễn ra.'}
+                              </small>
+                            </p>
+                          </div>
                         </div>
-                        {isDecided && (
-                          <small className="text-muted mt-2 d-block">
-                            Bạn có thể thay đổi quyết định bất cứ lúc nào
-                          </small>
-                        )}
                       </div>
                     </div>
                   );
