@@ -22,6 +22,8 @@ export default function ParentPrescriptions() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("newest");
 
   const fetchPrescriptions = useCallback(async () => {
     setLoading(true);
@@ -205,6 +207,25 @@ export default function ParentPrescriptions() {
     }
   };
 
+  const filteredPrescriptions = prescriptions.filter(p => {
+    if (!searchTerm) return true;
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return (
+      (p.schedule && p.schedule.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (p.parentNote && p.parentNote.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (p.submittedDate && p.submittedDate.toString().toLowerCase().includes(lowerCaseSearchTerm))
+    );
+  });
+
+  const sortedPrescriptions = [...filteredPrescriptions].sort((a, b) => {
+    const idA = a.parentPrescriptionId || a.prescriptionId;
+    const idB = b.parentPrescriptionId || b.prescriptionId;
+    if (sortOrder === 'newest') {
+      return idB - idA;
+    }
+    return idA - idB;
+  });
+
   // Hàm upload ảnh đơn thuốc
   const handleUploadImage = async (e) => {
     const file = e.target.files[0];
@@ -242,6 +263,27 @@ export default function ParentPrescriptions() {
                 <h1 className="display-4 mb-3 fw-bold">Đơn thuốc</h1>
                 <p className="lead text-muted">Danh sách đơn thuốc của học sinh</p>
                 <button className="btn btn-primary mt-3" onClick={() => setShowModal(true)}>+ Tạo đơn thuốc</button>
+              </div>
+              <div className="row mb-4 g-3">
+                <div className="col-md-8">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Tìm kiếm theo lịch uống, ghi chú, hoặc ngày tạo..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-4">
+                  <select
+                    className="form-select"
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                  >
+                    <option value="newest">Sắp xếp: Mới nhất</option>
+                    <option value="oldest">Sắp xếp: Cũ nhất</option>
+                  </select>
+                </div>
               </div>
               {/* Modal tạo đơn thuốc */}
               {showModal && (
@@ -304,67 +346,71 @@ export default function ParentPrescriptions() {
                 </div>
               )}
               {/* Kết thúc modal */}
-              {prescriptions.length === 0 ? (
+              {sortedPrescriptions.length === 0 ? (
                 <div className="text-center text-muted">
                   <p>Không có đơn thuốc nào</p>
                 </div>
               ) : (
                 <div className="list-group">
-                  {prescriptions.map((pres) => (
-                    <div key={pres.prescriptionId} className="card mb-3">
-                      <div className="card-body">
-                        <h5 className="card-title">Đơn thuốc #{pres.prescriptionId}</h5>
-                        <p className="card-text"><strong>Ngày tạo:</strong> {pres.submittedDate ? new Date(pres.submittedDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
-                        <p className="card-text"><strong>Lịch uống:</strong> {pres.schedule}</p>
-                        <p className="card-text"><strong>Ghi chú phụ huynh:</strong> {pres.parentNote}</p>
-                        <div className="mb-2">
-                          <strong>File đơn thuốc:</strong><br />
-                          {renderPrescriptionFile(pres.prescriptionFile)}
-                        </div>
-                        <button
-                          className="btn btn-info btn-sm"
-                          onClick={() => toggleShowMedicals(pres.prescriptionId)}
-                          disabled={loadingMedicals && selectedPrescription === pres.prescriptionId}
-                        >
-                          {loadingMedicals && selectedPrescription === pres.prescriptionId 
-                            ? "Đang tải..." 
-                            : (selectedPrescription === pres.prescriptionId ? "Ẩn chi tiết thuốc" : "Xem chi tiết thuốc")}
-                        </button>
-                        {selectedPrescription === pres.prescriptionId && (
-                          <div className="mt-3">
-                            <h6>Chi tiết thuốc:</h6>
-                            {medicals.length === 0 ? (
-                              <p>Không có thuốc nào trong đơn này.</p>
-                            ) : (
-                              <div className="table-responsive">
-                                <table className="table table-bordered">
-                                  <thead>
-                                    <tr>
-                                      <th>Tên thuốc</th>
-                                      <th>Liều dùng</th>
-                                      <th>Số lượng</th>
-                                      <th>Số lượng còn lại</th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    {medicals.map((med) => (
-                                      <tr key={med.medicationId}>
-                                        <td>{med.medicationName}</td>
-                                        <td>{med.dosage}</td>
-                                        <td>{med.quantity}</td>
-                                        <td>{med.remainingQuantity}</td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                  {sortedPrescriptions.map((p) => (
+                    <div key={p.parentPrescriptionId || p.prescriptionId} className="list-group-item list-group-item-action">
+                      <div className="d-flex w-100 justify-content-between">
+                        <h5 className="mb-1">{p.parentPrescriptionId ? `Đơn thuốc #${p.parentPrescriptionId}` : `Đơn thuốc #${p.prescriptionId}`}</h5>
+                        <small>{p.submittedDate ? new Date(p.submittedDate).toLocaleDateString('vi-VN') : 'N/A'}</small>
                       </div>
+                      <p className="mb-1">{p.schedule}</p>
+                      <p className="mb-1">{p.parentNote}</p>
+                      <div className="mb-2">
+                        <strong>File đơn thuốc:</strong><br />
+                        {renderPrescriptionFile(p.prescriptionFile)}
+                      </div>
+                      <button
+                        className="btn btn-info btn-sm"
+                        onClick={() => toggleShowMedicals(p.prescriptionId)}
+                        disabled={loadingMedicals && selectedPrescription === p.prescriptionId}
+                      >
+                        {loadingMedicals && selectedPrescription === p.prescriptionId 
+                          ? "Đang tải..." 
+                          : (selectedPrescription === p.prescriptionId ? "Ẩn chi tiết thuốc" : "Xem chi tiết thuốc")}
+                      </button>
+                      {selectedPrescription === p.prescriptionId && (
+                        <div className="mt-3">
+                          <h6>Chi tiết thuốc:</h6>
+                          {medicals.length === 0 ? (
+                            <p>Không có thuốc nào trong đơn này.</p>
+                          ) : (
+                            <div className="table-responsive">
+                              <table className="table table-bordered">
+                                <thead>
+                                  <tr>
+                                    <th>Tên thuốc</th>
+                                    <th>Liều dùng</th>
+                                    <th>Số lượng</th>
+                                    <th>Số lượng còn lại</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {medicals.map((med) => (
+                                    <tr key={med.medicationId}>
+                                      <td>{med.medicationName}</td>
+                                      <td>{med.dosage}</td>
+                                      <td>{med.quantity}</td>
+                                      <td>{med.remainingQuantity}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
+              )}
+
+              {sortedPrescriptions.length === 0 && !loading && (
+                <div className="alert alert-info text-center">Không tìm thấy đơn thuốc phù hợp.</div>
               )}
             </div>
           </div>

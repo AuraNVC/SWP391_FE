@@ -10,6 +10,9 @@ export default function ParentNotifications() {
   const { userRole } = useUserRole();
   const [schedulesMap, setSchedulesMap] = useState({});
   const [students, setStudents] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState("newest");
 
   const updateConsentFormStatus = async (consentFormId, isAccept) => {
     // Prevent multiple clicks
@@ -137,6 +140,30 @@ export default function ParentNotifications() {
     }
   }, [userRole]);
 
+  const filteredAndSortedForms = consentForms
+    .filter(form => {
+      // Lọc theo trạng thái
+      if (statusFilter !== "all" && form.status !== statusFilter) {
+        return false;
+      }
+      // Tìm kiếm
+      if (!searchTerm) return true;
+      const lowerCaseSearchTerm = searchTerm.toLowerCase();
+      return (
+        (form.form.title && form.form.title.toLowerCase().includes(lowerCaseSearchTerm)) ||
+        (form.form.content && form.form.content.toLowerCase().includes(lowerCaseSearchTerm))
+      );
+    })
+    .sort((a, b) => {
+      // Sắp xếp theo ngày tạo form
+      const dateA = a.form.createdAt ? new Date(a.form.createdAt) : 0;
+      const dateB = b.form.createdAt ? new Date(b.form.createdAt) : 0;
+      if (sortOrder === 'newest') {
+        return dateB - dateA;
+      }
+      return dateA - dateB;
+    });
+
   if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
   if (error) return <div className="text-red-500 text-center p-4">{error}</div>;
 
@@ -150,6 +177,32 @@ export default function ParentNotifications() {
                 <h1 className="display-4 mb-3 fw-bold">Thông báo</h1>
                 <p className="lead text-muted">Thông tin về lịch khám sức khỏe và tiêm chủng của học sinh</p>
               </div>
+
+              <div className="row mb-4 g-3">
+                <div className="col-md-5">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Tìm kiếm theo tiêu đề, nội dung..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-4">
+                  <select className="form-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                    <option value="all">Tất cả trạng thái</option>
+                    <option value="Pending">Chờ xác nhận</option>
+                    <option value="Accepted">Đã chấp nhận</option>
+                    <option value="Rejected">Đã từ chối</option>
+                  </select>
+                </div>
+                <div className="col-md-3">
+                  <select className="form-select" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                    <option value="newest">Sắp xếp: Mới nhất</option>
+                    <option value="oldest">Sắp xếp: Cũ nhất</option>
+                  </select>
+                </div>
+              </div>
               
               {/* Success Message */}
               {successMessage && (
@@ -159,12 +212,12 @@ export default function ParentNotifications() {
                 </div>
               )}
               
-              {consentForms.length === 0 ? (
+              {filteredAndSortedForms.length === 0 ? (
                 <div className="text-center text-muted">
-                  <p>Không có biểu mẫu đồng ý nào</p>
+                  <p>Không có thông báo nào phù hợp.</p>
                 </div>
               ) : (
-                consentForms.map((form) => {
+                filteredAndSortedForms.map((form) => {
                   const isUpdating = updatingForms.has(form.consentFormId);
                   const schedule = schedulesMap[form.form.formId];
                   

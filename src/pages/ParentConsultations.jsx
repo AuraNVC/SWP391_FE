@@ -8,6 +8,9 @@ export default function ParentConsultations() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [updatingForms, setUpdatingForms] = useState(new Set());
   const { userRole } = useUserRole();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState("newest");
 
   const updateConsultationStatus = async (consultationFormId, isAccept) => {
     if (updatingForms.has(consultationFormId)) return;
@@ -94,6 +97,31 @@ export default function ParentConsultations() {
     }
   }, [userRole]);
 
+  const filteredConsultations = consultations
+    .filter(form => {
+      // Lọc theo trạng thái
+      if (statusFilter !== "all" && form.status !== statusFilter) {
+        return false;
+      }
+      // Tìm kiếm
+      if (!searchTerm) return true;
+      const lowerCaseSearchTerm = searchTerm.toLowerCase();
+      return (
+        (form.title && form.title.toLowerCase().includes(lowerCaseSearchTerm)) ||
+        (form.content && form.content.toLowerCase().includes(lowerCaseSearchTerm)) ||
+        (form.consultationSchedule && form.consultationSchedule.location && form.consultationSchedule.location.toLowerCase().includes(lowerCaseSearchTerm))
+      );
+    })
+    .sort((a, b) => {
+      // Sắp xếp
+      const dateA = a.consultationSchedule ? new Date(a.consultationSchedule.consultDate) : 0;
+      const dateB = b.consultationSchedule ? new Date(b.consultationSchedule.consultDate) : 0;
+      if (sortOrder === 'newest') {
+        return dateB - dateA;
+      }
+      return dateA - dateB;
+    });
+
   if (loading) return <div className="flex justify-center items-center h-screen">Đang tải...</div>;
   if (error) return <div className="text-red-500 text-center p-4">{error}</div>;
 
@@ -108,6 +136,32 @@ export default function ParentConsultations() {
                 <p className="lead text-muted">Thông tin chi tiết về các buổi tư vấn sức khỏe</p>
               </div>
               
+              <div className="row mb-4 g-3">
+                <div className="col-md-5">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Tìm kiếm theo tiêu đề, nội dung, địa điểm..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-4">
+                  <select className="form-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                    <option value="all">Tất cả trạng thái</option>
+                    <option value="Pending">Chờ xác nhận</option>
+                    <option value="Accepted">Đã chấp nhận</option>
+                    <option value="Rejected">Đã từ chối</option>
+                  </select>
+                </div>
+                <div className="col-md-3">
+                  <select className="form-select" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                    <option value="newest">Sắp xếp: Mới nhất</option>
+                    <option value="oldest">Sắp xếp: Cũ nhất</option>
+                  </select>
+                </div>
+              </div>
+
               {successMessage && (
                 <div className="alert alert-success alert-dismissible fade show" role="alert">
                   {successMessage}
@@ -115,13 +169,13 @@ export default function ParentConsultations() {
                 </div>
               )}
 
-              {consultations.length === 0 ? (
+              {filteredConsultations.length === 0 ? (
                 <div className="text-center text-muted">
-                  <p>Hiện không có lịch tư vấn nào.</p>
+                  <p>Không có lịch tư vấn nào phù hợp.</p>
                 </div>
               ) : (
                 <div className="list-group">
-                  {consultations.map((form) => {
+                  {filteredConsultations.map((form) => {
                     const isUpdating = updatingForms.has(form.consultationFormId);
 
                     let isTooLateToChange = false;
