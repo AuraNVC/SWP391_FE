@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
 
 export default function ParentPrescriptions() {
@@ -19,35 +19,42 @@ export default function ParentPrescriptions() {
     ]
   });
   const [adding, setAdding] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef();
+
+  const fetchPrescriptions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const parentId = localStorage.getItem('userId');
+      if (!parentId) throw new Error('Parent ID not found');
+      let response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${parentId}`);
+      if (!response.ok) {
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getByParent?parentId=${parentId}`);
+      }
+      if (!response.ok) {
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getPrescriptionByParent?parentId=${parentId}`);
+      }
+      if (!response.ok) throw new Error('Không thể lấy danh sách đơn thuốc');
+      const data = await response.json();
+      setPrescriptions(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Lấy danh sách đơn thuốc của phụ huynh
   useEffect(() => {
-    const fetchPrescriptions = async () => {
-      try {
-        const parentId = localStorage.getItem('userId');
-        if (!parentId) throw new Error('Parent ID not found');
-        let response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${parentId}`);
-        if (!response.ok) {
-          response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getByParent?parentId=${parentId}`);
-        }
-        if (!response.ok) {
-          response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getPrescriptionByParent?parentId=${parentId}`);
-        }
-        if (!response.ok) throw new Error('Không thể lấy danh sách đơn thuốc');
-        const data = await response.json();
-        setPrescriptions(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (userRole === 'parent') fetchPrescriptions();
-    else {
+    if (userRole === 'parent') {
+      fetchPrescriptions();
+    } else {
       setLoading(false);
       setError('Access denied. Parent role required.');
     }
-  }, [userRole]);
+  }, [userRole, fetchPrescriptions]);
 
   // Lấy và ẩn chi tiết thuốc theo đơn
   const toggleShowMedicals = async (prescriptionId) => {
@@ -76,16 +83,30 @@ export default function ParentPrescriptions() {
     }
   };
 
-  // Hàm kiểm tra file là ảnh hay pdf
-  const renderPrescriptionFile = (fileUrl) => {
-    if (!fileUrl) return <span className="text-muted">Không có file</span>;
-    if (fileUrl.endsWith('.jpg') || fileUrl.endsWith('.jpeg') || fileUrl.endsWith('.png') || fileUrl.endsWith('.gif')) {
-      return <img src={fileUrl} alt="prescription" style={{ maxWidth: 200, maxHeight: 200 }} className="d-block mb-2" />;
+  // Hàm kiểm tra file là ảnh hay pdf, đây là nơi duy nhất xử lý logic hiển thị
+  const renderPrescriptionFile = (file) => {
+    if (!file) return <span className="text-muted">Không có file</span>;
+    
+    let finalUrl = file;
+
+    // Xử lý cả URL đầy đủ (dữ liệu cũ) và tên file (dữ liệu mới)
+    if (file.startsWith('http')) {
+      // Nếu là URL, sửa lỗi 2 dấu gạch chéo '//'
+      finalUrl = file.replace(/([^:]\/)\/+/g, "$1");
+    } else {
+      // Nếu là tên file, tạo URL đầy đủ từ API base URL
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      finalUrl = `${baseUrl}/files/blogs/${file.replace(/^\//, '')}`;
     }
-    if (fileUrl.endsWith('.pdf')) {
-      return <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm mb-2">Tải file PDF</a>;
+
+    if (finalUrl && (finalUrl.toLowerCase().endsWith('.jpg') || finalUrl.toLowerCase().endsWith('.jpeg') || finalUrl.toLowerCase().endsWith('.png') || finalUrl.toLowerCase().endsWith('.gif'))) {
+      return <img src={finalUrl} alt="prescription" style={{ maxWidth: 200, maxHeight: 200 }} className="d-block mb-2" />;
     }
-    return <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-secondary btn-sm mb-2">Tải file</a>;
+    if (finalUrl && finalUrl.toLowerCase().endsWith('.pdf')) {
+      return <a href={finalUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm mb-2">Tải file PDF</a>;
+    }
+    // Fallback cho các trường hợp khác hoặc URL không hợp lệ
+    return <a href={finalUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-secondary btn-sm mb-2">Xem file</a>;
   };
 
   // Hàm xử lý thêm thuốc trong form
@@ -114,57 +135,97 @@ export default function ParentPrescriptions() {
   const handleCreatePrescription = async (e) => {
     e.preventDefault();
     setAdding(true);
+    setError(null);
     try {
       const parentId = localStorage.getItem('userId');
-      const now = new Date().toLocaleDateString('en-CA');
-      // Gửi đơn thuốc trước, không gửi medications
+      if (!parentId) {
+        throw new Error("Không tìm thấy Parent ID. Vui lòng đăng nhập lại.");
+      }
+      const now = new Date().toLocaleDateString('en-CA'); // Format YYYY-MM-DD cho DateOnly
+      
       const body = {
-        parentId,
+        parentId: parseInt(parentId, 10), // Đảm bảo parentId là số
         schedule: newPrescription.schedule,
         parentNote: newPrescription.parentNote,
         prescriptionFile: newPrescription.prescriptionFile,
         submittedDate: now
       };
+
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      if (!response.ok) throw new Error('Không thể tạo đơn thuốc');
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Không thể tạo đơn thuốc: ${errorText}`);
+      }
       const prescription = await response.json();
-      // Ưu tiên các trường phổ biến
+      
       const prescriptionId = prescription.parentPrescriptionId || prescription.prescriptionId || prescription.id;
+      if (!prescriptionId) {
+          throw new Error("Tạo đơn thuốc thành công nhưng không nhận được ID.");
+      }
+
       // Gọi API add medication cho từng thuốc
       for (const med of newPrescription.medications) {
+        if (!med.medicationName || !med.dosage) continue; // Bỏ qua nếu thuốc trống
+
         const medBody = {
-          prescriptionId, // hoặc parentPrescriptionId tuỳ BE
+          prescriptionId: prescriptionId, // Sửa lại tên trường ID cho đúng với yêu cầu của backend
           medicationName: med.medicationName,
           dosage: med.dosage,
-          quantity: med.quantity
+          quantity: parseInt(med.quantity, 10) || 1
         };
-        await fetch(`${import.meta.env.VITE_API_BASE_URL}/medication/add`, {
+        
+        const medResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medication/add`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(medBody)
         });
+
+        if (!medResponse.ok) {
+          const errorText = await medResponse.text();
+          // Ném lỗi để dừng quá trình và hiển thị cho người dùng
+          throw new Error(`Không thể lưu thuốc "${med.medicationName}": ${errorText}`);
+        }
       }
+      
       setShowModal(false);
       setNewPrescription({ schedule: '', parentNote: '', prescriptionFile: '', medications: [{ medicationName: '', dosage: '', quantity: 1 }] });
-      // Reload lại danh sách đơn thuốc như cũ...
-      setLoading(true);
-      setError(null);
-      let reloadRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${parentId}`);
-      if (!reloadRes.ok) reloadRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getByParent?parentId=${parentId}`);
-      if (!reloadRes.ok) reloadRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getPrescriptionByParent?parentId=${parentId}`);
-      if (reloadRes.ok) {
-        const data = await reloadRes.json();
-        setPrescriptions(data);
-      }
+      
+      // Reload lại danh sách đơn thuốc
+      await fetchPrescriptions(); // Gọi lại hàm fetch đã có
+
     } catch (err) {
       setError(err.message);
     } finally {
       setAdding(false);
-      setLoading(false);
+    }
+  };
+
+  // Hàm upload ảnh đơn thuốc
+  const handleUploadImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadError("");
+    try {
+      const formData = new FormData();
+      formData.append("imageFile", file);
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/blog/uploadImage`, {
+        method: "POST",
+        body: formData
+      });
+      if (!res.ok) throw new Error("Lỗi khi upload ảnh");
+      const result = await res.json();
+      // Sửa lỗi: dùng result.pathFull để đảm bảo URL luôn chính xác
+      setNewPrescription(prev => ({ ...prev, prescriptionFile: result.pathFull }));
+    } catch (err) {
+      setUploadError("Upload ảnh thất bại!");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -202,8 +263,11 @@ export default function ParentPrescriptions() {
                             <textarea className="form-control" value={newPrescription.parentNote} onChange={e => setNewPrescription(prev => ({ ...prev, parentNote: e.target.value }))} />
                           </div>
                           <div className="mb-3">
-                            <label className="form-label">Link file đơn thuốc (nếu có)</label>
-                            <input type="text" className="form-control" value={newPrescription.prescriptionFile} onChange={e => setNewPrescription(prev => ({ ...prev, prescriptionFile: e.target.value }))} />
+                            <label className="form-label">Ảnh đơn thuốc</label>
+                            <input type="file" accept="image/*" className="form-control" onChange={handleUploadImage} ref={fileInputRef} disabled={uploading} />
+                            {uploading && <div className="text-info">Đang upload...</div>}
+                            {uploadError && <div className="text-danger">{uploadError}</div>}
+                            {newPrescription.prescriptionFile && renderPrescriptionFile(newPrescription.prescriptionFile)}
                           </div>
                           <div className="mb-3">
                             <label className="form-label">Danh sách thuốc</label>
