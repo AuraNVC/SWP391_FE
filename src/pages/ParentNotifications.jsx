@@ -272,6 +272,11 @@ export default function ParentNotifications() {
                         
                         {schedule && (
                           <>
+                            {form.form.type === 'Vaccine' || form.form.type === 'Vaccination' ? (
+                              <p className="card-text">
+                                <strong>Tên vắc xin:</strong> {schedule.name || 'Chưa cập nhật'}
+                              </p>
+                            ) : null}
                             <p className="card-text">
                               <strong>Thời gian:</strong> {new Date(schedule.checkDate || schedule.scheduleDate).toLocaleDateString('vi-VN')} - {new Date(schedule.checkDate || schedule.scheduleDate).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                             </p>

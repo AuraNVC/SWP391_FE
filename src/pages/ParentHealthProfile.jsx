@@ -19,6 +19,9 @@ const ParentHealthProfile = () => {
   const [vaccinationResults, setVaccinationResults] = useState([]);
   const [loadingVaccination, setLoadingVaccination] = useState(false);
   const [selectedStudentForVaccination, setSelectedStudentForVaccination] = useState(null);
+  const [medicalEvents, setMedicalEvents] = useState([]);
+  const [loadingMedicalEvents, setLoadingMedicalEvents] = useState(false);
+  const [selectedStudentForMedicalEvents, setSelectedStudentForMedicalEvents] = useState(null);
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -67,10 +70,11 @@ const ParentHealthProfile = () => {
   };
 
   const handleViewResultsClick = async (profile) => {
-    // Hide vaccination results when viewing health check results
+    // Hide vaccination and medical events when viewing health check results
     setSelectedStudentForVaccination(null);
     setVaccinationResults([]);
-
+    setSelectedStudentForMedicalEvents(null);
+    setMedicalEvents([]);
     if (!profile || !profile.healthProfileId) {
       alert('Không tìm thấy hồ sơ sức khỏe cho học sinh này.');
       return;
@@ -123,10 +127,11 @@ const ParentHealthProfile = () => {
   };
 
   const handleViewVaccinationResultsClick = async (profile) => {
-    // Hide health check results when viewing vaccination results
+    // Hide health check and medical events when viewing vaccination results
     setSelectedStudentForResults(null);
     setHealthResults([]);
-    
+    setSelectedStudentForMedicalEvents(null);
+    setMedicalEvents([]);
     if (!profile || !profile.healthProfileId) {
       alert('Không tìm thấy hồ sơ sức khỏe cho học sinh này.');
       return;
@@ -173,6 +178,39 @@ const ParentHealthProfile = () => {
       setVaccinationResults([]);
     } finally {
       setLoadingVaccination(false);
+    }
+  };
+
+  const handleViewMedicalEventsClick = async (profile) => {
+    setSelectedStudentForResults(null);
+    setHealthResults([]);
+    setSelectedStudentForVaccination(null);
+    setVaccinationResults([]);
+    if (!profile || !profile.studentId) {
+      alert('Không tìm thấy học sinh này.');
+      return;
+    }
+    if (selectedStudentForMedicalEvents?.studentId === profile.studentId) {
+      setSelectedStudentForMedicalEvents(null);
+      setMedicalEvents([]);
+      return;
+    }
+    setLoadingMedicalEvents(true);
+    setSelectedStudentForMedicalEvents(profile);
+    setError(null);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medicalEvent/getMedicalByStudent?studentId=${profile.studentId}`);
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Không thể tải sự kiện y tế: ${errorData}`);
+      }
+      const event = await response.json();
+      setMedicalEvents(Array.isArray(event) ? event : []);
+    } catch (err) {
+      setError(err.message);
+      setMedicalEvents([]);
+    } finally {
+      setLoadingMedicalEvents(false);
     }
   };
 
@@ -341,6 +379,13 @@ const ParentHealthProfile = () => {
                                     <i className="bi bi-shield-check me-1"></i>
                                     Xem lịch sử tiêm chủng
                                     </button>
+                                  <button
+                                    className="btn btn-outline-danger btn-sm"
+                                    onClick={() => handleViewMedicalEventsClick(student)}
+                                  >
+                                    <i className="bi bi-activity me-1"></i>
+                                    Xem sự kiện y tế
+                                  </button>
                               </div>
 
                               {/* Health Check Results Section */}
@@ -386,7 +431,9 @@ const ParentHealthProfile = () => {
                                     <ul className="list-group" style={{ maxHeight: '450px', overflowY: 'auto' }}>
                                       {vaccinationResults.map(result => (
                                         <li key={result.vaccinationResultId} className="list-group-item">
-                                          {result.schedule && <h6 className='fw-bold text-primary'>{result.schedule.name}</h6>}
+                                          {result.schedule && (
+                                            <p className='mb-1'><strong>Tên vắc xin:</strong> {result.schedule.name || 'Chưa cập nhật'}</p>
+                                          )}
                                           <p className='mb-1'><strong>Ngày tiêm:</strong> {result.schedule ? new Date(result.schedule.scheduleDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
                                           <p className='mb-1'><strong>Địa điểm:</strong> {result.schedule?.location || 'Chưa cập nhật'}</p>
                                           <p className='mb-1'>
@@ -405,6 +452,33 @@ const ParentHealthProfile = () => {
                                     </ul>
                                   ) : (
                                     <div className="alert alert-light text-center">Không có lịch sử tiêm chủng nào.</div>
+                                  )}
+                                </div>
+                              )}
+                              {/* Medical Events Section */}
+                              {selectedStudentForMedicalEvents?.studentId === student.studentId && (
+                                <div className="mt-4 border-top pt-3">
+                                  <h6 className='text-danger mb-3'>Sự kiện y tế</h6>
+                                  {loadingMedicalEvents ? (
+                                    <div className="d-flex justify-content-center">
+                                      <div className="spinner-border spinner-border-sm text-danger" role="status">
+                                        <span className="visually-hidden">Loading...</span>
+                                      </div>
+                                    </div>
+                                  ) : medicalEvents.length > 0 ? (
+                                    <ul className="list-group" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+                                      {medicalEvents.map(event => (
+                                        <li key={event.eventId} className="list-group-item">
+                                          <p className='mb-1'><strong>Tên sự kiện:</strong> {event.eventName || 'Chưa cập nhật'}</p>
+                                          <p className='mb-1'><strong>Ngày:</strong> {event.eventDate ? new Date(event.eventDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
+                                          <p className='mb-1'><strong>Triệu chứng:</strong> {event.symptoms || 'Không có'}</p>
+                                          <p className='mb-1'><strong>Xử lý:</strong> {event.actionTaken || 'Không có'}</p>
+                                          {event.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {event.note}</p>}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    <div className="alert alert-light text-center">Không có sự kiện y tế nào.</div>
                                   )}
                                 </div>
                               )}
