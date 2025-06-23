@@ -26,6 +26,8 @@ export default function ParentPrescriptions() {
   const [sortOrder, setSortOrder] = useState("newest");
   const [showImageModal, setShowImageModal] = useState(false);
   const [imageInModal, setImageInModal] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
 
   const fetchPrescriptions = useCallback(async () => {
     setLoading(true);
@@ -58,6 +60,21 @@ export default function ParentPrescriptions() {
       setError('Access denied. Parent role required.');
     }
   }, [userRole, fetchPrescriptions]);
+
+  useEffect(() => {
+    if (userRole === 'parent') {
+      const parentId = localStorage.getItem('userId');
+      if (parentId) {
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/student/getParent${parentId}`)
+          .then(res => res.ok ? res.json() : [])
+          .then(data => {
+            setStudents(data);
+            if (data.length > 0) setSelectedStudentId(data[0].studentId);
+          })
+          .catch(() => setStudents([]));
+      }
+    }
+  }, [userRole]);
 
   const filteredPrescriptions = prescriptions.filter(p => {
     if (!searchTerm) return true;
@@ -159,8 +176,10 @@ export default function ParentPrescriptions() {
       if (!parentId) {
         throw new Error("Không tìm thấy Parent ID. Vui lòng đăng nhập lại.");
       }
+      if (!selectedStudentId) {
+        throw new Error("Vui lòng chọn học sinh cho đơn thuốc.");
+      }
       const now = new Date().toLocaleDateString('en-CA');
-      
       const body = {
         parentId: parseInt(parentId, 10),
         schedule: newPrescription.schedule,
@@ -168,51 +187,42 @@ export default function ParentPrescriptions() {
         prescriptionFile: newPrescription.prescriptionFile || "",
         submittedDate: now
       };
-
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`Không thể tạo đơn thuốc: ${errorText}`);
       }
       const prescription = await response.json();
-      
       const prescriptionId = prescription.parentPrescriptionId || prescription.prescriptionId || prescription.id;
       if (!prescriptionId) {
           throw new Error("Tạo đơn thuốc thành công nhưng không nhận được ID.");
       }
-
       for (const med of newPrescription.medications) {
         if (!med.medicationName || !med.dosage) continue;
-
         const medBody = {
           prescriptionId: prescriptionId,
           medicationName: med.medicationName,
           dosage: med.dosage,
-          quantity: parseInt(med.quantity, 10) || 1
+          quantity: parseInt(med.quantity, 10) || 1,
+          studentId: selectedStudentId
         };
-        
         const medResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medication/add`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(medBody)
         });
-
         if (!medResponse.ok) {
           const errorText = await medResponse.text();
           throw new Error(`Không thể lưu thuốc "${med.medicationName}": ${errorText}`);
         }
       }
-      
       setShowModal(false);
       setNewPrescription({ schedule: '', parentNote: '', prescriptionFile: '', medications: [{ medicationName: '', dosage: '', quantity: 1 }] });
-      
       await fetchPrescriptions();
-
     } catch (err) {
       setError(err.message);
     } finally {
@@ -309,6 +319,14 @@ export default function ParentPrescriptions() {
                             {newPrescription.prescriptionFile && renderPrescriptionFile(newPrescription.prescriptionFile)}
                           </div>
                           <div className="mb-3">
+                            <label className="form-label">Chọn học sinh</label>
+                            <select className="form-select" value={selectedStudentId} onChange={e => setSelectedStudentId(e.target.value)} required>
+                              {students.map(s => (
+                                <option key={s.studentId} value={s.studentId}>{s.fullName}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="mb-3">
                             <label className="form-label">Danh sách thuốc</label>
                             {newPrescription.medications.map((med, idx) => (
                               <div key={idx} className="border rounded p-2 mb-2">
@@ -352,10 +370,20 @@ export default function ParentPrescriptions() {
                   const presId = p.parentPrescriptionId || p.prescriptionId;
                   const isSelected = selectedPrescription === presId;
                   
+                  // Lấy tên học sinh cho đơn thuốc này (nếu có medicals)
+                  let studentName = '';
+                  if (isSelected && medicals.length > 0) {
+                    studentName = students.find(s => s.studentId == medicals[0].studentId)?.fullName || 'Không rõ';
+                  } else if (p.medications && p.medications.length > 0) {
+                    studentName = students.find(s => s.studentId == p.medications[0].studentId)?.fullName || '';
+                  }
                   return (
                     <div key={presId} className="card mb-3 shadow-sm">
                       <div className="card-header bg-light">
                         <h5 className="mb-0 text-primary">Đơn thuốc #{presId}</h5>
+                        {studentName && (
+                          <div className="text-secondary small mt-1"><strong>Học sinh:</strong> {studentName}</div>
+                        )}
                       </div>
                       <div className="card-body">
                         <div className="row align-items-center">
