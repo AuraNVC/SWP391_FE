@@ -124,6 +124,21 @@ export default function ParentConsultations() {
                   {consultations.map((form) => {
                     const isUpdating = updatingForms.has(form.consultationFormId);
 
+                    let isTooLateToChange = false;
+                    if (form.consultationSchedule) {
+                      const scheduleDate = form.consultationSchedule.consultDate.substring(0, 10); // YYYY-MM-DD
+                      
+                      const today = new Date();
+                      const year = today.getFullYear();
+                      const month = (today.getMonth() + 1).toString().padStart(2, '0');
+                      const day = today.getDate().toString().padStart(2, '0');
+                      const todayString = `${year}-${month}-${day}`;
+                      
+                      if (scheduleDate <= todayString) {
+                        isTooLateToChange = true;
+                      }
+                    }
+
                     return (
                       <div key={form.consultationFormId} className="list-group-item list-group-item-action p-4 mb-3 shadow-sm rounded">
                         <h5 className="mb-3 text-primary fw-bold">{form.title}</h5>
@@ -154,21 +169,28 @@ export default function ParentConsultations() {
                               </>
                           )}
                         </div>
-                        <div className="mt-3 d-flex gap-2">
-                            <button
-                                className={`btn btn-sm ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
-                                onClick={() => updateConsultationStatus(form.consultationFormId, true)}
-                                disabled={isUpdating}
-                            >
-                                {isUpdating ? 'Đang xử lý...' : 'Chấp nhận'}
-                            </button>
-                            <button
-                                className={`btn btn-sm ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
-                                onClick={() => updateConsultationStatus(form.consultationFormId, false)}
-                                disabled={isUpdating}
-                            >
-                                {isUpdating ? 'Đang xử lý...' : 'Từ chối'}
-                            </button>
+                        <div className="d-flex justify-content-between align-items-center mt-3">
+                          <div className="d-flex gap-2">
+                              <button
+                                  className={`btn btn-sm ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
+                                  onClick={() => updateConsultationStatus(form.consultationFormId, true)}
+                                  disabled={isTooLateToChange || isUpdating}
+                              >
+                                  {isUpdating ? 'Đang xử lý...' : 'Chấp nhận'}
+                              </button>
+                              <button
+                                  className={`btn btn-sm ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
+                                  onClick={() => updateConsultationStatus(form.consultationFormId, false)}
+                                  disabled={isTooLateToChange || isUpdating}
+                              >
+                                  {isUpdating ? 'Đang xử lý...' : 'Từ chối'}
+                              </button>
+                          </div>
+                          <p className="text-muted fst-italic mb-0">
+                            <small>
+                              {isTooLateToChange ? 'Đã hết hạn thay đổi.' : 'Có thể thay đổi đến trước ngày diễn ra.'}
+                            </small>
+                          </p>
                         </div>
                       </div>
                     );
