@@ -1,0 +1,175 @@
+import React, { useState, useEffect } from 'react';
+
+const StudentHealthProfile = () => {
+  const [student, setStudent] = useState(null);
+  const [healthProfile, setHealthProfile] = useState(null);
+  const [healthResults, setHealthResults] = useState([]);
+  const [vaccinationResults, setVaccinationResults] = useState([]);
+  const [medicalEvents, setMedicalEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAll = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const studentId = localStorage.getItem('userId');
+        if (!studentId) throw new Error('Không tìm thấy ID học sinh.');
+        // Lấy thông tin cá nhân
+        const studentRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/${studentId}`);
+        if (!studentRes.ok) throw new Error('Không thể lấy thông tin học sinh');
+        const studentData = await studentRes.json();
+        setStudent(studentData);
+        // Lấy hồ sơ sức khỏe
+        const healthRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/healthProfile/${studentId}`);
+        if (!healthRes.ok) throw new Error('Không thể lấy hồ sơ sức khỏe');
+        const healthData = await healthRes.json();
+        setHealthProfile(healthData);
+        // Lấy lịch sử khám
+        if (healthData.healthProfileId) {
+          const checkupRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/healthCheckResult/getResultsByProfile${healthData.healthProfileId}`);
+          if (checkupRes.ok) {
+            const checkupData = await checkupRes.json();
+            const enrichedResults = await Promise.all(
+              checkupData.map(async (result) => {
+                if (result.healthCheckScheduleId) {
+                  try {
+                    const scheduleRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/healthCheckSchedule/${result.healthCheckScheduleId}`);
+                    if (scheduleRes.ok) {
+                      const scheduleData = await scheduleRes.json();
+                      return { ...result, schedule: scheduleData };
+                    }
+                  } catch {}
+                }
+                return { ...result, schedule: null };
+              })
+            );
+            setHealthResults(enrichedResults);
+          }
+          // Lấy lịch sử tiêm chủng
+          const vacRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/vaccinationResult/getResultsByProfile${healthData.healthProfileId}`);
+          if (vacRes.ok) {
+            const vacData = await vacRes.json();
+            const enrichedVac = await Promise.all(
+              vacData.map(async (result) => {
+                if (result.vaccinationScheduleId) {
+                  try {
+                    const scheduleRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/vaccinationSchedule/${result.vaccinationScheduleId}`);
+                    if (scheduleRes.ok) {
+                      const scheduleData = await scheduleRes.json();
+                      return { ...result, schedule: scheduleData };
+                    }
+                  } catch {}
+                }
+                return { ...result, schedule: null };
+              })
+            );
+            setVaccinationResults(enrichedVac);
+          }
+        }
+        // Lấy sự kiện y tế
+        const eventRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medicalEvent/getMedicalByStudent?studentId=${studentId}`);
+        if (eventRes.ok) {
+          const eventData = await eventRes.json();
+          setMedicalEvents(Array.isArray(eventData) ? eventData : []);
+        }
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAll();
+  }, []);
+
+  if (loading) return <div className="flex justify-center items-center h-screen">Đang tải...</div>;
+  if (error) return <div className="text-danger text-center p-4">{error}</div>;
+
+  return (
+    <div className="container py-5" style={{ marginTop: "80px", maxWidth: 800 }}>
+      <h1 className="mb-4 text-primary fw-bold text-center">Hồ sơ sức khỏe cá nhân</h1>
+      {student && (
+        <div className="mb-4 border rounded p-3 bg-light">
+          <h5 className="fw-bold mb-3">Thông tin cá nhân</h5>
+          <div className="row">
+            <div className="col-md-6">
+              <p><strong>Họ tên:</strong> {student.fullName}</p>
+              <p><strong>Mã học sinh:</strong> {student.studentNumber}</p>
+              <p><strong>Ngày sinh:</strong> {new Date(student.dateOfBirth).toLocaleDateString()}</p>
+            </div>
+            <div className="col-md-6">
+              <p><strong>Giới tính:</strong> {student.gender}</p>
+              <p><strong>Lớp:</strong> {student.className}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      {healthProfile && (
+        <div className="mb-4 border rounded p-3">
+          <h5 className="fw-bold mb-3 text-success">Thông tin sức khỏe</h5>
+          <div className="row">
+            <div className="col-md-6">
+              <p><strong>Nhóm máu:</strong> {healthProfile.bloodType}</p>
+            </div>
+            <div className="col-md-6">
+              <p><strong>Dị ứng:</strong> {healthProfile.allergies}</p>
+            </div>
+          </div>
+        </div>
+      )}
+      <div className="mb-4 border rounded p-3">
+        <h5 className="fw-bold mb-3 text-info">Lịch sử khám định kì</h5>
+        {healthResults.length > 0 ? (
+          <ul className="list-group" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {healthResults.map(result => (
+              <li key={result.healthCheckupRecordId} className="list-group-item">
+                {result.schedule && <h6 className='fw-bold text-primary'>{result.schedule.name}</h6>}
+                <p><strong>Ngày khám:</strong> {result.schedule ? new Date(result.schedule.checkDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
+                <p><strong>Địa điểm:</strong> {result.schedule?.location || 'Chưa cập nhật'}</p>
+                <p><strong>Chiều cao:</strong> {result.height || 'N/A'} cm - <strong>Cân nặng:</strong> {result.weight || 'N/A'} kg</p>
+                <p><strong>Thị lực:</strong> Mắt trái: {result.leftVision || 'N/A'} - Mắt phải: {result.rightVision || 'N/A'}</p>
+                <p><strong>Kết luận:</strong> <span className='fw-bold'>{result.result || 'Chưa có'}</span></p>
+                {result.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {result.note}</p>}
+              </li>
+            ))}
+          </ul>
+        ) : <div className="alert alert-light text-center">Không có kết quả khám nào.</div>}
+      </div>
+      <div className="mb-4 border rounded p-3">
+        <h5 className="fw-bold mb-3 text-warning">Lịch sử tiêm chủng</h5>
+        {vaccinationResults.length > 0 ? (
+          <ul className="list-group" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {vaccinationResults.map(result => (
+              <li key={result.vaccinationResultId} className="list-group-item">
+                {result.schedule && <p className='mb-1'><strong>Tên vắc xin:</strong> {result.schedule.name || 'Chưa cập nhật'}</p>}
+                <p><strong>Ngày tiêm:</strong> {result.schedule ? new Date(result.schedule.scheduleDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
+                <p><strong>Địa điểm:</strong> {result.schedule?.location || 'Chưa cập nhật'}</p>
+                <p><strong>Trạng thái:</strong> <span className={`badge ${result.status === 'Pending' ? 'bg-warning' : result.status === 'Accepted' ? 'bg-success' : 'bg-danger'}`}>{result.status}</span></p>
+                {result.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {result.note}</p>}
+              </li>
+            ))}
+          </ul>
+        ) : <div className="alert alert-light text-center">Không có lịch sử tiêm chủng nào.</div>}
+      </div>
+      <div className="mb-4 border rounded p-3">
+        <h5 className="fw-bold mb-3 text-danger">Sự kiện y tế</h5>
+        {medicalEvents.length > 0 ? (
+          <ul className="list-group" style={{ maxHeight: '300px', overflowY: 'auto' }}>
+            {medicalEvents.map(event => (
+              <li key={event.eventId} className="list-group-item">
+                <p><strong>Tên sự kiện:</strong> {event.eventName || 'Chưa cập nhật'}</p>
+                <p><strong>Ngày:</strong> {event.eventDate ? new Date(event.eventDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
+                <p><strong>Triệu chứng:</strong> {event.symptoms || 'Không có'}</p>
+                <p><strong>Xử lý:</strong> {event.actionTaken || 'Không có'}</p>
+                {event.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {event.note}</p>}
+              </li>
+            ))}
+          </ul>
+        ) : <div className="alert alert-light text-center">Không có sự kiện y tế nào.</div>}
+      </div>
+    </div>
+  );
+};
+
+export default StudentHealthProfile; 

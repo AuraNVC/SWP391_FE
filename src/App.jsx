@@ -25,6 +25,8 @@ import About from './pages/About'
 import ParentPrescriptions from './pages/ParentPrescriptions'
 import ParentStudents from './pages/ParentStudents'
 import ParentConsultations from './pages/ParentConsultations'
+import StudentHealthProfile from './pages/StudentHealthProfile'
+import StudentNotifications from './pages/StudentNotifications'
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -126,6 +128,14 @@ function AppContent() {
           <Route path="/manager/blog" element={<AdminBlog />} />
           <Route path="/manager/form" element={<AdminForm />} />
           <Route path="/manager/form/create" element={<AddForm />} />
+        </Route>
+        <Route element={
+          <ProtectedRoute roles={["student"]}>
+            <MainLayout isLoggedIn={isLoggedIn} userRole={userRole} avatarUrl={avatarUrl} />
+          </ProtectedRoute>
+        }>
+          <Route path="/student/health-profile" element={<StudentHealthProfile />} />
+          <Route path="/student/notifications" element={<StudentNotifications />} />
         </Route>
       </Routes>
     </>

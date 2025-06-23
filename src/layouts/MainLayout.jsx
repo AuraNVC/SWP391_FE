@@ -78,11 +78,44 @@ export default function MainLayout(props) {
     >Đơn thuốc</Link>,
   ];
 
+  const extraLinksStudent = [
+    <Link
+      key="home"
+      className={`nav-link${currentPage === "home" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/"
+    >Trang chủ</Link>,
+    <Link
+      key="blog"
+      className={`nav-link${currentPage === "blog" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/blog"
+    >Blog</Link>,
+    <Link
+      key="contact"
+      className={`nav-link${currentPage === "contact" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/contact"
+    >Liên hệ</Link>,
+    <Link
+      key="about"
+      className={`nav-link${currentPage === "about" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/about"
+    >Giới thiệu</Link>,
+    <Link
+      key="student-health-profile"
+      className={`nav-link${currentPage === "student-health-profile" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/student/health-profile"
+    >Hồ sơ sức khỏe</Link>,
+    <Link
+      key="student-notifications"
+      className={`nav-link${currentPage === "student-notifications" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/student/notifications"
+    >Thông báo</Link>,
+  ];
+
   const role = props.userRole;
 
   return (
     <>
-      <Navbar {...props} extraLinks={role === 'parent' ? extraLinksParent : extraLinks} currentPage={currentPage} />
+      <Navbar {...props} extraLinks={role === 'parent' ? extraLinksParent : role === 'student' ? extraLinksStudent : extraLinks} currentPage={currentPage} />
       <div style={{ paddingTop: 80 }}>
         <Outlet />
       </div>

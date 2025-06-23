@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
 
 export default function ParentPrescriptions() {
@@ -13,45 +13,115 @@ export default function ParentPrescriptions() {
   const [newPrescription, setNewPrescription] = useState({
     schedule: '',
     parentNote: '',
-    prescriptionFile: '', // URL hoặc file, tuỳ backend
+    prescriptionFile: '',
     medications: [
       { medicationName: '', dosage: '', quantity: 1 }
     ]
   });
   const [adding, setAdding] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const fileInputRef = useRef();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("newest");
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [imageInModal, setImageInModal] = useState(null);
+  const [students, setStudents] = useState([]);
+  const [selectedStudentId, setSelectedStudentId] = useState("");
 
-  // Lấy danh sách đơn thuốc của phụ huynh
-  useEffect(() => {
-    const fetchPrescriptions = async () => {
-      try {
-        const parentId = localStorage.getItem('userId');
-        if (!parentId) throw new Error('Parent ID not found');
-        let response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${parentId}`);
-        if (!response.ok) {
-          response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getByParent?parentId=${parentId}`);
-        }
-        if (!response.ok) {
-          response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getPrescriptionByParent?parentId=${parentId}`);
-        }
-        if (!response.ok) throw new Error('Không thể lấy danh sách đơn thuốc');
-        const data = await response.json();
-        setPrescriptions(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+  const fetchPrescriptions = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const parentId = localStorage.getItem('userId');
+      if (!parentId) throw new Error('Parent ID not found');
+      let response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${parentId}`);
+      if (!response.ok) {
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getByParent?parentId=${parentId}`);
       }
-    };
-    if (userRole === 'parent') fetchPrescriptions();
-    else {
+      if (!response.ok) {
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getPrescriptionByParent?parentId=${parentId}`);
+      }
+      if (!response.ok) throw new Error('Không thể lấy danh sách đơn thuốc');
+      const data = await response.json();
+      setPrescriptions(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (userRole === 'parent') {
+      fetchPrescriptions();
+    } else {
       setLoading(false);
       setError('Access denied. Parent role required.');
     }
+  }, [userRole, fetchPrescriptions]);
+
+  useEffect(() => {
+    if (userRole === 'parent') {
+      const parentId = localStorage.getItem('userId');
+      if (parentId) {
+        fetch(`${import.meta.env.VITE_API_BASE_URL}/student/getParent${parentId}`)
+          .then(res => res.ok ? res.json() : [])
+          .then(data => {
+            setStudents(data);
+            if (data.length > 0) setSelectedStudentId(data[0].studentId);
+          })
+          .catch(() => setStudents([]));
+      }
+    }
   }, [userRole]);
 
-  // Lấy và ẩn chi tiết thuốc theo đơn
+  const filteredPrescriptions = prescriptions.filter(p => {
+    if (!searchTerm) return true;
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    return (
+      (p.schedule && p.schedule.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (p.parentNote && p.parentNote.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (p.submittedDate && p.submittedDate.toString().toLowerCase().includes(lowerCaseSearchTerm))
+    );
+  });
+
+  const sortedPrescriptions = [...filteredPrescriptions].sort((a, b) => {
+    const idA = a.parentPrescriptionId || a.prescriptionId;
+    const idB = b.parentPrescriptionId || b.prescriptionId;
+    if (sortOrder === 'newest') {
+      return idB - idA;
+    }
+    return idA - idB;
+  });
+
+  const renderPrescriptionFile = (file) => {
+    if (!file) return <span className="text-muted">Không có file</span>;
+    
+    let finalUrl = file;
+
+    if (file.startsWith('http')) {
+      finalUrl = file.replace(/([^:]\/)\/+/g, "$1");
+    } else {
+      const baseUrl = import.meta.env.VITE_API_BASE_URL;
+      finalUrl = `${baseUrl}/files/blogs/${file.replace(/^\//, '')}`;
+    }
+
+    if (finalUrl && (finalUrl.toLowerCase().endsWith('.jpg') || finalUrl.toLowerCase().endsWith('.jpeg') || finalUrl.toLowerCase().endsWith('.png') || finalUrl.toLowerCase().endsWith('.gif'))) {
+      return (
+        <div>
+          <img src={finalUrl} alt="prescription" style={{ width: '150px', height: '150px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #dee2e6' }} className="d-block mb-2" />
+          <button className="btn btn-outline-info btn-sm" onClick={() => openImageModal(finalUrl)}>Xem ảnh</button>
+        </div>
+      );
+    }
+    if (finalUrl && finalUrl.toLowerCase().endsWith('.pdf')) {
+      return <a href={finalUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm mb-2">Tải file PDF</a>;
+    }
+    return <a href={finalUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-secondary btn-sm mb-2">Xem file</a>;
+  };
+
   const toggleShowMedicals = async (prescriptionId) => {
-    // Nếu click vào đơn đang mở, thì đóng lại
     if (selectedPrescription === prescriptionId) {
       setSelectedPrescription(null);
       setMedicals([]);
@@ -76,33 +146,20 @@ export default function ParentPrescriptions() {
     }
   };
 
-  // Hàm kiểm tra file là ảnh hay pdf
-  const renderPrescriptionFile = (fileUrl) => {
-    if (!fileUrl) return <span className="text-muted">Không có file</span>;
-    if (fileUrl.endsWith('.jpg') || fileUrl.endsWith('.jpeg') || fileUrl.endsWith('.png') || fileUrl.endsWith('.gif')) {
-      return <img src={fileUrl} alt="prescription" style={{ maxWidth: 200, maxHeight: 200 }} className="d-block mb-2" />;
-    }
-    if (fileUrl.endsWith('.pdf')) {
-      return <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-primary btn-sm mb-2">Tải file PDF</a>;
-    }
-    return <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-secondary btn-sm mb-2">Tải file</a>;
-  };
-
-  // Hàm xử lý thêm thuốc trong form
   const handleAddMedication = () => {
     setNewPrescription(prev => ({
       ...prev,
       medications: [...prev.medications, { medicationName: '', dosage: '', quantity: 1 }]
     }));
   };
-  // Hàm xử lý xoá thuốc trong form
+
   const handleRemoveMedication = (idx) => {
     setNewPrescription(prev => ({
       ...prev,
       medications: prev.medications.filter((_, i) => i !== idx)
     }));
   };
-  // Hàm xử lý thay đổi trường trong form
+
   const handleChangeMedication = (idx, field, value) => {
     setNewPrescription(prev => ({
       ...prev,
@@ -110,19 +167,24 @@ export default function ParentPrescriptions() {
     }));
   };
 
-  // Hàm submit tạo đơn thuốc
   const handleCreatePrescription = async (e) => {
     e.preventDefault();
     setAdding(true);
+    setError(null);
     try {
       const parentId = localStorage.getItem('userId');
+      if (!parentId) {
+        throw new Error("Không tìm thấy Parent ID. Vui lòng đăng nhập lại.");
+      }
+      if (!selectedStudentId) {
+        throw new Error("Vui lòng chọn học sinh cho đơn thuốc.");
+      }
       const now = new Date().toLocaleDateString('en-CA');
-      // Gửi đơn thuốc trước, không gửi medications
       const body = {
-        parentId,
+        parentId: parseInt(parentId, 10),
         schedule: newPrescription.schedule,
         parentNote: newPrescription.parentNote,
-        prescriptionFile: newPrescription.prescriptionFile,
+        prescriptionFile: newPrescription.prescriptionFile || "",
         submittedDate: now
       };
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/add`, {
@@ -130,42 +192,69 @@ export default function ParentPrescriptions() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      if (!response.ok) throw new Error('Không thể tạo đơn thuốc');
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Không thể tạo đơn thuốc: ${errorText}`);
+      }
       const prescription = await response.json();
-      // Ưu tiên các trường phổ biến
       const prescriptionId = prescription.parentPrescriptionId || prescription.prescriptionId || prescription.id;
-      // Gọi API add medication cho từng thuốc
+      if (!prescriptionId) {
+          throw new Error("Tạo đơn thuốc thành công nhưng không nhận được ID.");
+      }
       for (const med of newPrescription.medications) {
+        if (!med.medicationName || !med.dosage) continue;
         const medBody = {
-          prescriptionId, // hoặc parentPrescriptionId tuỳ BE
+          prescriptionId: prescriptionId,
           medicationName: med.medicationName,
           dosage: med.dosage,
-          quantity: med.quantity
+          quantity: parseInt(med.quantity, 10) || 1,
+          studentId: selectedStudentId
         };
-        await fetch(`${import.meta.env.VITE_API_BASE_URL}/medication/add`, {
+        const medResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medication/add`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(medBody)
         });
+        if (!medResponse.ok) {
+          const errorText = await medResponse.text();
+          throw new Error(`Không thể lưu thuốc "${med.medicationName}": ${errorText}`);
+        }
       }
       setShowModal(false);
       setNewPrescription({ schedule: '', parentNote: '', prescriptionFile: '', medications: [{ medicationName: '', dosage: '', quantity: 1 }] });
-      // Reload lại danh sách đơn thuốc như cũ...
-      setLoading(true);
-      setError(null);
-      let reloadRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${parentId}`);
-      if (!reloadRes.ok) reloadRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getByParent?parentId=${parentId}`);
-      if (!reloadRes.ok) reloadRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getPrescriptionByParent?parentId=${parentId}`);
-      if (reloadRes.ok) {
-        const data = await reloadRes.json();
-        setPrescriptions(data);
-      }
+      await fetchPrescriptions();
     } catch (err) {
       setError(err.message);
     } finally {
       setAdding(false);
-      setLoading(false);
     }
+  };
+
+  const handleUploadImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadError("");
+    try {
+      const formData = new FormData();
+      formData.append("imageFile", file);
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/blog/uploadImage`, {
+        method: "POST",
+        body: formData
+      });
+      if (!res.ok) throw new Error("Lỗi khi upload ảnh");
+      const result = await res.json();
+      setNewPrescription(prev => ({ ...prev, prescriptionFile: result.pathFull }));
+    } catch (err) {
+      setUploadError("Upload ảnh thất bại!");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const openImageModal = (imageUrl) => {
+    setImageInModal(imageUrl);
+    setShowImageModal(true);
   };
 
   if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
@@ -182,7 +271,28 @@ export default function ParentPrescriptions() {
                 <p className="lead text-muted">Danh sách đơn thuốc của học sinh</p>
                 <button className="btn btn-primary mt-3" onClick={() => setShowModal(true)}>+ Tạo đơn thuốc</button>
               </div>
-              {/* Modal tạo đơn thuốc */}
+              <div className="row mb-4 g-3">
+                <div className="col-md-8">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Tìm kiếm theo lịch uống, ghi chú, hoặc ngày tạo..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-4">
+                  <select
+                    className="form-select"
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                  >
+                    <option value="newest">Sắp xếp: Mới nhất</option>
+                    <option value="oldest">Sắp xếp: Cũ nhất</option>
+                  </select>
+                </div>
+              </div>
+
               {showModal && (
                 <div className="modal fade show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.3)' }}>
                   <div className="modal-dialog">
@@ -202,8 +312,19 @@ export default function ParentPrescriptions() {
                             <textarea className="form-control" value={newPrescription.parentNote} onChange={e => setNewPrescription(prev => ({ ...prev, parentNote: e.target.value }))} />
                           </div>
                           <div className="mb-3">
-                            <label className="form-label">Link file đơn thuốc (nếu có)</label>
-                            <input type="text" className="form-control" value={newPrescription.prescriptionFile} onChange={e => setNewPrescription(prev => ({ ...prev, prescriptionFile: e.target.value }))} />
+                            <label className="form-label">Ảnh đơn thuốc</label>
+                            <input type="file" accept="image/*" className="form-control" onChange={handleUploadImage} ref={fileInputRef} disabled={uploading} />
+                            {uploading && <div className="text-info">Đang upload...</div>}
+                            {uploadError && <div className="text-danger">{uploadError}</div>}
+                            {newPrescription.prescriptionFile && renderPrescriptionFile(newPrescription.prescriptionFile)}
+                          </div>
+                          <div className="mb-3">
+                            <label className="form-label">Chọn học sinh</label>
+                            <select className="form-select" value={selectedStudentId} onChange={e => setSelectedStudentId(e.target.value)} required>
+                              {students.map(s => (
+                                <option key={s.studentId} value={s.studentId}>{s.fullName}</option>
+                              ))}
+                            </select>
                           </div>
                           <div className="mb-3">
                             <label className="form-label">Danh sách thuốc</label>
@@ -216,64 +337,81 @@ export default function ParentPrescriptions() {
                                   <div className="col">
                                     <input type="text" className="form-control" placeholder="Liều dùng" value={med.dosage} onChange={e => handleChangeMedication(idx, 'dosage', e.target.value)} required />
                                   </div>
-                                  <div className="col-3">
-                                    <input type="number" min="1" className="form-control" placeholder="Số lượng" value={med.quantity} onChange={e => handleChangeMedication(idx, 'quantity', e.target.value)} required />
+                                  <div className="col-auto">
+                                    <input type="number" className="form-control" placeholder="Số lượng" value={med.quantity} onChange={e => handleChangeMedication(idx, 'quantity', e.target.value)} required min="1" />
                                   </div>
                                   <div className="col-auto">
-                                    {newPrescription.medications.length > 1 && (
-                                      <button type="button" className="btn btn-danger btn-sm" onClick={() => handleRemoveMedication(idx)}>&times;</button>
-                                    )}
+                                    <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => handleRemoveMedication(idx)}>Xóa</button>
                                   </div>
                                 </div>
                               </div>
                             ))}
-                            <button type="button" className="btn btn-outline-success btn-sm" onClick={handleAddMedication}>+ Thêm thuốc</button>
+                            <button type="button" className="btn btn-outline-primary btn-sm mt-2" onClick={handleAddMedication}>+ Thêm thuốc</button>
                           </div>
                         </div>
                         <div className="modal-footer">
-                          <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Huỷ</button>
-                          <button type="submit" className="btn btn-primary" disabled={adding}>{adding ? 'Đang lưu...' : 'Lưu đơn thuốc'}</button>
+                          <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Đóng</button>
+                          <button type="submit" className="btn btn-primary" disabled={adding}>
+                            {adding ? 'Đang tạo...' : 'Tạo đơn thuốc'}
+                          </button>
                         </div>
                       </form>
                     </div>
                   </div>
                 </div>
               )}
-              {/* Kết thúc modal */}
-              {prescriptions.length === 0 ? (
-                <div className="text-center text-muted">
-                  <p>Không có đơn thuốc nào</p>
-                </div>
-              ) : (
-                <div className="list-group">
-                  {prescriptions.map((pres) => (
-                    <div key={pres.prescriptionId} className="card mb-3">
+
+              {sortedPrescriptions.length === 0 && !loading && (
+                <div className="alert alert-info text-center">Không tìm thấy đơn thuốc phù hợp.</div>
+              )}
+
+              <div className="list-group">
+                {sortedPrescriptions.map((p) => {
+                  const presId = p.parentPrescriptionId || p.prescriptionId;
+                  const isSelected = selectedPrescription === presId;
+                  
+                  // Lấy tên học sinh cho đơn thuốc này (nếu có medicals)
+                  let studentName = '';
+                  if (isSelected && medicals.length > 0) {
+                    studentName = students.find(s => s.studentId == medicals[0].studentId)?.fullName || 'Không rõ';
+                  } else if (p.medications && p.medications.length > 0) {
+                    studentName = students.find(s => s.studentId == p.medications[0].studentId)?.fullName || '';
+                  }
+                  return (
+                    <div key={presId} className="card mb-3 shadow-sm">
+                      <div className="card-header bg-light">
+                        <h5 className="mb-0 text-primary">Đơn thuốc #{presId}</h5>
+                        {studentName && (
+                          <div className="text-secondary small mt-1"><strong>Học sinh:</strong> {studentName}</div>
+                        )}
+                      </div>
                       <div className="card-body">
-                        <h5 className="card-title">Đơn thuốc #{pres.prescriptionId}</h5>
-                        <p className="card-text"><strong>Ngày kê:</strong> {pres.submittedDate ? new Date(pres.submittedDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
-                        <p className="card-text"><strong>Lịch uống:</strong> {pres.schedule}</p>
-                        <p className="card-text"><strong>Ghi chú phụ huynh:</strong> {pres.parentNote}</p>
-                        <div className="mb-2">
-                          <strong>File đơn thuốc:</strong><br />
-                          {renderPrescriptionFile(pres.prescriptionFile)}
+                        <div className="row align-items-center">
+                          <div className="col-md-8">
+                            <p className="mb-2"><strong>Ngày tạo:</strong> {p.submittedDate ? new Date(p.submittedDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
+                            <p className="mb-2"><strong>Lịch uống:</strong> {p.schedule || 'Chưa có'}</p>
+                            <p className="mb-3"><strong>Ghi chú:</strong> {p.parentNote || 'Không có'}</p>
+                            <button
+                              className="btn btn-info btn-sm"
+                              onClick={() => toggleShowMedicals(presId)}
+                              disabled={loadingMedicals && isSelected}
+                            >
+                              {loadingMedicals && isSelected ? "Đang tải..." : (isSelected ? "Ẩn chi tiết thuốc" : "Xem chi tiết thuốc")}
+                            </button>
+                          </div>
+                          <div className="col-md-4">
+                            <strong className="d-block mb-2">File đính kèm:</strong>
+                            {renderPrescriptionFile(p.prescriptionFile)}
+                          </div>
                         </div>
-                        <button
-                          className="btn btn-info btn-sm"
-                          onClick={() => toggleShowMedicals(pres.prescriptionId)}
-                          disabled={loadingMedicals && selectedPrescription === pres.prescriptionId}
-                        >
-                          {loadingMedicals && selectedPrescription === pres.prescriptionId 
-                            ? "Đang tải..." 
-                            : (selectedPrescription === pres.prescriptionId ? "Ẩn chi tiết thuốc" : "Xem chi tiết thuốc")}
-                        </button>
-                        {selectedPrescription === pres.prescriptionId && (
-                          <div className="mt-3">
-                            <h6>Chi tiết thuốc:</h6>
-                            {medicals.length === 0 ? (
-                              <p>Không có thuốc nào trong đơn này.</p>
-                            ) : (
+                      </div>
+                      {isSelected && (
+                        <div className="card-footer bg-white">
+                          <h6 className="text-muted">Chi tiết thuốc:</h6>
+                          {loadingMedicals ? <p>Đang tải...</p> : (
+                            medicals.length > 0 ? (
                               <div className="table-responsive">
-                                <table className="table table-bordered">
+                                <table className="table table-bordered table-sm">
                                   <thead>
                                     <tr>
                                       <th>Tên thuốc</th>
@@ -292,18 +430,33 @@ export default function ParentPrescriptions() {
                                   </tbody>
                                 </table>
                               </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                            ) : <p>Không có chi tiết thuốc.</p>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
+                  )
+                })}
+              </div>
             </div>
           </div>
         </div>
       </main>
+      {showImageModal && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setShowImageModal(false)}>
+          <div className="modal-dialog modal-lg modal-dialog-centered">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">Xem ảnh đơn thuốc</h5>
+                <button type="button" className="btn-close" onClick={() => setShowImageModal(false)}></button>
+              </div>
+              <div className="modal-body text-center">
+                <img src={imageInModal} alt="Đơn thuốc" style={{ maxWidth: '100%', maxHeight: '80vh' }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

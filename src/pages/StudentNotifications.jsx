@@ -1,109 +1,56 @@
 import React, { useState, useEffect } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
 
-export default function ParentNotifications() {
-  const [consentForms, setConsentForms] = useState([]);
+export default function StudentNotifications() {
+  const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [successMessage, setSuccessMessage] = useState(null);
-  const [updatingForms, setUpdatingForms] = useState(new Set());
   const { userRole } = useUserRole();
-  const [schedulesMap, setSchedulesMap] = useState({});
-  const [students, setStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
-
-  const updateConsentFormStatus = async (consentFormId, isAccept) => {
-    // Prevent multiple clicks
-    if (updatingForms.has(consentFormId)) return;
-    
-    try {
-      setUpdatingForms(prev => new Set(prev).add(consentFormId));
-      setError(null);
-      setSuccessMessage(null);
-      
-      console.log('Updating consent form:', { consentFormId, isAccept });
-      const endpoint = isAccept ? 'accept' : 'reject';
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/${endpoint}/${consentFormId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      console.log('Update response status:', response.status);
-      if (!response.ok) {
-        throw new Error(`Failed to update consent form: ${response.status}`);
-      }
-
-      // Show success message
-      const action = isAccept ? 'đồng ý' : 'từ chối';
-      setSuccessMessage(`Đã ${action} biểu mẫu thành công!`);
-
-      // Refresh the consent forms list
-      const parentId = localStorage.getItem('userId');
-      const numericParentId = parseInt(parentId);
-      console.log('Refreshing list for parent:', numericParentId);
-      const updatedResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`);
-      const updatedData = await updatedResponse.json();
-      console.log('Updated consent forms:', updatedData);
-      setConsentForms(updatedData);
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      console.error('Error updating consent form:', err);
-      setError('Không thể cập nhật biểu mẫu. Vui lòng thử lại sau.');
-    } finally {
-      setUpdatingForms(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(consentFormId);
-        return newSet;
-      });
-    }
-  };
+  const [student, setStudent] = useState(null);
+  const [schedulesMap, setSchedulesMap] = useState({});
 
   useEffect(() => {
     const fetchAllData = async () => {
       try {
         setLoading(true);
-        const parentId = localStorage.getItem('userId');
-        if (!parentId) {
-          throw new Error('Parent ID not found. Please login again.');
+        const studentId = localStorage.getItem('userId');
+        if (!studentId) {
+          throw new Error('Student ID not found. Please login again.');
         }
-        const numericParentId = parseInt(parentId);
-        if (isNaN(numericParentId)) {
-          throw new Error('Invalid Parent ID. Please login again.');
+        // Lấy thông tin học sinh để lấy parentId
+        const studentRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/${studentId}`);
+        if (!studentRes.ok) throw new Error('Không thể lấy thông tin học sinh');
+        const studentData = await studentRes.json();
+        setStudent(studentData);
+        // Lấy parentId từ studentData.parent.parentId
+        let parentIds = [];
+        if (studentData.parent && studentData.parent.parentId) {
+          parentIds = [studentData.parent.parentId];
         }
-        
-        // Step 1: Fetch consent forms and students
-        const [consentFormsResponse, studentsRes] = await Promise.all([
-          fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`),
-          fetch(`${import.meta.env.VITE_API_BASE_URL}/student/getParent${numericParentId}`)
-        ]);
-
-        if (!consentFormsResponse.ok) {
-          throw new Error(`Failed to fetch consent forms: ${consentFormsResponse.status}`);
+        if (parentIds.length === 0) throw new Error('Không tìm thấy phụ huynh của học sinh này.');
+        // Lấy tất cả consent form của các phụ huynh
+        let allForms = [];
+        for (const pid of parentIds) {
+          const notificationsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${pid}`);
+          if (notificationsResponse.ok) {
+            const forms = await notificationsResponse.json();
+            allForms = allForms.concat(forms);
+          }
         }
-        const forms = await consentFormsResponse.json();
-        setConsentForms(forms);
-
-        const studentList = studentsRes.ok ? await studentsRes.json() : [];
-        setStudents(studentList);
-
-        // Step 2: Based on forms, fetch their specific schedules
-        const schedulePromises = forms.map(consentForm => {
-          const formId = consentForm.form.formId;
-          const formType = consentForm.form.type;
-
+        setNotifications(allForms);
+        // Lấy schedules cho các form
+        const schedulePromises = allForms.map(form => {
+          const formId = form.form.formId;
+          const formType = form.form.type;
           let scheduleUrl = '';
           if (formType === 'HealthCheck') {
             scheduleUrl = `${import.meta.env.VITE_API_BASE_URL}/healthCheckSchedule/getByForm${formId}`;
           } else if (formType === 'Vaccine' || formType === 'Vaccination') {
             scheduleUrl = `${import.meta.env.VITE_API_BASE_URL}/vaccinationSchedule/getByForm${formId}`;
           }
-
           if (scheduleUrl) {
             return fetch(scheduleUrl)
               .then(res => (res.ok ? res.json() : []))
@@ -111,11 +58,8 @@ export default function ParentNotifications() {
           }
           return Promise.resolve([]);
         });
-        
         const schedulesPerForm = await Promise.all(schedulePromises);
         const allSchedules = schedulesPerForm.flat();
-
-        // Step 3: Create the schedule map
         const newSchedulesMap = {};
         allSchedules.forEach(schedule => {
           if (schedule && schedule.form && schedule.form.formId && !newSchedulesMap[schedule.form.formId]) {
@@ -123,30 +67,25 @@ export default function ParentNotifications() {
           }
         });
         setSchedulesMap(newSchedulesMap);
-
       } catch (err) {
-        console.error('Error details:', err);
         setError('Failed to fetch data. Please try again later.');
       } finally {
         setLoading(false);
       }
     };
-
-    if (userRole === 'parent') {
+    if (userRole === 'student') {
       fetchAllData();
     } else {
       setLoading(false);
-      setError('Access denied. Parent role required.');
+      setError('Access denied. Student role required.');
     }
   }, [userRole]);
 
-  const filteredAndSortedForms = consentForms
+  const filteredAndSortedForms = notifications
     .filter(form => {
-      // Lọc theo trạng thái
       if (statusFilter !== "all" && form.status !== statusFilter) {
         return false;
       }
-      // Tìm kiếm
       if (!searchTerm) return true;
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       return (
@@ -155,7 +94,6 @@ export default function ParentNotifications() {
       );
     })
     .sort((a, b) => {
-      // Sắp xếp theo ngày tạo form
       const dateA = a.form.createdAt ? new Date(a.form.createdAt) : 0;
       const dateB = b.form.createdAt ? new Date(b.form.createdAt) : 0;
       if (sortOrder === 'newest') {
@@ -177,7 +115,6 @@ export default function ParentNotifications() {
                 <h1 className="display-4 mb-3 fw-bold">Thông báo</h1>
                 <p className="lead text-muted">Thông tin về lịch khám sức khỏe và tiêm chủng của học sinh</p>
               </div>
-
               <div className="row mb-4 g-3">
                 <div className="col-md-5">
                   <input
@@ -203,52 +140,21 @@ export default function ParentNotifications() {
                   </select>
                 </div>
               </div>
-              
-              {/* Success Message */}
-              {successMessage && (
-                <div className="alert alert-success alert-dismissible fade show" role="alert">
-                  {successMessage}
-                  <button type="button" className="btn-close" onClick={() => setSuccessMessage(null)}></button>
-                </div>
-              )}
-              
               {filteredAndSortedForms.length === 0 ? (
                 <div className="text-center text-muted">
                   <p>Không có thông báo nào phù hợp.</p>
                 </div>
               ) : (
                 filteredAndSortedForms.map((form) => {
-                  const isUpdating = updatingForms.has(form.consentFormId);
                   const schedule = schedulesMap[form.form.formId];
-                  
-                  let isTooLateToChange = false;
-                  if (schedule) {
-                    const scheduleDate = (schedule.checkDate || schedule.scheduleDate).substring(0, 10); // YYYY-MM-DD
-                    
-                    const today = new Date();
-                    const year = today.getFullYear();
-                    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-                    const day = today.getDate().toString().padStart(2, '0');
-                    const todayString = `${year}-${month}-${day}`;
-                    
-                    if (scheduleDate <= todayString) {
-                      isTooLateToChange = true;
-                    }
-                  }
-
-                  // Find matching students
-                  const matchingStudents = students.filter(student => 
-                    form.form.className === 'Tất cả' || student.className === form.form.className
-                  );
-                  
                   return (
                     <div key={form.consentFormId} className="card mb-3">
                       <div className="card-body">
                         <h5 className="card-title">{form.form.title}</h5>
-                        {matchingStudents.length > 0 && (
+                        {student && (
                           <p className="card-text text-primary fw-bold">
                             <i className="bi bi-person-check-fill me-2"></i>
-                            Dành cho học sinh: {matchingStudents.map(s => s.fullName).join(', ')}
+                            Dành cho học sinh: {student.fullName}
                           </p>
                         )}
                         <p className="card-text">
@@ -269,14 +175,13 @@ export default function ParentNotifications() {
                         <p className="card-text">
                           <strong>Nội dung:</strong> {form.form.content}
                         </p>
-                        
                         {schedule && (
                           <>
-                            {form.form.type === 'Vaccine' || form.form.type === 'Vaccination' ? (
+                            {(form.form.type === 'Vaccine' || form.form.type === 'Vaccination') && (
                               <p className="card-text">
                                 <strong>Tên vắc xin:</strong> {schedule.name || 'Chưa cập nhật'}
                               </p>
-                            ) : null}
+                            )}
                             <p className="card-text">
                               <strong>Thời gian:</strong> {new Date(schedule.checkDate || schedule.scheduleDate).toLocaleDateString('vi-VN')} - {new Date(schedule.checkDate || schedule.scheduleDate).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                             </p>
@@ -285,31 +190,6 @@ export default function ParentNotifications() {
                             </p>
                           </>
                         )}
-
-                        {/* Action buttons */}
-                        <div className="d-flex justify-content-end mt-3">
-                          <div className="text-end">
-                            <button
-                              className={`btn btn-sm me-2 ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
-                              onClick={() => updateConsentFormStatus(form.consentFormId, true)}
-                              disabled={isTooLateToChange || isUpdating}
-                            >
-                              {isUpdating ? 'Đang xử lý...' : 'Đồng ý'}
-                            </button>
-                            <button
-                              className={`btn btn-sm ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
-                              onClick={() => updateConsentFormStatus(form.consentFormId, false)}
-                              disabled={isTooLateToChange || isUpdating}
-                            >
-                              {isUpdating ? 'Đang xử lý...' : 'Từ chối'}
-                            </button>
-                            <p className="text-muted fst-italic mt-1 mb-0">
-                              <small>
-                                {isTooLateToChange ? 'Đã hết hạn thay đổi.' : 'Có thể thay đổi đến trước ngày diễn ra.'}
-                              </small>
-                            </p>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   );
