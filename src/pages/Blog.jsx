@@ -4,13 +4,18 @@ import { API_SERVICE } from "../services/api";
 
 const PAGE_SIZE = 6; // Số bài viết mỗi trang
 
-const categories = [
-    { value: "", label: "Chọn chủ đề" },
-    { value: "dinh-duong", label: "Dinh dưỡng" },
-    { value: "tam-ly", label: "Tâm lý" },
-    { value: "benh-truyen-nhiem", label: "Bệnh truyền nhiễm" },
-    { value: "the-chat", label: "Thể chất" },
-];
+const categoryMap = {
+    "": "Chọn chủ đề",
+    Nutrition: "Dinh dưỡng",
+    Psychology: "Tâm lý",
+    InfectiousDiseases: "Bệnh truyền nhiễm",
+    Physical: "Thể chất"
+};
+const categories = Object.entries(categoryMap).map(([value, label]) => ({ value, label }));
+
+function getCategoryLabel(enumValue) {
+    return categoryMap[enumValue] || enumValue;
+}
 
 const sorts = [
     { value: "", label: "Sắp xếp theo" },
@@ -76,7 +81,7 @@ export default function Blog() {
     const transformedPosts = filteredPosts.map(post => ({
         id: post.blogId,
         title: post.title,
-        category: post.category,
+        category: getCategoryLabel(post.category),
         date: post.datePosted ? new Date(post.datePosted).toLocaleDateString('vi-VN') : "N/A",
         image: post.thumbnail ? `https://localhost:7024/files/blogs/${post.thumbnail}` : null,
         excerpt: post.content ? (post.content.length > 150 ? post.content.substring(0, 150) + "..." : post.content) : "Không có nội dung",
