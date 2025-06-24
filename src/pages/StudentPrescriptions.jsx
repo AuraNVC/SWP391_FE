@@ -12,6 +12,11 @@ export default function StudentPrescriptions() {
   const [parentNameMap, setParentNameMap] = useState({});
   const [studentId, setStudentId] = useState(null);
   const [parentId, setParentId] = useState(null);
+  const [consultations, setConsultations] = useState([]);
+  const [loadingConsult, setLoadingConsult] = useState(true);
+  const [errorConsult, setErrorConsult] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sortOrder, setSortOrder] = useState("newest");
 
   useEffect(() => {
     const fetchStudentAndPrescriptions = async () => {
@@ -80,6 +85,28 @@ export default function StudentPrescriptions() {
     }
   }, [userRole]);
 
+  // useEffect lấy lịch hẹn tư vấn
+  useEffect(() => {
+    const fetchConsultations = async () => {
+      if (!parentId) return;
+      setLoadingConsult(true);
+      setErrorConsult(null);
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationForm/getByParent?parentId=${parentId}`);
+        if (!response.ok) throw new Error('Không thể lấy lịch hẹn tư vấn');
+        const data = await response.json();
+        setConsultations(data);
+      } catch (err) {
+        setErrorConsult(err.message);
+      } finally {
+        setLoadingConsult(false);
+      }
+    };
+    if (parentId) {
+      fetchConsultations();
+    }
+  }, [parentId]);
+
   const [showDetail, setShowDetail] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
   const [imageInModal, setImageInModal] = useState(null);
@@ -116,6 +143,28 @@ export default function StudentPrescriptions() {
     return <a href={finalUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline-secondary btn-sm mb-2">Xem file</a>;
   };
 
+  // Lọc và sắp xếp đơn thuốc
+  const filteredPrescriptions = prescriptions.filter(p => {
+    if (!searchTerm) return true;
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    const presId = p.parentPrescriptionId || p.prescriptionId;
+    const meds = medicalsMap[presId] || [];
+    return (
+      (p.schedule && p.schedule.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (p.parentNote && p.parentNote.toLowerCase().includes(lowerCaseSearchTerm)) ||
+      (p.submittedDate && p.submittedDate.toString().toLowerCase().includes(lowerCaseSearchTerm)) ||
+      meds.some(med => med.medicationName && med.medicationName.toLowerCase().includes(lowerCaseSearchTerm))
+    );
+  });
+  const sortedPrescriptions = [...filteredPrescriptions].sort((a, b) => {
+    const idA = a.parentPrescriptionId || a.prescriptionId;
+    const idB = b.parentPrescriptionId || b.prescriptionId;
+    if (sortOrder === 'newest') {
+      return idB - idA;
+    }
+    return idA - idB;
+  });
+
   if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
   if (error) return <div className="text-red-500 text-center p-4">{error}</div>;
 
@@ -129,11 +178,32 @@ export default function StudentPrescriptions() {
                 <h1 className="display-4 mb-3 fw-bold">Đơn thuốc của bạn</h1>
                 <p className="lead text-muted">Danh sách đơn thuốc phụ huynh gửi cho bạn</p>
               </div>
-              {prescriptions.length === 0 && !loading && (
+              <div className="row mb-4 g-3">
+                <div className="col-md-8">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Tìm kiếm theo lịch uống, ghi chú, tên thuốc hoặc ngày tạo..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                </div>
+                <div className="col-md-4">
+                  <select
+                    className="form-select"
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(e.target.value)}
+                  >
+                    <option value="newest">Sắp xếp: Mới nhất</option>
+                    <option value="oldest">Sắp xếp: Cũ nhất</option>
+                  </select>
+                </div>
+              </div>
+              {sortedPrescriptions.length === 0 && !loading && (
                 <div className="alert alert-info text-center">Không tìm thấy đơn thuốc nào.</div>
               )}
               <div className="list-group">
-                {prescriptions.map((p) => {
+                {sortedPrescriptions.map((p) => {
                   const presId = p.parentPrescriptionId || p.prescriptionId;
                   const parentName = parentNameMap[presId] || (p.parent && p.parent.fullName) || '';
                   const meds = medicalsMap[presId] || [];
@@ -194,6 +264,33 @@ export default function StudentPrescriptions() {
                     </div>
                   )
                 })}
+              </div>
+              <hr className="my-5" />
+              <div className="mb-4">
+                <h2 className="fw-bold mb-3">Lịch hẹn tư vấn</h2>
+                {loadingConsult ? (
+                  <div>Đang tải lịch hẹn...</div>
+                ) : errorConsult ? (
+                  <div className="text-danger">{errorConsult}</div>
+                ) : consultations.length === 0 ? (
+                  <div className="text-muted">Không có lịch hẹn nào.</div>
+                ) : (
+                  <div className="list-group">
+                    {consultations.map((form) => (
+                      <div key={form.consultationFormId} className="list-group-item list-group-item-action p-4 mb-3 shadow-sm rounded">
+                        <h5 className="mb-3 text-primary fw-bold">{form.title}</h5>
+                        <p className="mb-2"><strong>Nội dung:</strong> {form.content}</p>
+                        {form.consultationSchedule && (
+                          <>
+                            <p className="mb-2"><strong>Địa điểm:</strong> {form.consultationSchedule.location || 'Chưa có'}</p>
+                            <p className="mb-2"><strong>Thời gian:</strong> {form.consultationSchedule.consultDate ? new Date(form.consultationSchedule.consultDate).toLocaleString('vi-VN') : 'Chưa có'}</p>
+                          </>
+                        )}
+                        <p className="mb-2"><strong>Trạng thái:</strong> {form.status || 'Không rõ'}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
