@@ -28,6 +28,26 @@ export default function ParentPrescriptions() {
   const [imageInModal, setImageInModal] = useState(null);
   const [students, setStudents] = useState([]);
   const [selectedStudentId, setSelectedStudentId] = useState("");
+  const [prescriptionStudents, setPrescriptionStudents] = useState({});
+
+  const getStudentForPrescription = async (prescriptionId) => {
+    try {
+      let response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medication/getMedicalByPrescription?prescriptionId=${prescriptionId}`);
+      if (!response.ok) {
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getMedicalByPrescription?prescriptionId=${prescriptionId}`);
+      }
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.length > 0 && data[0].studentId) {
+          const student = students.find(s => s.studentId == data[0].studentId);
+          return student ? student.fullName : 'Không rõ';
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching student info:', err);
+    }
+    return 'Không rõ';
+  };
 
   const fetchPrescriptions = useCallback(async () => {
     setLoading(true);
@@ -45,12 +65,19 @@ export default function ParentPrescriptions() {
       if (!response.ok) throw new Error('Không thể lấy danh sách đơn thuốc');
       const data = await response.json();
       setPrescriptions(data);
+      
+      const studentInfo = {};
+      for (const prescription of data) {
+        const presId = prescription.parentPrescriptionId || prescription.prescriptionId;
+        studentInfo[presId] = await getStudentForPrescription(presId);
+      }
+      setPrescriptionStudents(studentInfo);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [students]);
 
   useEffect(() => {
     if (userRole === 'parent') {
@@ -370,13 +397,7 @@ export default function ParentPrescriptions() {
                   const presId = p.parentPrescriptionId || p.prescriptionId;
                   const isSelected = selectedPrescription === presId;
                   
-                  // Lấy tên học sinh cho đơn thuốc này (nếu có medicals)
-                  let studentName = '';
-                  if (isSelected && medicals.length > 0) {
-                    studentName = students.find(s => s.studentId == medicals[0].studentId)?.fullName || 'Không rõ';
-                  } else if (p.medications && p.medications.length > 0) {
-                    studentName = students.find(s => s.studentId == p.medications[0].studentId)?.fullName || '';
-                  }
+                  let studentName = prescriptionStudents[presId] || 'Không rõ';
                   return (
                     <div key={presId} className="card mb-3 shadow-sm">
                       <div className="card-header bg-light">
