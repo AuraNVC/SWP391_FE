@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
 
 export default function StudentConsultations() {
-  const [schedules, setSchedules] = useState([]);
+  const [forms, setForms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { userRole } = useUserRole();
@@ -10,7 +10,7 @@ export default function StudentConsultations() {
   const [sortOrder, setSortOrder] = useState("newest");
 
   useEffect(() => {
-    const fetchSchedules = async () => {
+    const fetchForms = async () => {
       setLoading(true);
       setError(null);
       try {
@@ -19,13 +19,13 @@ export default function StudentConsultations() {
           throw new Error('Không tìm thấy ID học sinh. Vui lòng đăng nhập lại.');
         }
 
-        // Fetch schedules for the student
-        const scheduleResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationSchedule/getByStudent?studentId=${studentId}`);
-        if (!scheduleResponse.ok) {
+        // Fetch consultation forms for the student
+        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationForm/getByStudent?studentId=${studentId}`);
+        if (!response.ok) {
           throw new Error('Không thể tải lịch hẹn tư vấn.');
         }
-        const scheduleData = await scheduleResponse.json();
-        setSchedules(scheduleData);
+        const data = await response.json();
+        setForms(data);
 
       } catch (err) {
         setError(err.message);
@@ -35,27 +35,41 @@ export default function StudentConsultations() {
     };
 
     if (userRole === 'student') {
-      fetchSchedules();
+      fetchForms();
     } else {
       setLoading(false);
       setError('Truy cập bị từ chối. Cần có vai trò học sinh.');
     }
   }, [userRole]);
 
-  const filteredSchedules = schedules
-    .filter(schedule => {
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case "Pending":
+        return "bg-warning text-dark";
+      case "Accepted":
+        return "bg-success";
+      case "Rejected":
+        return "bg-danger";
+      default:
+        return "bg-secondary";
+    }
+  };
+
+  const filteredForms = forms
+    .filter(form => {
       // Search term filter
       if (!searchTerm) return true;
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       return (
-        (schedule.location && schedule.location.toLowerCase().includes(lowerCaseSearchTerm)) ||
-        (schedule.consultDate && schedule.consultDate.toString().toLowerCase().includes(lowerCaseSearchTerm))
+        (form.title && form.title.toLowerCase().includes(lowerCaseSearchTerm)) ||
+        (form.content && form.content.toLowerCase().includes(lowerCaseSearchTerm)) ||
+        (form.consultationSchedule.location && form.consultationSchedule.location.toLowerCase().includes(lowerCaseSearchTerm))
       );
     })
     .sort((a, b) => {
       // Sort
-      const dateA = a.consultDate ? new Date(a.consultDate) : 0;
-      const dateB = b.consultDate ? new Date(b.consultDate) : 0;
+      const dateA = a.consultationSchedule?.consultDate ? new Date(a.consultationSchedule.consultDate) : 0;
+      const dateB = b.consultationSchedule?.consultDate ? new Date(b.consultationSchedule.consultDate) : 0;
       if (sortOrder === 'newest') {
         return dateB - dateA;
       }
@@ -72,7 +86,7 @@ export default function StudentConsultations() {
           <div className="row justify-content-center">
             <div className="col-md-10">
               <div className="text-center mb-5">
-                <h1 className="display-4 mb-3 fw-bold">Lịch hẹn tư vấn của bạn</h1>
+                <h1 className="display-4 mb-3 fw-bold">Lịch Hẹn Tư Vấn</h1>
                 <p className="lead text-muted">Thông tin chi tiết về các buổi tư vấn sức khỏe của bạn.</p>
               </div>
               
@@ -81,7 +95,7 @@ export default function StudentConsultations() {
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Tìm theo địa điểm, ngày..."
+                    placeholder="Tìm theo chủ đề, nội dung, địa điểm..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -94,17 +108,38 @@ export default function StudentConsultations() {
                 </div>
               </div>
 
-              {filteredSchedules.length === 0 ? (
+              {filteredForms.length === 0 ? (
                 <div className="text-center text-muted">
                   <p>Bạn không có lịch hẹn tư vấn nào.</p>
                 </div>
               ) : (
                 <div className="list-group">
-                  {filteredSchedules.map((schedule) => (
-                    <div key={schedule.consultationScheduleId} className="list-group-item list-group-item-action p-4 mb-3 shadow-sm rounded">
-                      <h5 className="mb-3 text-primary fw-bold">Lịch hẹn #{schedule.consultationScheduleId}</h5>
-                      <p className="mb-2"><strong>Địa điểm:</strong> {schedule.location}</p>
-                      <p className="mb-0"><strong>Ngày:</strong> {new Date(schedule.consultDate).toLocaleString('vi-VN')}</p>
+                  {filteredForms.map((form) => (
+                    <div key={form.consultationFormId} className="list-group-item list-group-item-action p-4 mb-3 shadow-sm rounded">
+                      <h5 className="mb-3 text-primary fw-bold">{form.title}</h5>
+                      <p className="mb-2"><strong>Nội dung:</strong> {form.content}</p>
+                      <div className="row">
+                        <div className="col-md-6">
+                            <p className="mb-2">
+                                <strong>Trạng thái:</strong>{' '}
+                                <span className={`badge ${getStatusBadge(form.status)}`}>
+                                    {form.status === 'Pending' ? 'Chờ xác nhận' :
+                                    form.status === 'Accepted' ? 'Đã chấp nhận' :
+                                    'Đã từ chối'}
+                                </span>
+                            </p>
+                        </div>
+                        {form.consultationSchedule && (
+                            <>
+                                <div className="col-md-6">
+                                    <p className="mb-2"><strong>Ngày tư vấn:</strong> {new Date(form.consultationSchedule.consultDate).toLocaleDateString('vi-VN')} - {new Date(form.consultationSchedule.consultDate).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
+                                </div>
+                                <div className="col-md-12">
+                                    <p className="mb-0"><strong>Địa điểm:</strong> {form.consultationSchedule.location}</p>
+                                </div>
+                            </>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
