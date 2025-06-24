@@ -27,6 +27,7 @@ import ParentStudents from './pages/ParentStudents'
 import ParentConsultations from './pages/ParentConsultations'
 import StudentHealthProfile from './pages/StudentHealthProfile'
 import StudentNotifications from './pages/StudentNotifications'
+import StudentPrescriptions from './pages/StudentPrescriptions'
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -136,6 +137,7 @@ function AppContent() {
         }>
           <Route path="/student/health-profile" element={<StudentHealthProfile />} />
           <Route path="/student/notifications" element={<StudentNotifications />} />
+          <Route path="/student/prescriptions" element={<StudentPrescriptions />} />
         </Route>
       </Routes>
     </>

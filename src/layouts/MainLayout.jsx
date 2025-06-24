@@ -109,6 +109,11 @@ export default function MainLayout(props) {
       className={`nav-link${currentPage === "student-notifications" ? " text-body-tertiary fw-bold" : " text-white"}`}
       to="/student/notifications"
     >Thông báo</Link>,
+    <Link
+      key="student-prescriptions"
+      className={`nav-link${currentPage === "student-prescriptions" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/student/prescriptions"
+    >Đơn thuốc</Link>,
   ];
 
   const role = props.userRole;
