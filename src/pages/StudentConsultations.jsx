@@ -2,75 +2,68 @@ import React, { useState, useEffect } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
 
 export default function StudentConsultations() {
-  const [consultations, setConsultations] = useState([]);
-  const [loadingConsult, setLoadingConsult] = useState(true);
-  const [errorConsult, setErrorConsult] = useState(null);
+  const [schedules, setSchedules] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const { userRole } = useUserRole();
-  const [parentId, setParentId] = useState(null);
-  const [studentId, setStudentId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
 
   useEffect(() => {
-    const fetchParentId = async () => {
-      const sid = localStorage.getItem('userId');
-      setStudentId(sid);
-      if (!sid) return;
-      const resStudent = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/${sid}`);
-      if (!resStudent.ok) return;
-      const studentData = await resStudent.json();
-      const pid = studentData.parent?.parentId || studentData.parentId;
-      setParentId(pid);
+    const fetchSchedules = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const studentId = localStorage.getItem('userId');
+        if (!studentId) {
+          throw new Error('Không tìm thấy ID học sinh. Vui lòng đăng nhập lại.');
+        }
+
+        // Fetch schedules for the student
+        const scheduleResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationSchedule/getByStudent?studentId=${studentId}`);
+        if (!scheduleResponse.ok) {
+          throw new Error('Không thể tải lịch hẹn tư vấn.');
+        }
+        const scheduleData = await scheduleResponse.json();
+        setSchedules(scheduleData);
+
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
     };
+
     if (userRole === 'student') {
-      fetchParentId();
+      fetchSchedules();
+    } else {
+      setLoading(false);
+      setError('Truy cập bị từ chối. Cần có vai trò học sinh.');
     }
   }, [userRole]);
 
-  useEffect(() => {
-    const fetchConsultations = async () => {
-      if (!parentId) return;
-      setLoadingConsult(true);
-      setErrorConsult(null);
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationForm/getByParent?parentId=${parentId}`);
-        if (!response.ok) throw new Error('Không thể lấy lịch hẹn tư vấn');
-        const data = await response.json();
-        setConsultations(data);
-      } catch (err) {
-        setErrorConsult(err.message);
-      } finally {
-        setLoadingConsult(false);
-      }
-    };
-    if (parentId) {
-      fetchConsultations();
-    }
-  }, [parentId]);
-
-  // Lọc, tìm kiếm, sắp xếp lịch hẹn tư vấn
-  const filteredConsultations = consultations
-    .filter(form => {
-      if (statusFilter !== "all" && form.status !== statusFilter) {
-        return false;
-      }
+  const filteredSchedules = schedules
+    .filter(schedule => {
+      // Search term filter
       if (!searchTerm) return true;
       const lowerCaseSearchTerm = searchTerm.toLowerCase();
       return (
-        (form.title && form.title.toLowerCase().includes(lowerCaseSearchTerm)) ||
-        (form.content && form.content.toLowerCase().includes(lowerCaseSearchTerm)) ||
-        (form.consultationSchedule && form.consultationSchedule.location && form.consultationSchedule.location.toLowerCase().includes(lowerCaseSearchTerm))
+        (schedule.location && schedule.location.toLowerCase().includes(lowerCaseSearchTerm)) ||
+        (schedule.consultDate && schedule.consultDate.toString().toLowerCase().includes(lowerCaseSearchTerm))
       );
     })
     .sort((a, b) => {
-      const dateA = a.consultationSchedule ? new Date(a.consultationSchedule.consultDate) : 0;
-      const dateB = b.consultationSchedule ? new Date(b.consultationSchedule.consultDate) : 0;
+      // Sort
+      const dateA = a.consultDate ? new Date(a.consultDate) : 0;
+      const dateB = b.consultDate ? new Date(b.consultDate) : 0;
       if (sortOrder === 'newest') {
         return dateB - dateA;
       }
       return dateA - dateB;
     });
+
+  if (loading) return <div className="flex justify-center items-center h-screen">Đang tải...</div>;
+  if (error) return <div className="text-red-500 text-center p-4">{error}</div>;
 
   return (
     <div className="min-vh-100 d-flex flex-column">
@@ -79,74 +72,39 @@ export default function StudentConsultations() {
           <div className="row justify-content-center">
             <div className="col-md-10">
               <div className="text-center mb-5">
-                <h1 className="display-4 mb-3 fw-bold">Lịch Tư Vấn</h1>
-                <p className="lead text-muted">Thông tin chi tiết về các buổi tư vấn sức khỏe</p>
+                <h1 className="display-4 mb-3 fw-bold">Lịch hẹn tư vấn của bạn</h1>
+                <p className="lead text-muted">Thông tin chi tiết về các buổi tư vấn sức khỏe của bạn.</p>
               </div>
+              
               <div className="row mb-4 g-3">
-                <div className="col-md-5">
+                <div className="col-md-8">
                   <input
                     type="text"
                     className="form-control"
-                    placeholder="Tìm kiếm theo tiêu đề, nội dung, địa điểm..."
+                    placeholder="Tìm theo địa điểm, ngày..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
                 </div>
                 <div className="col-md-4">
-                  <select className="form-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                    <option value="all">Tất cả trạng thái</option>
-                    <option value="Pending">Chờ xác nhận</option>
-                    <option value="Accepted">Đã chấp nhận</option>
-                    <option value="Rejected">Đã từ chối</option>
-                  </select>
-                </div>
-                <div className="col-md-3">
                   <select className="form-select" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
                     <option value="newest">Sắp xếp: Mới nhất</option>
                     <option value="oldest">Sắp xếp: Cũ nhất</option>
                   </select>
                 </div>
               </div>
-              {loadingConsult ? (
-                <div>Đang tải lịch hẹn...</div>
-              ) : errorConsult ? (
-                <div className="text-danger">{errorConsult}</div>
-              ) : filteredConsultations.length === 0 ? (
+
+              {filteredSchedules.length === 0 ? (
                 <div className="text-center text-muted">
-                  <p>Không có lịch tư vấn nào phù hợp.</p>
+                  <p>Bạn không có lịch hẹn tư vấn nào.</p>
                 </div>
               ) : (
                 <div className="list-group">
-                  {filteredConsultations.map((form) => (
-                    <div key={form.consultationFormId} className="list-group-item list-group-item-action p-4 mb-3 shadow-sm rounded">
-                      <h5 className="mb-3 text-primary fw-bold">{form.title}</h5>
-                      <p className="mb-2"><strong>Nội dung:</strong> {form.content}</p>
-                      <div className="row">
-                        <div className="col-md-6">
-                          <p className="mb-2">
-                            <strong>Trạng thái:</strong>{' '}
-                            <span className={`badge ${
-                              form.status === 'Pending' ? 'bg-warning' :
-                              form.status === 'Accepted' ? 'bg-success' :
-                              'bg-danger'
-                            }`}>
-                              {form.status === 'Pending' ? 'Chờ xác nhận' :
-                                form.status === 'Accepted' ? 'Đã chấp nhận' :
-                                'Đã từ chối'}
-                            </span>
-                          </p>
-                        </div>
-                        {form.consultationSchedule && (
-                          <>
-                            <div className="col-md-6">
-                              <p className="mb-2"><strong>Ngày tư vấn:</strong> {new Date(form.consultationSchedule.consultDate).toLocaleDateString('vi-VN')} - {new Date(form.consultationSchedule.consultDate).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</p>
-                            </div>
-                            <div className="col-md-12">
-                              <p className="mb-0"><strong>Địa điểm:</strong> {form.consultationSchedule.location}</p>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                  {filteredSchedules.map((schedule) => (
+                    <div key={schedule.consultationScheduleId} className="list-group-item list-group-item-action p-4 mb-3 shadow-sm rounded">
+                      <h5 className="mb-3 text-primary fw-bold">Lịch hẹn #{schedule.consultationScheduleId}</h5>
+                      <p className="mb-2"><strong>Địa điểm:</strong> {schedule.location}</p>
+                      <p className="mb-0"><strong>Ngày:</strong> {new Date(schedule.consultDate).toLocaleString('vi-VN')}</p>
                     </div>
                   ))}
                 </div>

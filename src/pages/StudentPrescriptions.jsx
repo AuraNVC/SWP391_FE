@@ -12,9 +12,6 @@ export default function StudentPrescriptions() {
   const [parentNameMap, setParentNameMap] = useState({});
   const [studentId, setStudentId] = useState(null);
   const [parentId, setParentId] = useState(null);
-  const [consultations, setConsultations] = useState([]);
-  const [loadingConsult, setLoadingConsult] = useState(true);
-  const [errorConsult, setErrorConsult] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOrder, setSortOrder] = useState("newest");
 
@@ -84,28 +81,6 @@ export default function StudentPrescriptions() {
       setError('Access denied. Student role required.');
     }
   }, [userRole]);
-
-  // useEffect lấy lịch hẹn tư vấn
-  useEffect(() => {
-    const fetchConsultations = async () => {
-      if (!parentId) return;
-      setLoadingConsult(true);
-      setErrorConsult(null);
-      try {
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationForm/getByParent?parentId=${parentId}`);
-        if (!response.ok) throw new Error('Không thể lấy lịch hẹn tư vấn');
-        const data = await response.json();
-        setConsultations(data);
-      } catch (err) {
-        setErrorConsult(err.message);
-      } finally {
-        setLoadingConsult(false);
-      }
-    };
-    if (parentId) {
-      fetchConsultations();
-    }
-  }, [parentId]);
 
   const [showDetail, setShowDetail] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -264,33 +239,6 @@ export default function StudentPrescriptions() {
                     </div>
                   )
                 })}
-              </div>
-              <hr className="my-5" />
-              <div className="mb-4">
-                <h2 className="fw-bold mb-3">Lịch hẹn tư vấn</h2>
-                {loadingConsult ? (
-                  <div>Đang tải lịch hẹn...</div>
-                ) : errorConsult ? (
-                  <div className="text-danger">{errorConsult}</div>
-                ) : consultations.length === 0 ? (
-                  <div className="text-muted">Không có lịch hẹn nào.</div>
-                ) : (
-                  <div className="list-group">
-                    {consultations.map((form) => (
-                      <div key={form.consultationFormId} className="list-group-item list-group-item-action p-4 mb-3 shadow-sm rounded">
-                        <h5 className="mb-3 text-primary fw-bold">{form.title}</h5>
-                        <p className="mb-2"><strong>Nội dung:</strong> {form.content}</p>
-                        {form.consultationSchedule && (
-                          <>
-                            <p className="mb-2"><strong>Địa điểm:</strong> {form.consultationSchedule.location || 'Chưa có'}</p>
-                            <p className="mb-2"><strong>Thời gian:</strong> {form.consultationSchedule.consultDate ? new Date(form.consultationSchedule.consultDate).toLocaleString('vi-VN') : 'Chưa có'}</p>
-                          </>
-                        )}
-                        <p className="mb-2"><strong>Trạng thái:</strong> {form.status || 'Không rõ'}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             </div>
           </div>
