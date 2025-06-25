@@ -29,6 +29,7 @@ import StudentHealthProfile from './pages/StudentHealthProfile'
 import StudentNotifications from './pages/StudentNotifications'
 import StudentPrescriptions from './pages/StudentPrescriptions'
 import StudentConsultations from './pages/StudentConsultations'
+import ActivateAccount from './pages/ActivateAccount'
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -95,6 +96,7 @@ function AppContent() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
         </Route>
+        <Route path="/activate/:code" element={<ActivateAccount />} />
 
         {/* Parent routes */}
         <Route element={
