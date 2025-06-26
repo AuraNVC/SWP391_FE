@@ -47,16 +47,6 @@ export default function MainLayout(props) {
       to="/blog"
     >Blog</Link>,
     <Link
-      key="contact"
-      className={`nav-link${currentPage === "contact" ? " text-body-tertiary fw-bold" : " text-white"}`}
-      to="/contact"
-    >Liên hệ</Link>,
-    <Link
-      key="about"
-      className={`nav-link${currentPage === "about" ? " text-body-tertiary fw-bold" : " text-white"}`}
-      to="/about"
-    >Giới thiệu</Link>,
-    <Link
       key="notifications"
       className={`nav-link${currentPage === "notifications" ? " text-body-tertiary fw-bold" : " text-white"}`}
       to="/parent/notifications"
@@ -76,6 +66,16 @@ export default function MainLayout(props) {
       className={`nav-link${currentPage === "prescriptions" ? " text-body-tertiary fw-bold" : " text-white"}`}
       to="/parent/prescriptions"
     >Đơn thuốc</Link>,
+    <Link
+      key="contact"
+      className={`nav-link${currentPage === "contact" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/contact"
+    >Liên hệ</Link>,
+    <Link
+      key="about"
+      className={`nav-link${currentPage === "about" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/about"
+    >Giới thiệu</Link>,
   ];
 
   const extraLinksStudent = [
@@ -89,16 +89,6 @@ export default function MainLayout(props) {
       className={`nav-link${currentPage === "blog" ? " text-body-tertiary fw-bold" : " text-white"}`}
       to="/blog"
     >Blog</Link>,
-    <Link
-      key="contact"
-      className={`nav-link${currentPage === "contact" ? " text-body-tertiary fw-bold" : " text-white"}`}
-      to="/contact"
-    >Liên hệ</Link>,
-    <Link
-      key="about"
-      className={`nav-link${currentPage === "about" ? " text-body-tertiary fw-bold" : " text-white"}`}
-      to="/about"
-    >Giới thiệu</Link>,
     <Link
       key="student-health-profile"
       className={`nav-link${currentPage === "student-health-profile" ? " text-body-tertiary fw-bold" : " text-white"}`}
@@ -119,6 +109,16 @@ export default function MainLayout(props) {
       className={`nav-link${currentPage === "student-consultations" ? " text-body-tertiary fw-bold" : " text-white"}`}
       to="/student/consultations"
     >Lịch tư vấn</Link>,
+    <Link
+      key="contact"
+      className={`nav-link${currentPage === "contact" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/contact"
+    >Liên hệ</Link>,
+    <Link
+      key="about"
+      className={`nav-link${currentPage === "about" ? " text-body-tertiary fw-bold" : " text-white"}`}
+      to="/about"
+    >Giới thiệu</Link>,
   ];
 
   const role = props.userRole;
