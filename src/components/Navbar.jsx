@@ -122,7 +122,7 @@ const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
           ) : (
             <>
               {/* Greeting */}
-              <div className="me-3 text-white">
+              {/* <div className="me-3 text-white">
                 {loading ? (
                   <span className="spinner-border spinner-border-sm me-2" role="status"></span>
                 ) : userInfo ? (
@@ -135,7 +135,7 @@ const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
                               userRole === 'student' ? 'Học sinh' : 'Người dùng'}
                   </span>
                 )}
-              </div>
+              </div> */}
               <img
                 src={avatarUrl}
                 alt="avatar"
