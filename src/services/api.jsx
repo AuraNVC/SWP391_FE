@@ -15,8 +15,11 @@ const API = {
     DOCUMENT_LIST: `${API_BASE_URL}/documents`,
     DOCUMENT_DETAIL: (id) => `${API_BASE_URL}/documents/${id}`,
     STUDENT_LIST: `${API_BASE_URL}/student/search`,
+    STUDENT_CREATE: `${API_BASE_URL}/student/add`,
     STUDENT_DELETE: (id) => `${API_BASE_URL}/student/${id}`,
     PARENT_LIST: `${API_BASE_URL}/parent/search`,
+    PARENT_SEARCH: `${API_BASE_URL}/parent/search`,
+    PARENT_CREATE: `${API_BASE_URL}/parent/add`,
     PARENT_DELETE: (id) => `${API_BASE_URL}/parent/${id}`,
     NURSE_LIST: `${API_BASE_URL}/nurse/search`,
     NURSE_DELETE: (id) => `${API_BASE_URL}/nurse/${id}`,
@@ -97,6 +100,11 @@ export const API_SERVICE = {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         }),
+        create: (data) => callApi(API.STUDENT_CREATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
         // Thêm các hàm khác nếu cần
     },
     parentAPI: {
@@ -108,6 +116,16 @@ export const API_SERVICE = {
         delete: (id) => callApi(API.PARENT_DELETE(id), {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
+        }),
+        search: (data) => callApi(API.PARENT_SEARCH, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        create: (data) => callApi(API.PARENT_CREATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
         }),
         // Thêm các hàm khác nếu cần
     },

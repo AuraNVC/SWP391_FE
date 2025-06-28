@@ -19,7 +19,6 @@ import LoginLayout from "./layouts/LoginLayout";
 import AdminLayout from "./layouts/AdminLayout";
 import ProtectedRoute from "./contexts/ProtectedRoute";
 import BlogList from './pages/BlogDashboard'
-import StudentCreate from './pages/StudentCreate'
 import Contact from './pages/Contact'
 import About from './pages/About'
 import ParentPrescriptions from './pages/ParentPrescriptions'
@@ -46,10 +45,6 @@ function AdminParent() {
 
 function AdminBlog() {
   return <BlogList />
-}
-
-function AddStudent() {
-  return <StudentCreate />
 }
 
 function AdminForm() {
@@ -122,7 +117,6 @@ function AppContent() {
         }>
           <Route path="/manager/dashboard" element={<AdminDashboard />} />
           <Route path="/manager/student" element={<AdminStudent />} />
-          <Route path="/manager/student/create" element={<AddStudent />} />
           <Route path="/manager/parent" element={<AdminParent />} />
           <Route path="/manager/nurse" element={<AdminNurse />} />
           <Route path="/manager/blog" element={<AdminBlog />} />
