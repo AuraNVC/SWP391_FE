@@ -30,6 +30,9 @@ import ParentStudents from './pages/ParentStudents'
 import ParentConsultations from './pages/ParentConsultations'
 import StudentHealthProfile from './pages/StudentHealthProfile'
 import StudentNotifications from './pages/StudentNotifications'
+import StudentPrescriptions from './pages/StudentPrescriptions'
+import StudentConsultations from './pages/StudentConsultations'
+import ActivateAccount from './pages/ActivateAccount'
 import BlogCreate from './pages/BlogCreate'
 import FormCreate from './pages/FormCreate'
 import HealthCheckScheduleDashboard from './pages/HealthCheckScheduleDashboard'
@@ -112,6 +115,7 @@ function AppContent() {
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
         </Route>
+        <Route path="/activate/:code" element={<ActivateAccount />} />
 
         {/* Parent routes */}
         <Route element={
@@ -160,6 +164,8 @@ function AppContent() {
         }>
           <Route path="/student/health-profile" element={<StudentHealthProfile />} />
           <Route path="/student/notifications" element={<StudentNotifications />} />
+          <Route path="/student/prescriptions" element={<StudentPrescriptions />} />
+          <Route path="/student/consultations" element={<StudentConsultations />} />
         </Route>
       </Routes>
     </>

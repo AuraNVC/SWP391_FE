@@ -8,6 +8,7 @@ export default function ParentConsultations() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [updatingForms, setUpdatingForms] = useState(new Set());
   const { userRole } = useUserRole();
+  const [students, setStudents] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
@@ -56,31 +57,55 @@ export default function ParentConsultations() {
   };
 
   useEffect(() => {
-    const fetchConsultations = async () => {
+    const fetchAllData = async () => {
       try {
+        setLoading(true);
         const parentId = localStorage.getItem('userId');
-        
         if (!parentId) {
           setError('Không tìm thấy ID phụ huynh. Vui lòng đăng nhập lại.');
-          setLoading(false);
           return;
         }
 
+        // Fetch students for the parent
+        const studentResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/getParent${parentId}`);
+        if (!studentResponse.ok) {
+          throw new Error('Không thể tải danh sách học sinh.');
+        }
+        const studentData = await studentResponse.json();
+        setStudents(studentData);
+
+        // Fetch all consultation forms for the parent
         const numericParentId = parseInt(parentId, 10);
-        if (isNaN(numericParentId)) {
-          setError('ID phụ huynh không hợp lệ. Vui lòng đăng nhập lại.');
-          setLoading(false);
-          return;
-        }
-
         const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationForm/getByParent?parentId=${numericParentId}`);
-        
         if (!response.ok) {
           throw new Error(`Lỗi khi tải dữ liệu: ${response.status}`);
         }
-        
-        const data = await response.json();
-        setConsultations(data);
+        let consultationData = await response.json();
+
+        // Map student names to consultations
+        if (Array.isArray(consultationData) && Array.isArray(studentData) && consultationData.length > 0) {
+            const enrichedConsultations = await Promise.all(consultationData.map(async form => {
+                if (!form.consultationSchedule?.consultationScheduleId) {
+                    return { ...form, studentName: 'Không rõ' };
+                }
+                // Fetch full schedule details to get studentId
+                const scheduleRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationSchedule/${form.consultationSchedule.consultationScheduleId}`);
+                if (scheduleRes.ok) {
+                    const scheduleData = await scheduleRes.json();
+                    const student = studentData.find(s => s.studentId === scheduleData.studentId);
+                    return {
+                        ...form,
+                        consultationSchedule: scheduleData, // Replace placeholder with full data
+                        studentName: student ? student.fullName : 'Không rõ'
+                    };
+                }
+                return { ...form, studentName: 'Không rõ' };
+            }));
+            setConsultations(enrichedConsultations);
+        } else {
+            setConsultations(consultationData);
+        }
+
       } catch (err) {
         console.error('Error details:', err);
         setError('Không thể tải lịch tư vấn. Vui lòng thử lại sau.');
@@ -90,7 +115,7 @@ export default function ParentConsultations() {
     };
 
     if (userRole === 'parent') {
-      fetchConsultations();
+      fetchAllData();
     } else {
       setLoading(false);
       setError('Truy cập bị từ chối. Cần có vai trò phụ huynh.');
@@ -109,7 +134,8 @@ export default function ParentConsultations() {
       return (
         (form.title && form.title.toLowerCase().includes(lowerCaseSearchTerm)) ||
         (form.content && form.content.toLowerCase().includes(lowerCaseSearchTerm)) ||
-        (form.consultationSchedule && form.consultationSchedule.location && form.consultationSchedule.location.toLowerCase().includes(lowerCaseSearchTerm))
+        (form.consultationSchedule && form.consultationSchedule.location && form.consultationSchedule.location.toLowerCase().includes(lowerCaseSearchTerm)) ||
+        (form.studentName && form.studentName.toLowerCase().includes(lowerCaseSearchTerm))
       );
     })
     .sort((a, b) => {
@@ -196,6 +222,7 @@ export default function ParentConsultations() {
                     return (
                       <div key={form.consultationFormId} className="list-group-item list-group-item-action p-4 mb-3 shadow-sm rounded">
                         <h5 className="mb-3 text-primary fw-bold">{form.title}</h5>
+                        {form.studentName && <p className="mb-2"><strong>Học sinh:</strong> {form.studentName}</p>}
                         <p className="mb-2"><strong>Nội dung:</strong> {form.content}</p>
                         <div className="row">
                           <div className="col-md-6">

@@ -151,12 +151,6 @@ export default function StudentNotifications() {
                     <div key={form.consentFormId} className="card mb-3">
                       <div className="card-body">
                         <h5 className="card-title">{form.form.title}</h5>
-                        {student && (
-                          <p className="card-text text-primary fw-bold">
-                            <i className="bi bi-person-check-fill me-2"></i>
-                            Dành cho học sinh: {student.fullName}
-                          </p>
-                        )}
                         <p className="card-text">
                           <strong>Lớp:</strong> {form.form.className}
                         </p>
