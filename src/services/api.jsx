@@ -4,6 +4,8 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 // Định nghĩa endpoint
 const API = {
     BLOG_LIST: `${API_BASE_URL}/blog/search`,
+    BLOG_CREATE: `${API_BASE_URL}/blog/add`,
+    BLOG_UPDATE: (id) => `${API_BASE_URL}/blog/${id}`,
     BLOG_DETAIL: (id) => `${API_BASE_URL}/blog/${id}`,
     BLOG_DELETE: (id) => `${API_BASE_URL}/blog/${id}`,
     LOGIN_MANAGER: `${API_BASE_URL}/manager/authorize`,
@@ -16,16 +18,25 @@ const API = {
     DOCUMENT_DETAIL: (id) => `${API_BASE_URL}/documents/${id}`,
     STUDENT_LIST: `${API_BASE_URL}/student/search`,
     STUDENT_CREATE: `${API_BASE_URL}/student/add`,
+    STUDENT_UPDATE: (id) => `${API_BASE_URL}/student/${id}`,
     STUDENT_DELETE: (id) => `${API_BASE_URL}/student/${id}`,
     PARENT_LIST: `${API_BASE_URL}/parent/search`,
     PARENT_SEARCH: `${API_BASE_URL}/parent/search`,
     PARENT_CREATE: `${API_BASE_URL}/parent/add`,
+    PARENT_UPDATE: (id) => `${API_BASE_URL}/parent/${id}`,
     PARENT_DELETE: (id) => `${API_BASE_URL}/parent/${id}`,
     NURSE_LIST: `${API_BASE_URL}/nurse/search`,
+    NURSE_CREATE: `${API_BASE_URL}/nurse/add`,
+    NURSE_UPDATE: (id) => `${API_BASE_URL}/nurse/${id}`,
     NURSE_DELETE: (id) => `${API_BASE_URL}/nurse/${id}`,
     FORM_LIST: `${API_BASE_URL}/form/search`,
     FORM_CREATE: `${API_BASE_URL}/form/add`,
     FORM_DELETE: (id) => `${API_BASE_URL}/form/${id}`,
+    HEALTH_CHECK_SCHEDULE_LIST: `${API_BASE_URL}/healthCheckSchedule/search`,
+    HEALTH_CHECK_SCHEDULE_CREATE: `${API_BASE_URL}/healthCheckSchedule/create`,
+    HEALTH_CHECK_SCHEDULE_UPDATE: (id) => `${API_BASE_URL}/healthCheckSchedule/${id}`,
+    HEALTH_CHECK_SCHEDULE_DETAIL: (id) => `${API_BASE_URL}/healthCheckSchedule/${id}`,
+    HEALTH_CHECK_SCHEDULE_DELETE: (id) => `${API_BASE_URL}/healthCheckSchedule/${id}`,
     // Thêm các endpoint khác nếu cần
 };
 
@@ -56,6 +67,14 @@ export const API_SERVICE = {
         delete: (id) => callApi(API.BLOG_DELETE(id), {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
+        }),
+        create: (formData) => callApi(API.BLOG_CREATE, {
+            method: "POST",
+            body: formData, // Don't set Content-Type for FormData
+        }),
+        update: (id, formData) => callApi(API.BLOG_UPDATE(id), {
+            method: "PUT",
+            body: formData, // Don't set Content-Type for FormData
         }),
         // Thêm các hàm POST/PUT/DELETE nếu cần
     },
@@ -105,6 +124,11 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        update: (id, data) => callApi(API.STUDENT_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
         // Thêm các hàm khác nếu cần
     },
     parentAPI: {
@@ -127,6 +151,11 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        update: (id, data) => callApi(API.PARENT_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
         // Thêm các hàm khác nếu cần
     },
     nurseAPI: {
@@ -139,16 +168,35 @@ export const API_SERVICE = {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         }),
-        // Thêm các hàm khác nếu cần
-    },
-    formAPI: {
-        getAll: (data) => callApi(API.FORM_LIST, {
+        create: (data) => callApi(API.NURSE_CREATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        update: (id, data) => callApi(API.NURSE_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        // Thêm các hàm khác nếu cần
+    },
+    formAPI: {
+        getAll: (params) => callApi(API.FORM_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(params)
+        }),
+        getById: (id) => callApi(API.FORM_DETAIL(id), {
+            method: "GET",
+            header: { "Content-Type": "application/json" }
+        }),
         create: (data) => callApi(API.FORM_CREATE, {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (id, data) => callApi(API.FORM_UPDATE(id), {
+            method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
@@ -157,6 +205,31 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" }
         }),
         // Thêm các hàm khác nếu cần
+    },
+    healthCheckScheduleAPI: {
+        getAll: (data) => callApi(API.HEALTH_CHECK_SCHEDULE_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getById: (id) => callApi(API.HEALTH_CHECK_SCHEDULE_DETAIL(id), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        create: (data) => callApi(API.HEALTH_CHECK_SCHEDULE_CREATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (id, data) => callApi(API.HEALTH_CHECK_SCHEDULE_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        delete: (id) => callApi(API.HEALTH_CHECK_SCHEDULE_DELETE(id), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        }),
     },
     // Thêm các nhóm API khác nếu cần
 };

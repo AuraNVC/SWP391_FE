@@ -1,26 +1,27 @@
 import React, { useState } from "react";
-import "../styles/FormCreateForm.css";
+import "../styles/ParentCreateForm.css";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import { useNavigate } from 'react-router-dom';
 
 const initialState = {
-  title: "",
-  className: "",
-  type: "",
-  content: "",
+  fullName: "",
+  email: "",
+  phoneNumber: "",
+  address: "",
+  passwordHash: "",
 };
 
-const FormCreate = () => {
+const ParentCreate = () => {
   const [form, setForm] = useState(initialState);
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-
+  
   const { setNotif } = useNotification();
   const navigate = useNavigate();
 
-  const handleChange = async (e) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
@@ -30,40 +31,25 @@ const FormCreate = () => {
     setLoading(true);
     setSuccessMsg("");
     setErrorMsg("");
-
     try {
-      // Lấy danh sách student theo className
-      const response = await API_SERVICE.studentAPI.getAll({ keyword: `${form.className}` });
-      console.log("Student response:", response);
-
-      // Lấy parentId từ tất cả student trong response
-      const parentIds = response
-        .map(student => Number(student.parent.parentId))
-        .filter(id => Number.isInteger(id) && id > 0);
-      console.log("Parent IDs:", parentIds);
-
       const payload = {
-        title: form.title,
-        className: form.className,
-        type: Number(form.type),
-        sentDate: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        content: form.content,
-        parentIds: parentIds,
+        fullName: form.fullName,
+        email: form.email,
+        phoneNumber: form.phoneNumber,
+        address: form.address,
+        passwordHash: form.passwordHash || form.phoneNumber, // Use phone number as default password
       };
-      console.log("Form payload:", payload);
-
-      await API_SERVICE.formAPI.create(payload);
-      setSuccessMsg("Form created successfully!");
+      await API_SERVICE.parentAPI.create(payload);
+      setSuccessMsg("Parent created successfully!");
       setNotif({
-        message: "Form created successfully!",
+        message: "Parent created successfully!",
         type: "success",
       });
       setTimeout(() => {
-        navigate('/manager/form');
+        navigate('/manager/parent');
       }, 1500);
     } catch (error) {
-      const errorMessage = "Failed to create form. " + (error?.response?.data?.message || error.message);
+      const errorMessage = "Failed to create parent. " + (error?.response?.data?.message || error.message);
       setErrorMsg(errorMessage);
       setNotif({
         message: errorMessage,
@@ -74,76 +60,80 @@ const FormCreate = () => {
   };
 
   const handleCancel = () => {
-    navigate('/manager/form');
+    navigate('/manager/parent');
   };
 
   return (
     <div className="admin-main">
       <div className="admin-header">
-        <h2>Create New Form</h2>
+        <h2>Create New Parent</h2>
         <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Back to Form List
+          Back to Parent List
         </button>
       </div>
-
-      <div className="form-create-page-container">
-        <form className="form-create-form" onSubmit={handleSubmit}>
+      
+      <div className="parent-create-page-container">
+        <form className="parent-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Title<span className="required">*</span></label>
+            <label>Full Name<span className="required">*</span></label>
             <input
               type="text"
-              name="title"
-              value={form.title}
+              name="fullName"
+              value={form.fullName}
               onChange={handleChange}
               required
               className="form-control"
-              placeholder="Enter form title"
             />
           </div>
           <div className="form-group">
-            <label>Class<span className="required">*</span></label>
+            <label>Email<span className="required">*</span></label>
             <input
-              type="text"
-              name="className"
-              value={form.className}
+              type="email"
+              name="email"
+              value={form.email}
               onChange={handleChange}
               required
               className="form-control"
-              placeholder="e.g. 1A, 2B"
             />
           </div>
           <div className="form-group">
-            <label>Type<span className="required">*</span></label>
-            <select
-              name="type"
-              value={form.type}
+            <label>Phone Number<span className="required">*</span></label>
+            <input
+              type="text"
+              name="phoneNumber"
+              value={form.phoneNumber}
               onChange={handleChange}
               required
               className="form-control"
-            >
-              <option value="">Select form type</option>
-              <option value="0">Health Check Form</option>
-              <option value="1">Vaccination Form</option>
-            </select>
+            />
           </div>
           <div className="form-group">
-            <label>Content<span className="required">*</span></label>
+            <label>Address</label>
             <textarea
-              name="content"
-              value={form.content}
+              name="address"
+              value={form.address}
               onChange={handleChange}
-              required
               className="form-control"
-              rows="8"
-              placeholder="Enter form content"
+              rows="3"
             />
           </div>
-
+          <div className="form-group">
+            <label>Password</label>
+            <input
+              type="password"
+              name="passwordHash"
+              value={form.passwordHash}
+              onChange={handleChange}
+              className="form-control"
+              placeholder="Leave empty to use phone number as password"
+            />
+          </div>
+          
           {successMsg && <div className="success-msg">{successMsg}</div>}
           {errorMsg && <div className="error-msg">{errorMsg}</div>}
           <div className="form-actions">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Creating..." : "Create Form"}
+              {loading ? "Creating..." : "Create Parent"}
             </button>
             <button
               type="button"
@@ -160,4 +150,4 @@ const FormCreate = () => {
   );
 };
 
-export default FormCreate;
+export default ParentCreate; 

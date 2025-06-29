@@ -3,6 +3,9 @@ import TableWithPaging from "../components/TableWithPaging";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
+import BlogViewDialog from "../components/BlogViewDialog";
+import BlogEditDialog from "../components/BlogEditDialog";
+import { useNavigate } from "react-router-dom";
 
 const columns = [
   { title: "ID", dataIndex: "blogId" },
@@ -36,7 +39,10 @@ const BlogList = () => {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [viewBlog, setViewBlog] = useState(null);
+  const [editBlog, setEditBlog] = useState(null);
   const { setNotif } = useNotification();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchBlogList = async () => {
@@ -53,11 +59,11 @@ const BlogList = () => {
   }, []);
 
   const handleViewDetail = (row) => {
-    alert(`View detail for blog: ${row.title}`);
+    setViewBlog(row);
   };
 
   const handleEdit = (row) => {
-    alert(`Edit blog: ${row.title}`);
+    setEditBlog(row);
   };
 
   const handleDelete = (row) => {
@@ -88,10 +94,27 @@ const BlogList = () => {
     setDeleteTarget(null);
   };
 
+  const reloadBlogList = async () => {
+    setLoading(true);
+    try {
+      const response = await API_SERVICE.blogAPI.getAll({ keyword: "" });
+      setBlogList(response);
+    } catch (error) {
+      console.error("Error fetching blog list:", error);
+    }
+    setLoading(false);
+  };
+
+  const handleCreateNew = () => {
+    navigate('/manager/blog/create');
+  };
+
   return (
     <div className="admin-main">
       <div className="admin-header">
-        <button className="admin-btn">+ Create New Blog</button>
+        <button className="admin-btn" onClick={handleCreateNew}>
+          + Create New Blog
+        </button>
         <input className="admin-search" type="text" placeholder="Search..." />
       </div>
       <div className="admin-table-container">
@@ -105,28 +128,30 @@ const BlogList = () => {
             pageSize={10}
             onPageChange={setPage}
             renderActions={(row) => (
-              <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+              <div className="admin-action-group">
                 <button
-                  className="admin-action-btn admin-action-view"
+                  className="admin-action-btn admin-action-view admin-action-btn-reset"
                   title="View Detail"
                   onClick={() => handleViewDetail(row)}
-                  style={{ background: "none", border: "none", padding: 0 }}
                 >
                   <FaEye style={iconStyle.view} size={18} />
                 </button>
                 <button
-                  className="admin-action-btn admin-action-edit"
+                  className="admin-action-btn admin-action-edit admin-action-btn-reset"
                   title="Edit"
                   onClick={() => handleEdit(row)}
-                  style={{ background: "none", border: "none", padding: 0 }}
                 >
                   <FaEdit style={iconStyle.edit} size={18} />
                 </button>
                 <button
-                  className="admin-action-btn admin-action-delete"
+                  className="admin-action-btn admin-action-delete admin-action-btn-reset"
                   title="Delete"
                   onClick={() => handleDelete(row)}
-                  style={{ background: "none", border: "none", padding: 0 }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                  }}
                 >
                   <FaTrash style={iconStyle.delete} size={18} />
                 </button>
@@ -135,45 +160,41 @@ const BlogList = () => {
           />
         )}
       </div>
+      
       {/* Dialog xác nhận xóa */}
       {deleteTarget && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0,0,0,0.3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              padding: 32,
-              borderRadius: 8,
-              minWidth: 320,
-              boxShadow: "0 2px 8px #888",
-              textAlign: "center",
-            }}
-          >
-            <div style={{ marginBottom: 20 }}>
+        <div className="blog-delete-modal-overlay">
+          <div className="blog-delete-modal-content">
+            <div className="blog-delete-modal-title">
               <strong>Bạn có chắc chắn muốn xóa blog "{deleteTarget.title}"?</strong>
             </div>
-            <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
-              <button className="admin-btn" style={{ background: "#dc3545" }} onClick={confirmDelete}>
+            <div className="blog-delete-modal-actions">
+              <button className="admin-btn btn-danger" onClick={confirmDelete}>
                 Xóa
               </button>
-              <button className="admin-btn" style={{ background: "#6c757d" }} onClick={cancelDelete}>
+              <button className="admin-btn btn-secondary" onClick={cancelDelete}>
                 Hủy
               </button>
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Dialog xem chi tiết blog */}
+      {viewBlog && (
+        <BlogViewDialog
+          blog={viewBlog}
+          onClose={() => setViewBlog(null)}
+        />
+      )}
+      
+      {/* Dialog chỉnh sửa blog */}
+      {editBlog && (
+        <BlogEditDialog
+          blog={editBlog}
+          onClose={() => setEditBlog(null)}
+          onSuccess={reloadBlogList}
+        />
       )}
     </div>
   );

@@ -4,7 +4,9 @@ import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { API_SERVICE } from "../services/api";
 import TableWithPaging from "../components/TableWithPaging";
 import { useNotification } from "../contexts/NotificationContext";
-import StudentCreateForm from "../components/StudentCreateForm";
+import StudentViewDialog from "../components/StudentViewDialog";
+import StudentEditDialog from "../components/StudentEditDialog";
+import { useNavigate } from "react-router-dom";
 
 const columns = [
   { title: "ID", dataIndex: "studentId" },
@@ -29,10 +31,12 @@ const iconStyle = {
 const StudentList = () => {
   const [studentList, setStudentList] = useState([]);
   const [page, setPage] = useState(1);
-  const [loading, setLoading] = useState(true); // Thêm loading
+  const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [viewStudent, setViewStudent] = useState(null);
+  const [editStudent, setEditStudent] = useState(null);
   const { setNotif } = useNotification();
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchStudentList = async () => {
@@ -49,11 +53,11 @@ const StudentList = () => {
   }, []);
 
   const handleViewDetail = (row) => {
-    alert(`View detail for student: ${row.fullName}`);
+    setViewStudent(row);
   };
 
   const handleEdit = (row) => {
-    alert(`Edit student: ${row.fullName}`);
+    setEditStudent(row);
   };
 
   const handleDelete = (row) => {
@@ -87,7 +91,7 @@ const StudentList = () => {
   const reloadStudentList = async () => {
     setLoading(true);
     try {
-      const response = await API_SERVICE.studentAPI.getAll({ keyword: " " });
+      const response = await API_SERVICE.studentAPI.getAll({ keyword: "" });
       setStudentList(response);
     } catch (error) {
       console.error("Error fetching student list:", error);
@@ -95,10 +99,14 @@ const StudentList = () => {
     setLoading(false);
   };
 
+  const handleCreateNew = () => {
+    navigate('/manager/student/create');
+  };
+
   return (
     <div className="admin-main">
       <div className="admin-header">
-        <button className="admin-btn" onClick={() => setShowCreateDialog(true)}>
+        <button className="admin-btn" onClick={handleCreateNew}>
           + Create New Student
         </button>
         <input className="admin-search" type="text" placeholder="Search..." />
@@ -146,6 +154,7 @@ const StudentList = () => {
           />
         )}
       </div>
+      
       {/* Dialog xác nhận xóa */}
       {deleteTarget && (
         <div className="student-delete-modal-overlay">
@@ -164,20 +173,22 @@ const StudentList = () => {
           </div>
         </div>
       )}
-      {/* Dialog tạo student */}
-      {showCreateDialog && (
-        <div className="student-create-modal-overlay">
-          <div className="student-create-modal-content">
-            <h2 className="student-create-title">Create New Student</h2>
-            <StudentCreateForm
-              onSuccess={() => {
-                setShowCreateDialog(false);
-                reloadStudentList();
-              }}
-              onCancel={() => setShowCreateDialog(false)}
-            />
-          </div>
-        </div>
+      
+      {/* Dialog xem chi tiết student */}
+      {viewStudent && (
+        <StudentViewDialog
+          student={viewStudent}
+          onClose={() => setViewStudent(null)}
+        />
+      )}
+      
+      {/* Dialog chỉnh sửa student */}
+      {editStudent && (
+        <StudentEditDialog
+          student={editStudent}
+          onClose={() => setEditStudent(null)}
+          onSuccess={reloadStudentList}
+        />
       )}
     </div>
   );

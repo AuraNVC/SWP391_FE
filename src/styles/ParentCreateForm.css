@@ -1,4 +1,4 @@
-.student-create-form {
+.parent-create-form {
   max-width: 600px;
   margin: 0 auto;
   background: #f9f9f9;
@@ -7,74 +7,74 @@
   box-shadow: 0 2px 8px rgba(60,72,88,0.08);
 }
 
-.student-create-page-container {
+.parent-create-page-container {
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
 }
 
-.student-create-page-container .student-create-form {
+.parent-create-page-container .parent-create-form {
   background: white;
   border: 1px solid #e0e0e0;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.student-create-form .form-group {
+.parent-create-form .form-group {
   margin-bottom: 18px;
   display: flex;
   flex-direction: column;
 }
 
-.student-create-form label {
+.parent-create-form label {
   font-weight: 600;
   margin-bottom: 6px;
 }
 
-.student-create-form .required {
+.parent-create-form .required {
   color: red;
   margin-left: 2px;
 }
 
-.student-create-form .form-control {
+.parent-create-form .form-control {
   padding: 8px 12px;
   border: 1px solid #cfd8dc;
   border-radius: 4px;
   font-size: 1rem;
   outline: none;
   transition: border 0.2s;
+  font-family: inherit;
 }
 
-.student-create-form .form-control:focus {
+.parent-create-form .form-control:focus {
   border: 1.5px solid #4fc3f7;
 }
 
-.student-create-form h4 {
-  margin-top: 24px;
-  margin-bottom: 12px;
-  color: #1976d2;
+.parent-create-form textarea.form-control {
+  resize: vertical;
+  min-height: 80px;
 }
 
-.student-create-form .form-actions {
+.parent-create-form .form-actions {
   display: flex;
   gap: 12px;
   margin-top: 16px;
 }
 
-.student-create-form .cancel-btn {
+.parent-create-form .cancel-btn {
   background: #6c757d;
 }
 
-.student-create-form .cancel-btn:hover {
+.parent-create-form .cancel-btn:hover {
   background: #495057;
 }
 
-.student-create-form .success-msg {
+.parent-create-form .success-msg {
   color: #388e3c;
   margin-top: 10px;
   font-weight: 500;
 }
 
-.student-create-form .error-msg {
+.parent-create-form .error-msg {
   color: #d32f2f;
   margin-top: 10px;
   font-weight: 500;
