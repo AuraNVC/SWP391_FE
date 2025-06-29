@@ -9,7 +9,11 @@ export default function MainLayout(props) {
       : location.pathname === "/blog" ? "blog"
         : location.pathname === "/about" ? "about"
           : location.pathname === "/contact" ? "contact"
-            : ""
+            : location.pathname === "/parent/notifications" ? "notifications"
+              : location.pathname === "/parent/health-profile" ? "health-profile"
+                : location.pathname === "/parent/consultations" ? "consultations"
+                  : location.pathname === "/parent/prescriptions" ? "prescriptions"
+                    : ""
   );
 
   const extraLinks = [

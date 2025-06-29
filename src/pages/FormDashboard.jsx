@@ -4,6 +4,9 @@ import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import TableWithPaging from "../components/TableWithPaging";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
+import { useNavigate } from "react-router-dom";
+import FormViewDialog from "../components/FormViewDialog";
+import FormEditDialog from "../components/FormEditDialog";
 
 const columns = [
     { title: "ID", dataIndex: "formId" },
@@ -25,14 +28,18 @@ const FormDashboard = () => {
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
     const [deleteTarget, setDeleteTarget] = useState(null);
+    const [viewForm, setViewForm] = useState(null);
+    const [editForm, setEditForm] = useState(null);
     const { setNotif } = useNotification();
+    const navigate = useNavigate();
 
     const handleViewDetail = (row) => {
-        window.location.href = `/manager/form/${row.formId}`;
+        console.log("View form data:", row);
+        setViewForm(row);
     };
 
     const handleEdit = (row) => {
-        window.location.href = `/manager/form/edit/${row.formId}`;
+        setEditForm(row);
     };
 
     const handleDelete = (row) => {
@@ -46,12 +53,12 @@ const FormDashboard = () => {
                 setFormList((prev) => prev.filter(f => f.formId !== deleteTarget.formId));
                 setDeleteTarget(null);
                 setNotif({
-                    message: "Xóa form thành công!",
+                    message: "Form deleted successfully!",
                     type: "success",
                 });
             } catch (error) {
                 setNotif({
-                    message: `Xóa form thất bại! ${error.message}`,
+                    message: `Failed to delete form. ${error?.response?.data?.message || error.message}`,
                     type: "error",
                 });
                 setDeleteTarget(null);
@@ -63,26 +70,34 @@ const FormDashboard = () => {
         setDeleteTarget(null);
     };
 
+    const handleCreateNew = () => {
+        navigate('/manager/form/create');
+    };
+
+    const refreshFormList = async () => {
+        setLoading(true);
+        try {
+            const response = await API_SERVICE.formAPI.getAll({ keyword: "" });
+            setFormList(response);
+        } catch (error) {
+            console.error("Error fetching form list:", error);
+            setNotif({
+                message: "Failed to refresh form list",
+                type: "error",
+            });
+        }
+        setLoading(false);
+    };
+
     useEffect(() => {
-        const fetchFormList = async () => {
-            setLoading(true);
-            try {
-                const response = await API_SERVICE.formAPI.getAll({ keyword: "" });
-                setFormList(response);
-                setLoading(false);
-            } catch (error) {
-                console.error("Error fetching form list:", error);
-                setLoading(false);
-            }
-        };
-        fetchFormList();
+        refreshFormList();
     }, []);
 
     return (
         <div className="admin-main">
             <div className="admin-header">
-                <button className="admin-btn">
-                    <a href="/manager/form/create" style={{ textDecoration: "none" }}>+ Create New Form</a>
+                <button className="admin-btn" onClick={handleCreateNew}>
+                    + Create New Form
                 </button>
                 <input className="admin-search" type="text" placeholder="Search..." />
             </div>
@@ -127,41 +142,37 @@ const FormDashboard = () => {
                     />
                 )}
             </div>
-            {/* Dialog xác nhận xóa */}
+
+            {/* View Dialog */}
+            {viewForm && (
+                <FormViewDialog
+                    form={viewForm}
+                    onClose={() => setViewForm(null)}
+                />
+            )}
+
+            {/* Edit Dialog */}
+            {editForm && (
+                <FormEditDialog
+                    form={editForm}
+                    onClose={() => setEditForm(null)}
+                    onSuccess={refreshFormList}
+                />
+            )}
+
+            {/* Delete Confirmation Dialog */}
             {deleteTarget && (
-                <div
-                    style={{
-                        position: "fixed",
-                        top: 0,
-                        left: 0,
-                        width: "100vw",
-                        height: "100vh",
-                        background: "rgba(0,0,0,0.3)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        zIndex: 1000,
-                    }}
-                >
-                    <div
-                        style={{
-                            background: "#fff",
-                            padding: 32,
-                            borderRadius: 8,
-                            minWidth: 320,
-                            boxShadow: "0 2px 8px #888",
-                            textAlign: "center",
-                        }}
-                    >
-                        <div style={{ marginBottom: 20 }}>
-                            <strong>Bạn có chắc chắn muốn xóa form "{deleteTarget.title}"?</strong>
+                <div className="form-delete-modal-overlay">
+                    <div className="form-delete-modal-content">
+                        <div className="form-delete-modal-title">
+                            <strong>Are you sure you want to delete form "{deleteTarget.title}"?</strong>
                         </div>
-                        <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
-                            <button className="admin-btn" style={{ background: "#dc3545" }} onClick={confirmDelete}>
-                                Xóa
+                        <div className="form-delete-modal-actions">
+                            <button className="admin-btn btn-danger" onClick={confirmDelete}>
+                                Delete
                             </button>
-                            <button className="admin-btn" style={{ background: "#6c757d" }} onClick={cancelDelete}>
-                                Hủy
+                            <button className="admin-btn btn-secondary" onClick={cancelDelete}>
+                                Cancel
                             </button>
                         </div>
                     </div>

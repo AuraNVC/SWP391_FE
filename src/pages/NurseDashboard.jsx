@@ -3,6 +3,9 @@ import TableWithPaging from "../components/TableWithPaging";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
+import NurseViewDialog from "../components/NurseViewDialog";
+import NurseEditDialog from "../components/NurseEditDialog";
+import { useNavigate } from "react-router-dom";
 
 const columns = [
   { title: "ID", dataIndex: "nurseId" },
@@ -22,7 +25,10 @@ const NurseList = () => {
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [viewNurse, setViewNurse] = useState(null);
+  const [editNurse, setEditNurse] = useState(null);
   const { setNotif } = useNotification();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchNurseList = async () => {
@@ -39,11 +45,11 @@ const NurseList = () => {
   }, []);
 
   const handleViewDetail = (row) => {
-    alert(`View detail for staff: ${row.fullName}`);
+    setViewNurse(row);
   };
 
   const handleEdit = (row) => {
-    alert(`Edit staff: ${row.fullName}`);
+    setEditNurse(row);
   };
 
   const handleDelete = (row) => {
@@ -57,12 +63,12 @@ const NurseList = () => {
         setNurseList((prev) => prev.filter(n => n.nurseId !== deleteTarget.nurseId));
         setDeleteTarget(null);
         setNotif({
-          message: "Xóa staff thành công!",
+          message: "Xóa nurse thành công!",
           type: "success",
         });
       } catch (error) {
         setNotif({
-          message: `Xóa staff thất bại! ${error.message}`,
+          message: `Xóa nurse thất bại! ${error.message}`,
           type: "error",
         });
         setDeleteTarget(null);
@@ -74,10 +80,27 @@ const NurseList = () => {
     setDeleteTarget(null);
   };
 
+  const reloadNurseList = async () => {
+    setLoading(true);
+    try {
+      const response = await API_SERVICE.nurseAPI.getAll({ keyword: "" });
+      setNurseList(response);
+    } catch (error) {
+      console.error("Error fetching nurse list:", error);
+    }
+    setLoading(false);
+  };
+
+  const handleCreateNew = () => {
+    navigate('/manager/nurse/create');
+  };
+
   return (
     <div className="admin-main">
       <div className="admin-header">
-        <button className="admin-btn">+ Create New Staff</button>
+        <button className="admin-btn" onClick={handleCreateNew}>
+          + Create New Nurse
+        </button>
         <input className="admin-search" type="text" placeholder="Search..." />
       </div>
       <div className="admin-table-container">
@@ -91,28 +114,30 @@ const NurseList = () => {
             pageSize={10}
             onPageChange={setPage}
             renderActions={(row) => (
-              <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
+              <div className="admin-action-group">
                 <button
-                  className="admin-action-btn admin-action-view"
+                  className="admin-action-btn admin-action-view admin-action-btn-reset"
                   title="View Detail"
                   onClick={() => handleViewDetail(row)}
-                  style={{ background: "none", border: "none", padding: 0 }}
                 >
                   <FaEye style={iconStyle.view} size={18} />
                 </button>
                 <button
-                  className="admin-action-btn admin-action-edit"
+                  className="admin-action-btn admin-action-edit admin-action-btn-reset"
                   title="Edit"
                   onClick={() => handleEdit(row)}
-                  style={{ background: "none", border: "none", padding: 0 }}
                 >
                   <FaEdit style={iconStyle.edit} size={18} />
                 </button>
                 <button
-                  className="admin-action-btn admin-action-delete"
+                  className="admin-action-btn admin-action-delete admin-action-btn-reset"
                   title="Delete"
                   onClick={() => handleDelete(row)}
-                  style={{ background: "none", border: "none", padding: 0 }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                  }}
                 >
                   <FaTrash style={iconStyle.delete} size={18} />
                 </button>
@@ -121,45 +146,41 @@ const NurseList = () => {
           />
         )}
       </div>
+      
       {/* Dialog xác nhận xóa */}
       {deleteTarget && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0,0,0,0.3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1000,
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              padding: 32,
-              borderRadius: 8,
-              minWidth: 320,
-              boxShadow: "0 2px 8px #888",
-              textAlign: "center",
-            }}
-          >
-            <div style={{ marginBottom: 20 }}>
-              <strong>Bạn có chắc chắn muốn xóa staff "{deleteTarget.fullName}"?</strong>
+        <div className="nurse-delete-modal-overlay">
+          <div className="nurse-delete-modal-content">
+            <div className="nurse-delete-modal-title">
+              <strong>Bạn có chắc chắn muốn xóa nurse "{deleteTarget.fullName}"?</strong>
             </div>
-            <div style={{ display: "flex", justifyContent: "center", gap: 16 }}>
-              <button className="admin-btn" style={{ background: "#dc3545" }} onClick={confirmDelete}>
+            <div className="nurse-delete-modal-actions">
+              <button className="admin-btn btn-danger" onClick={confirmDelete}>
                 Xóa
               </button>
-              <button className="admin-btn" style={{ background: "#6c757d" }} onClick={cancelDelete}>
+              <button className="admin-btn btn-secondary" onClick={cancelDelete}>
                 Hủy
               </button>
             </div>
           </div>
         </div>
+      )}
+      
+      {/* Dialog xem chi tiết nurse */}
+      {viewNurse && (
+        <NurseViewDialog
+          nurse={viewNurse}
+          onClose={() => setViewNurse(null)}
+        />
+      )}
+      
+      {/* Dialog chỉnh sửa nurse */}
+      {editNurse && (
+        <NurseEditDialog
+          nurse={editNurse}
+          onClose={() => setEditNurse(null)}
+          onSuccess={reloadNurseList}
+        />
       )}
     </div>
   );

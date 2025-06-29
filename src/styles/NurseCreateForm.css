@@ -1,0 +1,76 @@
+.nurse-create-form {
+  max-width: 600px;
+  margin: 0 auto;
+  background: #f9f9f9;
+  padding: 24px 32px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(60,72,88,0.08);
+}
+
+.nurse-create-page-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.nurse-create-page-container .nurse-create-form {
+  background: white;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.nurse-create-form .form-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.nurse-create-form label {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.nurse-create-form .required {
+  color: red;
+  margin-left: 2px;
+}
+
+.nurse-create-form .form-control {
+  padding: 8px 12px;
+  border: 1px solid #cfd8dc;
+  border-radius: 4px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s;
+  font-family: inherit;
+}
+
+.nurse-create-form .form-control:focus {
+  border: 1.5px solid #4fc3f7;
+}
+
+.nurse-create-form .form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.nurse-create-form .cancel-btn {
+  background: #6c757d;
+}
+
+.nurse-create-form .cancel-btn:hover {
+  background: #495057;
+}
+
+.nurse-create-form .success-msg {
+  color: #388e3c;
+  margin-top: 10px;
+  font-weight: 500;
+}
+
+.nurse-create-form .error-msg {
+  color: #d32f2f;
+  margin-top: 10px;
+  font-weight: 500;
+} 

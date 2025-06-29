@@ -1,0 +1,122 @@
+.blog-create-form {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #f9f9f9;
+  padding: 24px 32px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(60,72,88,0.08);
+}
+
+.blog-create-page-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.blog-create-page-container .blog-create-form {
+  background: white;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.blog-create-form .form-group {
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.blog-create-form label {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.blog-create-form .required {
+  color: red;
+  margin-left: 2px;
+}
+
+.blog-create-form .form-control {
+  padding: 8px 12px;
+  border: 1px solid #cfd8dc;
+  border-radius: 4px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s;
+  font-family: inherit;
+}
+
+.blog-create-form .form-control:focus {
+  border: 1.5px solid #4fc3f7;
+}
+
+.blog-create-form textarea.form-control {
+  resize: vertical;
+  min-height: 200px;
+  line-height: 1.6;
+}
+
+.blog-create-form input[type="file"].form-control {
+  padding: 6px 8px;
+  border: 2px dashed #cfd8dc;
+  background-color: #f8f9fa;
+  cursor: pointer;
+}
+
+.blog-create-form input[type="file"].form-control:hover {
+  border-color: #4fc3f7;
+  background-color: #f0f8ff;
+}
+
+.file-preview {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 6px;
+}
+
+.file-preview p {
+  margin: 0 0 8px 0;
+  font-weight: 500;
+  color: #333;
+}
+
+.current-thumbnail {
+  margin-top: 12px;
+  padding: 12px;
+  background-color: #f0f8ff;
+  border: 1px solid #b3d9ff;
+  border-radius: 6px;
+}
+
+.current-thumbnail p {
+  margin: 0 0 8px 0;
+  font-weight: 500;
+  color: #0066cc;
+}
+
+.blog-create-form .form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.blog-create-form .cancel-btn {
+  background: #6c757d;
+}
+
+.blog-create-form .cancel-btn:hover {
+  background: #495057;
+}
+
+.blog-create-form .success-msg {
+  color: #388e3c;
+  margin-top: 10px;
+  font-weight: 500;
+}
+
+.blog-create-form .error-msg {
+  color: #d32f2f;
+  margin-top: 10px;
+  font-weight: 500;
+} 

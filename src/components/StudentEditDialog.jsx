@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import "../styles/StudentDialog.css";
 import "../styles/StudentCreateForm.css";
 import { API_SERVICE } from "../services/api";
 import TextField from '@mui/material/TextField';
@@ -6,29 +7,34 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useNotification } from "../contexts/NotificationContext";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { useNavigate } from 'react-router-dom';
 
-const initialState = {
-  fullName: "",
-  dateOfBirth: "",
-  className: "",
-  gender: "",
-  studentNumber: "",
-  parentFullName: "",
-  parentPhoneNumber: "",
-  parentEmail: "",
-  parentAddress: "",
-};
-
-const StudentCreate = () => {
-  const [form, setForm] = useState(initialState);
+const StudentEditDialog = ({ student, onClose, onSuccess }) => {
+  const [form, setForm] = useState({
+    fullName: "",
+    dateOfBirth: "",
+    className: "",
+    gender: "",
+    studentNumber: "",
+  });
   const [loading, setLoading] = useState(false);
-  const [successMsg, setSuccessMsg] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [dateOfBirth, setDateOfBirth] = React.useState(null);
+  const [dateOfBirth, setDateOfBirth] = useState(null);
   
   const { setNotif } = useNotification();
-  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (student) {
+      setForm({
+        fullName: student.fullName || "",
+        dateOfBirth: student.dateOfBirth || "",
+        className: student.className || "",
+        gender: student.gender || "",
+        studentNumber: student.studentNumber || "",
+      });
+      if (student.dateOfBirth) {
+        setDateOfBirth(new Date(student.dateOfBirth));
+      }
+    }
+  }, [student]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,58 +44,42 @@ const StudentCreate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setSuccessMsg("");
-    setErrorMsg("");
     try {
-      const parent = await API_SERVICE.parentAPI.search({ keyword: form.parentFullName });
-      if (parent.length === 0) {
-        setErrorMsg("Parent not found. Please check the parent name.");
-        setLoading(false);
-        return;
-      }
       const payload = {
         fullName: form.fullName,
         dateOfBirth: form.dateOfBirth,
         className: form.className,
         gender: form.gender,
         studentNumber: form.studentNumber,
-        parentId: parent[0].parentId,
-        passwordHash: form.studentNumber,
       };
-      await API_SERVICE.studentAPI.create(payload);
-      setSuccessMsg("Student created successfully!");
+      await API_SERVICE.studentAPI.update(student.studentId, payload);
       setNotif({
-        message: "Student created successfully!",
+        message: "Student updated successfully!",
         type: "success",
       });
-      setTimeout(() => {
-        navigate('/manager/student');
-      }, 1500);
+      if (onSuccess) onSuccess();
+      onClose();
     } catch (error) {
-      const errorMessage = "Failed to create student. " + (error?.response?.data?.message || error.message);
-      setErrorMsg(errorMessage);
       setNotif({
-        message: errorMessage,
+        message: `Failed to update student. ${error?.response?.data?.message || error.message}`,
         type: "error",
       });
     }
     setLoading(false);
   };
 
-  const handleCancel = () => {
-    navigate('/manager/student');
-  };
+  if (!student) return null;
 
   return (
-    <div className="admin-main">
-      <div className="admin-header">
-        <h2>Create New Student</h2>
-        <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Back to Student List
-        </button>
-      </div>
-      
-      <div className="student-create-page-container">
+    <div className="student-dialog-overlay" onClick={onClose}>
+      <div className="student-dialog-content student-edit-dialog" onClick={(e) => e.stopPropagation()}>
+        <div className="student-dialog-header">
+          <h2>Edit Student</h2>
+          <button className="student-dialog-close" onClick={onClose}>
+            ×
+          </button>
+        </div>
+        
         <form className="student-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Full Name<span className="required">*</span></label>
@@ -157,59 +147,15 @@ const StudentCreate = () => {
               placeholder="e.g. binhan1"
             />
           </div>
-          <hr />
-          <h4>Parent Information</h4>
-          <div className="form-group">
-            <label>Parent Full Name<span className="required">*</span></label>
-            <input
-              type="text"
-              name="parentFullName"
-              value={form.parentFullName}
-              onChange={handleChange}
-              required
-              className="form-control"
-            />
-          </div>
-          <div className="form-group">
-            <label>Parent Phone Number</label>
-            <input
-              type="text"
-              name="parentPhoneNumber"
-              value={form.parentPhoneNumber}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="form-group">
-            <label>Parent Email</label>
-            <input
-              type="email"
-              name="parentEmail"
-              value={form.parentEmail}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          <div className="form-group">
-            <label>Parent Address</label>
-            <input
-              type="text"
-              name="parentAddress"
-              value={form.parentAddress}
-              onChange={handleChange}
-              className="form-control"
-            />
-          </div>
-          {successMsg && <div className="success-msg">{successMsg}</div>}
-          {errorMsg && <div className="error-msg">{errorMsg}</div>}
-          <div className="form-actions">
+          
+          <div className="student-dialog-footer">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Creating..." : "Create Student"}
+              {loading ? "Updating..." : "Update Student"}
             </button>
             <button
               type="button"
               className="admin-btn cancel-btn"
-              onClick={handleCancel}
+              onClick={onClose}
               disabled={loading}
             >
               Cancel
@@ -221,4 +167,4 @@ const StudentCreate = () => {
   );
 };
 
-export default StudentCreate; 
+export default StudentEditDialog; 
