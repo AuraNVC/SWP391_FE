@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_SERVICE } from '../services/api';
 
 const StudentHealthProfile = () => {
   const [student, setStudent] = useState(null);
@@ -17,63 +18,44 @@ const StudentHealthProfile = () => {
         const studentId = localStorage.getItem('userId');
         if (!studentId) throw new Error('Không tìm thấy ID học sinh.');
         // Lấy thông tin cá nhân
-        const studentRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/${studentId}`);
-        if (!studentRes.ok) throw new Error('Không thể lấy thông tin học sinh');
-        const studentData = await studentRes.json();
+        const studentData = await API_SERVICE.studentAPI.getById(studentId);
         setStudent(studentData);
         // Lấy hồ sơ sức khỏe
-        const healthRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/healthProfile/${studentId}`);
-        if (!healthRes.ok) throw new Error('Không thể lấy hồ sơ sức khỏe');
-        const healthData = await healthRes.json();
+        const healthData = await API_SERVICE.healthProfileAPI.get(studentId);
         setHealthProfile(healthData);
         // Lấy lịch sử khám
         if (healthData.healthProfileId) {
-          const checkupRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/healthCheckResult/getResultsByProfile${healthData.healthProfileId}`);
-          if (checkupRes.ok) {
-            const checkupData = await checkupRes.json();
-            const enrichedResults = await Promise.all(
-              checkupData.map(async (result) => {
-                if (result.healthCheckScheduleId) {
-                  try {
-                    const scheduleRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/healthCheckSchedule/${result.healthCheckScheduleId}`);
-                    if (scheduleRes.ok) {
-                      const scheduleData = await scheduleRes.json();
-                      return { ...result, schedule: scheduleData };
-                    }
-                  } catch {}
-                }
-                return { ...result, schedule: null };
-              })
-            );
-            setHealthResults(enrichedResults);
-          }
+          const checkupData = await API_SERVICE.healthCheckResultAPI.getByProfile(healthData.healthProfileId);
+          const enrichedResults = await Promise.all(
+            checkupData.map(async (result) => {
+              if (result.healthCheckScheduleId) {
+                try {
+                  const scheduleData = await API_SERVICE.healthCheckScheduleAPI.get(result.healthCheckScheduleId);
+                  return { ...result, schedule: scheduleData };
+                } catch {}
+              }
+              return { ...result, schedule: null };
+            })
+          );
+          setHealthResults(enrichedResults);
           // Lấy lịch sử tiêm chủng
-          const vacRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/vaccinationResult/getResultsByProfile${healthData.healthProfileId}`);
-          if (vacRes.ok) {
-            const vacData = await vacRes.json();
-            const enrichedVac = await Promise.all(
-              vacData.map(async (result) => {
-                if (result.vaccinationScheduleId) {
-                  try {
-                    const scheduleRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/vaccinationSchedule/${result.vaccinationScheduleId}`);
-                    if (scheduleRes.ok) {
-                      const scheduleData = await scheduleRes.json();
-                      return { ...result, schedule: scheduleData };
-                    }
-                  } catch {}
-                }
-                return { ...result, schedule: null };
-              })
-            );
-            setVaccinationResults(enrichedVac);
-          }
+          const vacData = await API_SERVICE.vaccinationResultAPI.getByProfile(healthData.healthProfileId);
+          const enrichedVac = await Promise.all(
+            vacData.map(async (result) => {
+              if (result.vaccinationScheduleId) {
+                try {
+                  const scheduleData = await API_SERVICE.vaccinationScheduleAPI.get(result.vaccinationScheduleId);
+                  return { ...result, schedule: scheduleData };
+                } catch {}
+              }
+              return { ...result, schedule: null };
+            })
+          );
+          setVaccinationResults(enrichedVac);
         }
         // Lấy sự kiện y tế
-        const eventRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medicalEvent/getMedicalByStudent?studentId=${studentId}`);
-        if (eventRes.ok) {
-          const eventData = await eventRes.json();
-          setMedicalEvents(Array.isArray(eventData) ? eventData : []);
-        }
+        const eventData = await API_SERVICE.medicalEventAPI.getByStudent(studentId);
+        setMedicalEvents(Array.isArray(eventData) ? eventData : []);
       } catch (err) {
         setError(err.message);
       } finally {

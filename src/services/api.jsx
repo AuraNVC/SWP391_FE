@@ -37,6 +37,37 @@ const API = {
     HEALTH_CHECK_SCHEDULE_UPDATE: (id) => `${API_BASE_URL}/healthCheckSchedule/${id}`,
     HEALTH_CHECK_SCHEDULE_DETAIL: (id) => `${API_BASE_URL}/healthCheckSchedule/${id}`,
     HEALTH_CHECK_SCHEDULE_DELETE: (id) => `${API_BASE_URL}/healthCheckSchedule/${id}`,
+    STUDENT_DETAIL: (id) => `${API_BASE_URL}/student/${id}`,
+    STUDENT_BY_PARENT: (parentId) => `${API_BASE_URL}/student/parent/${parentId}`,
+    PARENT_PRESCRIPTION_BY_STUDENT: (studentId) => `${API_BASE_URL}/parent-prescription/student/${studentId}`,
+    PARENT_PRESCRIPTION_BY_PARENT: (parentId) => `${API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${parentId}`,
+    PARENT_PRESCRIPTION_GET_BY_PARENT: (parentId) => `${API_BASE_URL}/parentPrescription/getByParent?parentId=${parentId}`,
+    MEDICATION_BY_PRESCRIPTION: (prescriptionId) => `${API_BASE_URL}/medication/getMedicalByPrescription?prescriptionId=${prescriptionId}`,
+    PRESCRIPTION_BY_PRESCRIPTION: (prescriptionId) => `${API_BASE_URL}/prescription/getMedicalByPrescription?prescriptionId=${prescriptionId}`,
+    PRESCRIPTION_BY_PARENT: (parentId) => `${API_BASE_URL}/prescription/getPrescriptionByParent?parentId=${parentId}`,
+    PARENT_GET: (parentId) => `${API_BASE_URL}/student/getParent${parentId}`,
+    HEALTH_PROFILE: (studentId) => `${API_BASE_URL}/healthProfile/${studentId}`,
+    HEALTH_PROFILE_UPDATE: `${API_BASE_URL}/healthProfile/update`,
+    HEALTH_CHECK_RESULT_BY_PROFILE: (profileId) => `${API_BASE_URL}/healthCheckResult/getResultsByProfile${profileId}`,
+    HEALTH_CHECK_SCHEDULE: (scheduleId) => `${API_BASE_URL}/healthCheckSchedule/${scheduleId}`,
+    VACCINATION_RESULT_BY_PROFILE: (profileId) => `${API_BASE_URL}/vaccinationResult/getResultsByProfile${profileId}`,
+    VACCINATION_SCHEDULE: (scheduleId) => `${API_BASE_URL}/vaccinationSchedule/${scheduleId}`,
+    MEDICAL_EVENT_BY_STUDENT: (studentId) => `${API_BASE_URL}/medicalEvent/getMedicalByStudent?studentId=${studentId}`,
+    PARENT_PRESCRIPTION_ADD: `${API_BASE_URL}/parentPrescription/add`,
+    MEDICATION_ADD: `${API_BASE_URL}/medication/add`,
+    BLOG_UPLOAD_IMAGE: `${API_BASE_URL}/blog/uploadImage`,
+    CONSENT_FORM_BY_PARENT: (parentId) => `${API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${parentId}`,
+    CONSENT_FORM_DETAIL: (endpoint, id) => `${API_BASE_URL}/consentForm/${endpoint}/${id}`,
+    CONSULTATION_FORM_BY_STUDENT: (studentId) => `${API_BASE_URL}/consultationForm/getByStudent?studentId=${studentId}`,
+    CONSULTATION_FORM_DETAIL: (endpoint, id) => `${API_BASE_URL}/consultationForm/${endpoint}/${id}`,
+    CONSULTATION_FORM_BY_PARENT: (parentId) => `${API_BASE_URL}/consultationForm/getByParent?parentId=${parentId}`,
+    CONSULTATION_SCHEDULE: (id) => `${API_BASE_URL}/consultationSchedule/${id}`,
+    HEALTH_CHECK_SCHEDULE_BY_FORM: (formId) => `${API_BASE_URL}/healthCheckSchedule/getByForm${formId}`,
+    VACCINATION_SCHEDULE_BY_FORM: (formId) => `${API_BASE_URL}/vaccinationSchedule/getByForm${formId}`,
+    CONSENT_FORM_ACCEPT: (id) => `${API_BASE_URL}/consentForm/accept/${id}`,
+    CONSENT_FORM_REJECT: (id) => `${API_BASE_URL}/consentForm/reject/${id}`,
+    CONSULTATION_FORM_ACCEPT: (id) => `${API_BASE_URL}/consultationForm/accept/${id}`,
+    CONSULTATION_FORM_REJECT: (id) => `${API_BASE_URL}/consultationForm/reject/${id}`,
     // Thêm các endpoint khác nếu cần
 };
 
@@ -75,6 +106,10 @@ export const API_SERVICE = {
         update: (id, formData) => callApi(API.BLOG_UPDATE(id), {
             method: "PUT",
             body: formData, // Don't set Content-Type for FormData
+        }),
+        uploadImage: (formData) => callApi(API.BLOG_UPLOAD_IMAGE, {
+            method: "POST",
+            body: formData,
         }),
         // Thêm các hàm POST/PUT/DELETE nếu cần
     },
@@ -129,6 +164,8 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        getById: (id) => callApi(API.STUDENT_DETAIL(id)),
+        getByParent: (parentId) => callApi(API.STUDENT_BY_PARENT(parentId)),
         // Thêm các hàm khác nếu cần
     },
     parentAPI: {
@@ -156,6 +193,7 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        getParent: (parentId) => callApi(API.PARENT_GET(parentId)),
         // Thêm các hàm khác nếu cần
     },
     nurseAPI: {
@@ -230,6 +268,72 @@ export const API_SERVICE = {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         }),
+        get: (scheduleId) => callApi(API.HEALTH_CHECK_SCHEDULE(scheduleId)),
+        getByForm: (formId) => callApi(API.HEALTH_CHECK_SCHEDULE_BY_FORM(formId)),
+    },
+    studentPrescriptionAPI: {
+        getByStudent: (studentId) => callApi(API.PARENT_PRESCRIPTION_BY_STUDENT(studentId)),
+        getPrescriptionByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_BY_PARENT(parentId)),
+        getByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_GET_BY_PARENT(parentId)),
+        add: (data) => callApi(API.PARENT_PRESCRIPTION_ADD, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+    },
+    medicationAPI: {
+        getByPrescription: (prescriptionId) => callApi(API.MEDICATION_BY_PRESCRIPTION(prescriptionId)),
+        add: (data) => callApi(API.MEDICATION_ADD, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+    },
+    prescriptionAPI: {
+        getByPrescription: (prescriptionId) => callApi(API.PRESCRIPTION_BY_PRESCRIPTION(prescriptionId)),
+        getByParent: (parentId) => callApi(API.PRESCRIPTION_BY_PARENT(parentId)),
+    },
+    healthProfileAPI: {
+        get: (studentId) => callApi(API.HEALTH_PROFILE(studentId)),
+        update: (healthProfileId, data) => callApi(API.HEALTH_PROFILE_UPDATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ healthProfileId, ...data })
+        }),
+    },
+    healthCheckResultAPI: {
+        getByProfile: (profileId) => callApi(API.HEALTH_CHECK_RESULT_BY_PROFILE(profileId)),
+    },
+    vaccinationResultAPI: {
+        getByProfile: (profileId) => callApi(API.VACCINATION_RESULT_BY_PROFILE(profileId)),
+    },
+    vaccinationScheduleAPI: {
+        get: (scheduleId) => callApi(API.VACCINATION_SCHEDULE(scheduleId)),
+        getByForm: (formId) => callApi(API.VACCINATION_SCHEDULE_BY_FORM(formId)),
+    },
+    medicalEventAPI: {
+        getByStudent: (studentId) => callApi(API.MEDICAL_EVENT_BY_STUDENT(studentId)),
+    },
+    consentFormAPI: {
+        getByParent: (parentId) => callApi(API.CONSENT_FORM_BY_PARENT(parentId)),
+        getDetail: (endpoint, id) => callApi(API.CONSENT_FORM_DETAIL(endpoint, id)),
+        accept: (id) => callApi(API.CONSENT_FORM_ACCEPT(id), { method: 'POST' }),
+        reject: (id) => callApi(API.CONSENT_FORM_REJECT(id), { method: 'POST' }),
+    },
+    consultationFormAPI: {
+        getByStudent: (studentId) => callApi(API.CONSULTATION_FORM_BY_STUDENT(studentId)),
+        getDetail: (endpoint, id) => callApi(API.CONSULTATION_FORM_DETAIL(endpoint, id)),
+        getByParent: (parentId) => callApi(API.CONSULTATION_FORM_BY_PARENT(parentId)),
+        accept: (id) => callApi(API.CONSULTATION_FORM_ACCEPT(id), { method: 'POST' }),
+        reject: (id) => callApi(API.CONSULTATION_FORM_REJECT(id), { method: 'POST' }),
+    },
+    consultationScheduleAPI: {
+        get: (id) => callApi(API.CONSULTATION_SCHEDULE(id)),
+    },
+    parentPrescriptionAPI: {
+        getPrescriptionByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_BY_PARENT(parentId)),
+        getByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_GET_BY_PARENT(parentId)),
+        // ... các hàm khác nếu cần
     },
     // Thêm các nhóm API khác nếu cần
 };

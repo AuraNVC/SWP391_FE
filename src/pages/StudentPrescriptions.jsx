@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
+import { API_SERVICE } from '../services/api';
 
 export default function StudentPrescriptions() {
   const [prescriptions, setPrescriptions] = useState([]);
@@ -24,19 +25,15 @@ export default function StudentPrescriptions() {
         setStudentId(sid);
         if (!sid) throw new Error('Student ID not found');
         // Lấy thông tin học sinh để lấy parentId
-        const resStudent = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/${sid}`);
-        if (!resStudent.ok) throw new Error('Không thể lấy thông tin học sinh');
-        const studentData = await resStudent.json();
+        const studentData = await API_SERVICE.studentAPI.getById(sid);
         const pid = studentData.parent?.parentId || studentData.parentId;
         setParentId(pid);
         if (!pid) throw new Error('Không tìm thấy parentId');
         // Lấy tất cả đơn thuốc của parent
-        let response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${pid}`);
-        if (!response.ok) {
-          response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getByParent?parentId=${pid}`);
+        let data = await API_SERVICE.parentPrescriptionAPI.getPrescriptionByParent(pid);
+        if (!data || data.length === 0) {
+          data = await API_SERVICE.parentPrescriptionAPI.getByParent(pid);
         }
-        if (!response.ok) throw new Error('Không thể lấy danh sách đơn thuốc');
-        const data = await response.json();
         // Lấy tên phụ huynh cho từng đơn thuốc nếu có
         const parentMap = {};
         for (const p of data) {
@@ -49,13 +46,11 @@ export default function StudentPrescriptions() {
         const medsMap = {};
         for (const p of data) {
           const presId = p.parentPrescriptionId || p.prescriptionId;
-          let medsRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medication/getMedicalByPrescription?prescriptionId=${presId}`);
-          if (!medsRes.ok) {
-            medsRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getMedicalByPrescription?prescriptionId=${presId}`);
+          let meds = await API_SERVICE.medicationAPI.getByPrescription(presId);
+          if (!meds || meds.length === 0) {
+            meds = await API_SERVICE.prescriptionAPI.getByPrescription(presId);
           }
-          if (medsRes.ok) {
-            const meds = await medsRes.json();
-            // Lọc thuốc dành cho học sinh này
+          if (meds && meds.length > 0) {
             medsMap[presId] = meds.filter(med => med.studentId == sid);
           } else {
             medsMap[presId] = [];
