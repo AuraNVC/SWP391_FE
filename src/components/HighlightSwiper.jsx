@@ -57,7 +57,7 @@ const HighlightSwiper = ({
                   height: "100%",
                   objectFit: "cover",
                   display: "block",
-                  imageRendering: "auto",
+                  imageRendering: "high-quality",
                   objectPosition: "center",
                 }}
               />

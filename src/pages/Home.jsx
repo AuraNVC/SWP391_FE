@@ -54,10 +54,15 @@ const Home = () => {
         ]);
     }, [userRole]);
 
-    // Mapping cho phần Bài Viết Mới Nhất (tất cả blog, mới nhất lên đầu)
+    // Mapping cho phần Bài Viết Mới Nhất (8 blog mới nhất, loại bỏ category Home)
     const latestBlogs = allBlogs
-        .slice()
+        .filter(blog =>
+            blog.category !== "Home" &&
+            blog.category !== 5 &&
+            !(typeof blog.category === "string" && blog.category.toLowerCase() === "home")
+        )
         .sort((a, b) => new Date(b.datePosted) - new Date(a.datePosted))
+        .slice(0, 9)
         .map(blog => ({
             title: blog.title,
             desc: blog.content ? (blog.content.length > 120 ? blog.content.substring(0, 120) + "..." : blog.content) : "Không có mô tả",
