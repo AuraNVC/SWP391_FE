@@ -1,53 +1,40 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import HighlightSwiper from "../components/HighlightSwiper"; // import component mới
-
-const highlightPrograms = [
-    {
-        title: "Chương trình tiêm chủng mở rộng",
-        desc: "Đảm bảo mọi học sinh được tiêm chủng đầy đủ các loại vaccine phòng bệnh theo khuyến nghị của Bộ Y tế.",
-        image: "/images/vaccine-program.jpg"
-    },
-    {
-        title: "Khám sức khỏe định kỳ",
-        desc: "Tổ chức khám sức khỏe tổng quát cho học sinh mỗi học kỳ, phát hiện sớm các vấn đề sức khỏe.",
-        image: "/images/health-check.jpg"
-    },
-    {
-        title: "Tư vấn dinh dưỡng học đường",
-        desc: "Chuyên gia dinh dưỡng tư vấn chế độ ăn uống hợp lý, giúp học sinh phát triển toàn diện.",
-        image: "/images/nutrition.jpg"
-    },
-    {
-        title: "Phòng chống dịch bệnh học đường",
-        desc: "Triển khai các biện pháp phòng chống dịch bệnh, hướng dẫn vệ sinh cá nhân và môi trường lớp học.",
-        image: "/images/disease-prevention.jpg"
-    }
-];
+import HighlightSwiper from "../components/HighlightSwiper";
+import { API_SERVICE } from "../services/api";
 
 const Home = () => {
-    const [blogs, setBlogs] = useState([]);
+    const [highlightBlogs, setHighlightBlogs] = useState([]);
+    const [allBlogs, setAllBlogs] = useState([]);
     const [documents, setDocuments] = useState([]);
     const [userRole] = useState(localStorage.getItem("userRole"));
 
     useEffect(() => {
-        setBlogs([
-            {
-                title: "Phòng tránh tay chân miệng",
-                desc: "Rửa tay thường xuyên, vệ sinh đồ chơi và dụng cụ học tập là những biện pháp quan trọng để phòng tránh bệnh tay chân miệng.",
-                link: "/blog/1"
-            },
-            {
-                title: "Lợi ích tiêm chủng",
-                desc: "Tiêm chủng giúp bảo vệ trẻ khỏi các bệnh truyền nhiễm nguy hiểm và tạo miễn dịch cộng đồng.",
-                link: "/blog/2"
-            },
-            {
-                title: "Bệnh mùa hè",
-                desc: "Cách nhận biết và phòng tránh các bệnh thường gặp trong mùa hè như sốt xuất huyết, tiêu chảy.",
-                link: "/blog/3"
+        async function fetchBlogs() {
+            try {
+                const response = await API_SERVICE.blogAPI.getAll({ keyword: "" });
+                setAllBlogs(response);
+                // Lọc blog category Home
+                const homeBlogs = response.filter(
+                    (post) =>
+                        post.category === "Home" ||
+                        (typeof post.category === "string" && post.category.toLowerCase() === "home") ||
+                        post.category === 5
+                );
+                // Mapping cho HighlightSwiper
+                const highlightItems = homeBlogs.map(blog => ({
+                    title: blog.title,
+                    desc: blog.content ? (blog.content.length > 120 ? blog.content.substring(0, 120) + "..." : blog.content) : "Không có mô tả",
+                    image: blog.thumbnail ? `https://localhost:7024/files/blogs/${blog.thumbnail}` : "/images/default.jpg",
+                    link: `/blog/${blog.blogId}`
+                }));
+                setHighlightBlogs(highlightItems);
+            } catch (e) {
+                setHighlightBlogs([]);
+                setAllBlogs([]);
             }
-        ]);
+        }
+        fetchBlogs();
         setDocuments([
             {
                 title: "Hướng dẫn phòng bệnh tay chân miệng",
@@ -67,17 +54,28 @@ const Home = () => {
         ]);
     }, [userRole]);
 
+    // Mapping cho phần Bài Viết Mới Nhất (tất cả blog, mới nhất lên đầu)
+    const latestBlogs = allBlogs
+        .slice()
+        .sort((a, b) => new Date(b.datePosted) - new Date(a.datePosted))
+        .map(blog => ({
+            title: blog.title,
+            desc: blog.content ? (blog.content.length > 120 ? blog.content.substring(0, 120) + "..." : blog.content) : "Không có mô tả",
+            image: blog.thumbnail ? `https://localhost:7024/files/blogs/${blog.thumbnail}` : "/images/default.jpg",
+            link: `/blog/${blog.blogId}`
+        }));
+
     return (
         <main className="container-fluid py-5 px-10">
             {/* Swiper giới thiệu các chương trình nổi bật */}
-            <HighlightSwiper items={highlightPrograms} title="Chương Trình Y Tế Đáng Chú Ý" />
+            <HighlightSwiper items={highlightBlogs} title="Chương Trình Y Tế Đáng Chú Ý" />
 
             <div style={{ margin: "0 auto", padding: "0 10rem" }}>
                 {/* Blog */}
                 <section className="mb-5">
                     <h2 className="text-center fw-bold mb-4 fs-2">Bài Viết Mới Nhất</h2>
                     <div className="row g-4">
-                        {blogs.map((blog, idx) => (
+                        {latestBlogs.map((blog, idx) => (
                             <div className="col-12 col-md-6 col-lg-4" key={idx}>
                                 <div className="bg-white rounded shadow h-100">
                                     <div className="p-4">

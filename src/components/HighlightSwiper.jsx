@@ -35,9 +35,6 @@ const HighlightSwiper = ({
         pagination={{ clickable: true }}
         autoplay={{ delay, disableOnInteraction: false }}
         style={{
-          borderRadius: 20,
-          background: "#fff",
-          boxShadow: "0 2px 16px #e0e0e0",
           minHeight: 420,
         }}
       >
@@ -60,6 +57,8 @@ const HighlightSwiper = ({
                   height: "100%",
                   objectFit: "cover",
                   display: "block",
+                  imageRendering: "auto",
+                  objectPosition: "center",
                 }}
               />
               <div

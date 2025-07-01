@@ -53,9 +53,10 @@ export default function Blog() {
         fetchBlogs();
     }, []);
 
-    // Lọc bài viết theo search và category
+    // Lọc bài viết theo search và category, đồng thời loại bỏ các blog category Home
     let filteredPosts = blogPosts.filter(
         (post) =>
+            ((post.category !== "Home" && post.category !== 5 && !(typeof post.category === "string" && post.category.toLowerCase() === "home"))) &&
             (category === "" || post.category === category) &&
             (search === "" ||
                 post.title.toLowerCase().includes(search.toLowerCase()) ||
