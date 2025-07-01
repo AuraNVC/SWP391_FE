@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
+import { API_SERVICE } from '../services/api';
 
 export default function ParentNotifications() {
   const [consentForms, setConsentForms] = useState([]);
@@ -24,17 +25,10 @@ export default function ParentNotifications() {
       setSuccessMessage(null);
       
       console.log('Updating consent form:', { consentFormId, isAccept });
-      const endpoint = isAccept ? 'accept' : 'reject';
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/${endpoint}/${consentFormId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      console.log('Update response status:', response.status);
-      if (!response.ok) {
-        throw new Error(`Failed to update consent form: ${response.status}`);
+      if (isAccept) {
+        await API_SERVICE.consentFormAPI.accept(consentFormId);
+      } else {
+        await API_SERVICE.consentFormAPI.reject(consentFormId);
       }
 
       // Show success message
@@ -45,9 +39,7 @@ export default function ParentNotifications() {
       const parentId = localStorage.getItem('userId');
       const numericParentId = parseInt(parentId);
       console.log('Refreshing list for parent:', numericParentId);
-      const updatedResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`);
-      const updatedData = await updatedResponse.json();
-      console.log('Updated consent forms:', updatedData);
+      const updatedData = await API_SERVICE.consentFormAPI.getByParent(numericParentId);
       setConsentForms(updatedData);
       
       // Clear success message after 3 seconds
@@ -78,18 +70,11 @@ export default function ParentNotifications() {
         }
         
         // Step 1: Fetch consent forms and students
-        const [consentFormsResponse, studentsRes] = await Promise.all([
-          fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${numericParentId}`),
-          fetch(`${import.meta.env.VITE_API_BASE_URL}/student/getParent${numericParentId}`)
+        const [forms, studentList] = await Promise.all([
+          API_SERVICE.consentFormAPI.getByParent(numericParentId),
+          API_SERVICE.parentAPI.getParent(numericParentId)
         ]);
-
-        if (!consentFormsResponse.ok) {
-          throw new Error(`Failed to fetch consent forms: ${consentFormsResponse.status}`);
-        }
-        const forms = await consentFormsResponse.json();
         setConsentForms(forms);
-
-        const studentList = studentsRes.ok ? await studentsRes.json() : [];
         setStudents(studentList);
 
         // Step 2: Based on forms, fetch their specific schedules

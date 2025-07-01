@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
+import { API_SERVICE } from '../services/api';
 
 export default function StudentConsultations() {
   const [forms, setForms] = useState([]);
@@ -20,11 +21,7 @@ export default function StudentConsultations() {
         }
 
         // Fetch consultation forms for the student
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationForm/getByStudent?studentId=${studentId}`);
-        if (!response.ok) {
-          throw new Error('Không thể tải lịch hẹn tư vấn.');
-        }
-        const data = await response.json();
+        const data = await API_SERVICE.consultationFormAPI.getByStudent(studentId);
         setForms(data);
 
       } catch (err) {

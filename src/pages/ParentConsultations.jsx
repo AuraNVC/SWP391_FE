@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
+import { API_SERVICE } from '../services/api';
 
 export default function ParentConsultations() {
   const [consultations, setConsultations] = useState([]);
@@ -21,16 +22,10 @@ export default function ParentConsultations() {
       setError(null);
       setSuccessMessage(null);
 
-      const endpoint = isAccept ? 'accept' : 'reject';
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationForm/${endpoint}/${consultationFormId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Lỗi khi cập nhật trạng thái: ${response.status}`);
+      if (isAccept) {
+        await API_SERVICE.consultationFormAPI.accept(consultationFormId);
+      } else {
+        await API_SERVICE.consultationFormAPI.reject(consultationFormId);
       }
 
       const action = isAccept ? 'chấp nhận' : 'từ chối';
@@ -39,8 +34,7 @@ export default function ParentConsultations() {
       // Refresh the list after update
       const parentId = localStorage.getItem('userId');
       const numericParentId = parseInt(parentId, 10);
-      const updatedResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationForm/getByParent?parentId=${numericParentId}`);
-      const updatedData = await updatedResponse.json();
+      const updatedData = await API_SERVICE.consultationFormAPI.getByParent(numericParentId);
       setConsultations(updatedData);
 
       setTimeout(() => setSuccessMessage(null), 3000);
@@ -67,20 +61,12 @@ export default function ParentConsultations() {
         }
 
         // Fetch students for the parent
-        const studentResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/getParent${parentId}`);
-        if (!studentResponse.ok) {
-          throw new Error('Không thể tải danh sách học sinh.');
-        }
-        const studentData = await studentResponse.json();
+        const studentData = await API_SERVICE.parentAPI.getParent(parentId);
         setStudents(studentData);
 
         // Fetch all consultation forms for the parent
         const numericParentId = parseInt(parentId, 10);
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationForm/getByParent?parentId=${numericParentId}`);
-        if (!response.ok) {
-          throw new Error(`Lỗi khi tải dữ liệu: ${response.status}`);
-        }
-        let consultationData = await response.json();
+        const consultationData = await API_SERVICE.consultationFormAPI.getByParent(numericParentId);
 
         // Map student names to consultations
         if (Array.isArray(consultationData) && Array.isArray(studentData) && consultationData.length > 0) {
@@ -89,17 +75,13 @@ export default function ParentConsultations() {
                     return { ...form, studentName: 'Không rõ' };
                 }
                 // Fetch full schedule details to get studentId
-                const scheduleRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consultationSchedule/${form.consultationSchedule.consultationScheduleId}`);
-                if (scheduleRes.ok) {
-                    const scheduleData = await scheduleRes.json();
-                    const student = studentData.find(s => s.studentId === scheduleData.studentId);
-                    return {
-                        ...form,
-                        consultationSchedule: scheduleData, // Replace placeholder with full data
-                        studentName: student ? student.fullName : 'Không rõ'
-                    };
-                }
-                return { ...form, studentName: 'Không rõ' };
+                const scheduleData = await API_SERVICE.consultationScheduleAPI.get(form.consultationSchedule.consultationScheduleId);
+                const student = studentData.find(s => s.studentId === scheduleData.studentId);
+                return {
+                    ...form,
+                    consultationSchedule: scheduleData, // Replace placeholder with full data
+                    studentName: student ? student.fullName : 'Không rõ'
+                };
             }));
             setConsultations(enrichedConsultations);
         } else {

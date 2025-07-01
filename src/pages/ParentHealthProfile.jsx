@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_SERVICE } from '../services/api';
 
 const ParentHealthProfile = () => {
   const [students, setStudents] = useState([]);
@@ -31,22 +32,14 @@ const ParentHealthProfile = () => {
           throw new Error('Parent ID not found');
         }
 
-        const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/getParent${parentId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch students');
-        }
-
-        const data = await response.json();
+        const data = await API_SERVICE.parentAPI.getParent(parentId);
         setStudents(data);
 
         // Fetch health profiles for each student
         const profiles = {};
         for (const student of data) {
-          const healthResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/healthProfile/${student.studentId}`);
-          if (healthResponse.ok) {
-            const healthData = await healthResponse.json();
-            profiles[student.studentId] = healthData;
-          }
+          const healthData = await API_SERVICE.healthProfileAPI.get(student.studentId);
+          profiles[student.studentId] = healthData;
         }
         setHealthProfiles(profiles);
       } catch (error) {
@@ -92,23 +85,16 @@ const ParentHealthProfile = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/healthCheckResult/getResultsByProfile${profile.healthProfileId}`);
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Không thể tải kết quả khám: ${errorData}`);
-      }
-      const results = await response.json();
+      const response = await API_SERVICE.healthCheckResultAPI.getByProfile(profile.healthProfileId);
+      const results = response;
 
       // Fetch schedule details for each result
       const enrichedResults = await Promise.all(
         results.map(async (result) => {
           if (result.healthCheckScheduleId) {
             try {
-              const scheduleRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/healthCheckSchedule/${result.healthCheckScheduleId}`);
-              if (scheduleRes.ok) {
-                const scheduleData = await scheduleRes.json();
-                return { ...result, schedule: scheduleData };
-              }
+              const scheduleData = await API_SERVICE.healthCheckScheduleAPI.get(result.healthCheckScheduleId);
+              return { ...result, schedule: scheduleData };
             } catch (scheduleErr) {
               console.error(`Failed to fetch health schedule for result ${result.resultId}:`, scheduleErr);
             }
@@ -148,22 +134,15 @@ const ParentHealthProfile = () => {
     setError(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/vaccinationResult/getResultsByProfile${profile.healthProfileId}`);
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Không thể tải lịch sử tiêm chủng: ${errorData}`);
-      }
-      const results = await response.json();
+      const response = await API_SERVICE.vaccinationResultAPI.getByProfile(profile.healthProfileId);
+      const results = response;
       // Fetch schedule details for each result
       const enrichedResults = await Promise.all(
         results.map(async (result) => {
           if (result.vaccinationScheduleId) {
             try {
-              const scheduleRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/vaccinationSchedule/${result.vaccinationScheduleId}`);
-              if (scheduleRes.ok) {
-                const scheduleData = await scheduleRes.json();
-                return { ...result, schedule: scheduleData };
-              }
+              const scheduleData = await API_SERVICE.vaccinationScheduleAPI.get(result.vaccinationScheduleId);
+              return { ...result, schedule: scheduleData };
             } catch (scheduleErr) {
               console.error(`Failed to fetch vaccination schedule for result ${result.resultId}:`, scheduleErr);
             }
@@ -199,13 +178,9 @@ const ParentHealthProfile = () => {
     setSelectedStudentForMedicalEvents(profile);
     setError(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medicalEvent/getMedicalByStudent?studentId=${profile.studentId}`);
-      if (!response.ok) {
-        const errorData = await response.text();
-        throw new Error(`Không thể tải sự kiện y tế: ${errorData}`);
-      }
-      const event = await response.json();
-      setMedicalEvents(Array.isArray(event) ? event : []);
+      const response = await API_SERVICE.medicalEventAPI.getByStudent(profile.studentId);
+      const results = response;
+      setMedicalEvents(Array.isArray(results) ? results : []);
     } catch (err) {
       setError(err.message);
       setMedicalEvents([]);
@@ -217,6 +192,9 @@ const ParentHealthProfile = () => {
   const handleUpdateSubmit = async (e) => {
     e.preventDefault();
     try {
+      if (!selectedProfile || !selectedProfile.healthProfileId) {
+        throw new Error('Không tìm thấy hồ sơ sức khỏe để cập nhật.');
+      }
       const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/healthProfile/update`, {
         method: 'PUT',
         headers: {
@@ -228,23 +206,23 @@ const ParentHealthProfile = () => {
           allergies: updateData.allergies
         })
       });
-
       if (!response.ok) {
-        throw new Error('Failed to update health profile');
+        const errorText = await response.text();
+        throw new Error('Lỗi cập nhật: ' + errorText);
       }
-
-      // Refresh health profiles after update
-      const updatedProfiles = { ...healthProfiles };
-      updatedProfiles[selectedProfile.studentId] = {
-        ...selectedProfile,
-        bloodType: updateData.bloodType,
-        allergies: updateData.allergies
-      };
-      setHealthProfiles(updatedProfiles);
+      // Cập nhật lại state FE
+      setHealthProfiles((prev) => ({
+        ...prev,
+        [selectedProfile.studentId]: {
+          ...selectedProfile,
+          bloodType: updateData.bloodType,
+          allergies: updateData.allergies
+        }
+      }));
       setShowModal(false);
+      alert('Cập nhật thành công!');
     } catch (err) {
-      console.error('Error updating health profile:', err);
-      alert('Có lỗi xảy ra khi cập nhật hồ sơ sức khỏe');
+      alert(err.message);
     }
   };
 
