@@ -30,7 +30,7 @@ export default function Login({ setNotif }) {
           navigate("/");
           break;
         case "nurse":
-          navigate("/");
+          navigate("/nurse/dashboard");
           break;
         case "parent":
           navigate("/");
@@ -99,7 +99,7 @@ export default function Login({ setNotif }) {
         if (!(data && data.user.accessToken && data.user.id)) {
           throw new Error();
         }
-        redirectPath = "/";
+        redirectPath = "/nurse/dashboard";
       } else if (role === "parent") {
         data = await API_SERVICE.login.parent({
           email: username,

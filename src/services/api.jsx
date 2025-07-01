@@ -1,7 +1,7 @@
 // eslint-disable-next-line no-undef
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Định nghĩa endpoint
+// Dinh nghia endpoint
 const API = {
     BLOG_LIST: `${API_BASE_URL}/blog/search`,
     BLOG_CREATE: `${API_BASE_URL}/blog/add`,
@@ -37,22 +37,56 @@ const API = {
     HEALTH_CHECK_SCHEDULE_UPDATE: (id) => `${API_BASE_URL}/healthCheckSchedule/${id}`,
     HEALTH_CHECK_SCHEDULE_DETAIL: (id) => `${API_BASE_URL}/healthCheckSchedule/${id}`,
     HEALTH_CHECK_SCHEDULE_DELETE: (id) => `${API_BASE_URL}/healthCheckSchedule/${id}`,
-    // Thêm các endpoint khác nếu cần
+    
+    // Medical Event endpoints
+    MEDICAL_EVENT_LIST: `${API_BASE_URL}/medicalEvent/search`,
+    MEDICAL_EVENT_CREATE: `${API_BASE_URL}/medicalEvent/add`,
+    MEDICAL_EVENT_UPDATE: (id) => `${API_BASE_URL}/medicalEvent/${id}`,
+    MEDICAL_EVENT_DETAIL: (id) => `${API_BASE_URL}/medicalEvent/${id}`,
+    MEDICAL_EVENT_DELETE: (id) => `${API_BASE_URL}/medicalEvent/${id}`,
+    
+    // Health Check Result endpoints
+    HEALTH_CHECK_RESULT_LIST: `${API_BASE_URL}/healthCheckResult/search`,
+    HEALTH_CHECK_RESULT_CREATE: `${API_BASE_URL}/healthCheckResult/add`,
+    HEALTH_CHECK_RESULT_UPDATE: (id) => `${API_BASE_URL}/healthCheckResult/${id}`,
+    HEALTH_CHECK_RESULT_DETAIL: (id) => `${API_BASE_URL}/healthCheckResult/${id}`,
+    
+    // Vaccination Result endpoints
+    VACCINATION_RESULT_LIST: `${API_BASE_URL}/vaccinationResult/search`,
+    VACCINATION_RESULT_CREATE: `${API_BASE_URL}/vaccinationResult/add`,
+    VACCINATION_RESULT_UPDATE: (id) => `${API_BASE_URL}/vaccinationResult/${id}`,
+    VACCINATION_RESULT_DETAIL: (id) => `${API_BASE_URL}/vaccinationResult/${id}`,
+    
+    // Consultation Schedule endpoints
+    CONSULTATION_SCHEDULE_LIST: `${API_BASE_URL}/consultationSchedule/search`,
+    CONSULTATION_SCHEDULE_CREATE: `${API_BASE_URL}/consultationSchedule/add`,
+    CONSULTATION_SCHEDULE_UPDATE: (id) => `${API_BASE_URL}/consultationSchedule/${id}`,
+    CONSULTATION_SCHEDULE_DETAIL: (id) => `${API_BASE_URL}/consultationSchedule/${id}`,
+    CONSULTATION_SCHEDULE_DELETE: (id) => `${API_BASE_URL}/consultationSchedule/${id}`,
+    
+    // Parent Prescription endpoints
+    PARENT_PRESCRIPTION_LIST: `${API_BASE_URL}/parentPrescription/search`,
+    PARENT_PRESCRIPTION_UPDATE: (id) => `${API_BASE_URL}/parentPrescription/${id}`,
+    PARENT_PRESCRIPTION_DETAIL: (id) => `${API_BASE_URL}/parentPrescription/${id}`,
+    
+    // Vaccination Schedule endpoints
+    VACCINATION_SCHEDULE_LIST: `${API_BASE_URL}/vaccinationSchedule/search`,
+    VACCINATION_SCHEDULE_DETAIL: (id) => `${API_BASE_URL}/vaccinationSchedule/${id}`,
 };
 
-// Hàm cha gọi API
+// Ham cha goi API
 async function callApi(url, options = {}) {
     const res = await fetch(url, options);
-    if (!res.ok) throw new Error("Lỗi khi gọi API");
+    if (!res.ok) throw new Error("Loi khi goi API");
     const contentType = res.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
         return res.json();
     }
-    // Nếu không có body (ví dụ DELETE trả về 204 No Content)
+    // Neu khong co body (vi du DELETE tra ve 204 No Content)
     return null;
 }
 
-// Các hàm con sử dụng hàm cha
+// Cac ham con su dung ham cha
 export const API_SERVICE = {
     blogAPI: {
         getAll: (data) => callApi(API.BLOG_LIST, {
@@ -76,16 +110,135 @@ export const API_SERVICE = {
             method: "PUT",
             body: formData, // Don't set Content-Type for FormData
         }),
-        // Thêm các hàm POST/PUT/DELETE nếu cần
+        // Them cac ham POST/PUT/DELETE neu can
+    },
+    medicalEventAPI: {
+        getAll: (data = {}) => callApi(API.MEDICAL_EVENT_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getById: (id) => callApi(API.MEDICAL_EVENT_DETAIL(id), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        create: (data) => callApi(API.MEDICAL_EVENT_CREATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (id, data) => callApi(API.MEDICAL_EVENT_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        delete: (id) => callApi(API.MEDICAL_EVENT_DELETE(id), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        }),
+    },
+    healthCheckResultAPI: {
+        getAll: (data = {}) => callApi(API.HEALTH_CHECK_RESULT_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getById: (id) => callApi(API.HEALTH_CHECK_RESULT_DETAIL(id), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        create: (data) => callApi(API.HEALTH_CHECK_RESULT_CREATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (id, data) => callApi(API.HEALTH_CHECK_RESULT_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+    },
+    vaccinationResultAPI: {
+        getAll: (data = {}) => callApi(API.VACCINATION_RESULT_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getById: (id) => callApi(API.VACCINATION_RESULT_DETAIL(id), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        create: (data) => callApi(API.VACCINATION_RESULT_CREATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (id, data) => callApi(API.VACCINATION_RESULT_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+    },
+    consultationScheduleAPI: {
+        getAll: (data = {}) => callApi(API.CONSULTATION_SCHEDULE_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getById: (id) => callApi(API.CONSULTATION_SCHEDULE_DETAIL(id), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        create: (data) => callApi(API.CONSULTATION_SCHEDULE_CREATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (id, data) => callApi(API.CONSULTATION_SCHEDULE_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        delete: (id) => callApi(API.CONSULTATION_SCHEDULE_DELETE(id), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        }),
+    },
+    parentPrescriptionAPI: {
+        getAll: (data = {}) => callApi(API.PARENT_PRESCRIPTION_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getById: (id) => callApi(API.PARENT_PRESCRIPTION_DETAIL(id), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        update: (id, data) => callApi(API.PARENT_PRESCRIPTION_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+    },
+    vaccinationScheduleAPI: {
+        getAll: (data = {}) => callApi(API.VACCINATION_SCHEDULE_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getById: (id) => callApi(API.VACCINATION_SCHEDULE_DETAIL(id), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
     },
     userAPI: {
         getProfile: () => callApi(API.USER_PROFILE, { credentials: "include" }),
-        // Thêm các hàm khác nếu cần
+        // Them cac ham khac neu can
     },
     documentAPI: {
         getAll: () => callApi(API.DOCUMENT_LIST),
         getById: (id) => callApi(API.DOCUMENT_DETAIL(id)),
-        // Thêm các hàm khác nếu cần
+        // Them cac ham khac neu can
     },
     login: {
         manager: (data) => callApi(API.LOGIN_MANAGER, {
@@ -129,7 +282,7 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        // Thêm các hàm khác nếu cần
+        // Them cac ham khac neu can
     },
     parentAPI: {
         getAll: (data) => callApi(API.PARENT_LIST, {
@@ -156,7 +309,7 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        // Thêm các hàm khác nếu cần
+        // Them cac ham khac neu can
     },
     nurseAPI: {
         getAll: (data) => callApi(API.NURSE_LIST, {
@@ -178,7 +331,7 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        // Thêm các hàm khác nếu cần
+        // Them cac ham khac neu can
     },
     formAPI: {
         getAll: (params) => callApi(API.FORM_LIST, {
@@ -204,7 +357,7 @@ export const API_SERVICE = {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         }),
-        // Thêm các hàm khác nếu cần
+        // Them cac ham khac neu can
     },
     healthCheckScheduleAPI: {
         getAll: (data) => callApi(API.HEALTH_CHECK_SCHEDULE_LIST, {
@@ -231,5 +384,6 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" }
         }),
     },
-    // Thêm các nhóm API khác nếu cần
 };
+
+export default API;
