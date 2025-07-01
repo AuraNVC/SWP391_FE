@@ -2,13 +2,16 @@ import React, { useState, useEffect } from "react";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
-import { FaEye, FaEdit, FaCheck, FaTimes } from "react-icons/fa";
+import { FaEye, FaEdit, FaCheck, FaTimes, FaSearch } from "react-icons/fa";
 import "../styles/Dashboard.css";
 
 const Medications = () => {
   const [medications, setMedications] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [showViewModal, setShowViewModal] = useState(false);
   const [showProcessModal, setShowProcessModal] = useState(false);
   const [selectedMedication, setSelectedMedication] = useState(null);
@@ -24,7 +27,7 @@ const Medications = () => {
     { title: "Phụ huynh", dataIndex: "parentName" },
     { title: "Học sinh", dataIndex: "studentName" },
     { title: "Tên thuốc", dataIndex: "medicineName" },
-    { title: "Ngày gửi", dataIndex: "createdDate", render: (date) => new Date(date).toLocaleDateString('vi-VN') },
+    { title: "Ngày gửi", dataIndex: "createdDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" },
     { title: "Trạng thái", dataIndex: "status", render: (status) => getStatusText(status) }
   ];
 
@@ -46,13 +49,22 @@ const Medications = () => {
 
   useEffect(() => {
     fetchMedications();
-  }, []);
+  }, [statusFilter]);
 
-  const fetchMedications = async () => {
+  const fetchMedications = async (keyword = "") => {
     setLoading(true);
     try {
-      // Assume there's an API endpoint for parent prescriptions
-      const response = await API_SERVICE.parentPrescriptionAPI.getAll();
+      const params = {
+        keyword: keyword,
+        nurseId: localStorage.getItem("userId") || ""
+      };
+      
+      // Thêm bộ lọc trạng thái nếu không phải "all"
+      if (statusFilter !== "all") {
+        params.status = statusFilter;
+      }
+      
+      const response = await API_SERVICE.parentPrescriptionAPI.getAll(params);
       setMedications(response);
     } catch (error) {
       console.error("Error fetching medications:", error);
@@ -62,6 +74,21 @@ const Medications = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    setSearchLoading(true);
+    try {
+      await fetchMedications(searchKeyword);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
     }
   };
 
@@ -88,11 +115,11 @@ const Medications = () => {
         type: "success"
       });
       setShowProcessModal(false);
-      fetchMedications();
+      fetchMedications(searchKeyword);
     } catch (error) {
       console.error("Error processing medication:", error);
       setNotif({
-        message: "Không thể xử lý thuốc",
+        message: "Không thể xử lý thuốc: " + (error.message || "Lỗi không xác định"),
         type: "error"
       });
     } finally {
@@ -136,6 +163,37 @@ const Medications = () => {
     <div className="admin-main">
       <div className="admin-header">
         <h2>Xử lý thuốc từ phụ huynh</h2>
+        <div className="admin-header-actions">
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Tìm kiếm thuốc..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="admin-search"
+            />
+            <button 
+              className="admin-btn search-btn" 
+              onClick={handleSearch}
+              disabled={searchLoading}
+            >
+              {searchLoading ? "Đang tìm..." : <FaSearch />}
+            </button>
+          </div>
+          <div className="filter-container">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="status-filter"
+            >
+              <option value="all">Tất cả trạng thái</option>
+              <option value="0">Chờ xử lý</option>
+              <option value="1">Đã chấp nhận</option>
+              <option value="2">Đã từ chối</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       <div className="admin-table-container">
@@ -186,6 +244,11 @@ const Medications = () => {
             )}
           />
         )}
+        {!loading && medications.length === 0 && (
+          <div className="no-data-message">
+            Không có yêu cầu thuốc nào
+          </div>
+        )}
       </div>
 
       {/* Modal xem chi tiết thuốc */}
@@ -199,52 +262,44 @@ const Medications = () => {
             <div className="modal-body">
               <div className="info-grid">
                 <div className="info-item">
-                  <label>ID:</label>
-                  <span>{selectedMedication.parentPrescriptionId}</span>
+                  <strong>ID:</strong> {selectedMedication.parentPrescriptionId}
                 </div>
                 <div className="info-item">
-                  <label>Phụ huynh:</label>
-                  <span>{selectedMedication.parentName}</span>
+                  <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Học sinh:</label>
-                  <span>{selectedMedication.studentName}</span>
+                  <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Tên thuốc:</label>
-                  <span>{selectedMedication.medicineName}</span>
+                  <strong>Tên thuốc:</strong> {selectedMedication.medicineName || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Liều lượng:</label>
-                  <span>{selectedMedication.dosage}</span>
+                  <strong>Liều lượng:</strong> {selectedMedication.dosage || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Thời gian dùng:</label>
-                  <span>{selectedMedication.frequency}</span>
+                  <strong>Thời gian dùng:</strong> {selectedMedication.frequency || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Ngày bắt đầu:</label>
-                  <span>{selectedMedication.startDate && new Date(selectedMedication.startDate).toLocaleDateString('vi-VN')}</span>
+                  <strong>Ngày bắt đầu:</strong> {selectedMedication.startDate ? new Date(selectedMedication.startDate).toLocaleDateString('vi-VN') : "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Ngày kết thúc:</label>
-                  <span>{selectedMedication.endDate && new Date(selectedMedication.endDate).toLocaleDateString('vi-VN')}</span>
+                  <strong>Ngày kết thúc:</strong> {selectedMedication.endDate ? new Date(selectedMedication.endDate).toLocaleDateString('vi-VN') : "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Trạng thái:</label>
-                  <span>{getStatusText(selectedMedication.status)}</span>
+                  <strong>Trạng thái:</strong> {getStatusText(selectedMedication.status)}
                 </div>
                 <div className="info-item full-width">
-                  <label>Hướng dẫn:</label>
-                  <span>{selectedMedication.instructions}</span>
+                  <strong>Hướng dẫn:</strong> {selectedMedication.instructions || "Không có"}
                 </div>
                 <div className="info-item full-width">
-                  <label>Ghi chú:</label>
-                  <span>{selectedMedication.note}</span>
+                  <strong>Ghi chú:</strong> {selectedMedication.note || "Không có"}
                 </div>
               </div>
             </div>
             <div className="modal-footer">
+              <button className="admin-btn" onClick={() => setShowViewModal(false)}>
+                Đóng
+              </button>
               <button
                 className="admin-btn"
                 onClick={() => {
@@ -253,12 +308,6 @@ const Medications = () => {
                 }}
               >
                 Xử lý
-              </button>
-              <button
-                className="admin-btn cancel-btn"
-                onClick={() => setShowViewModal(false)}
-              >
-                Đóng
               </button>
             </div>
           </div>
@@ -276,24 +325,22 @@ const Medications = () => {
             <form onSubmit={handleProcessMedication}>
               <div className="info-grid">
                 <div className="info-item">
-                  <label>Phụ huynh:</label>
-                  <span>{selectedMedication.parentName}</span>
+                  <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Học sinh:</label>
-                  <span>{selectedMedication.studentName}</span>
+                  <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Tên thuốc:</label>
-                  <span>{selectedMedication.medicineName}</span>
+                  <strong>Tên thuốc:</strong> {selectedMedication.medicineName || "Không có"}
                 </div>
               </div>
               <div className="form-group">
-                <label>Trạng thái</label>
+                <label>Trạng thái <span className="required">*</span></label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
+                  required
                   className="form-control"
                 >
                   <option value="0">Chờ xử lý</option>
@@ -308,10 +355,11 @@ const Medications = () => {
                   value={formData.note}
                   onChange={handleInputChange}
                   className="form-control"
-                  rows={3}
-                />
+                  rows="3"
+                  placeholder="Nhập ghi chú (nếu có)"
+                ></textarea>
               </div>
-              <div className="modal-footer">
+              <div className="form-actions">
                 <button type="submit" className="admin-btn" disabled={loading}>
                   {loading ? "Đang xử lý..." : "Xác nhận"}
                 </button>

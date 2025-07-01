@@ -1,4 +1,4 @@
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
     FaTachometerAlt, FaNotesMedical, FaStethoscope, FaSyringe, FaCalendarAlt, FaPills, FaClipboardCheck
@@ -9,13 +9,27 @@ export default function NurseLayout() {
     const current = location.pathname;
 
     const extraLinks = [
-        <a href="/nurse/dashboard" className={current === "/nurse/dashboard" ? "active" : ""}><FaTachometerAlt /> Dashboard</a>,
-        <a href="/nurse/medical-events" className={current === "/nurse/medical-events" ? "active" : ""}><FaNotesMedical /> Sự kiện y tế</a>,
-        <a href="/nurse/health-check-results" className={current === "/nurse/health-check-results" ? "active" : ""}><FaStethoscope /> Kết quả khám</a>,
-        <a href="/nurse/vaccination-results" className={current === "/nurse/vaccination-results" ? "active" : ""}><FaSyringe /> Kết quả tiêm</a>,
-        <a href="/nurse/vaccination-follow-up" className={current === "/nurse/vaccination-follow-up" ? "active" : ""}><FaClipboardCheck /> Theo dõi sau tiêm</a>,
-        <a href="/nurse/consultation-schedules" className={current === "/nurse/consultation-schedules" ? "active" : ""}><FaCalendarAlt /> Lịch tư vấn</a>,
-        <a href="/nurse/medications" className={current === "/nurse/medications" ? "active" : ""}><FaPills /> Xử lý thuốc</a>,
+        <Link to="/nurse/dashboard" className={current === "/nurse/dashboard" ? "active" : ""} key="dashboard-link">
+            <FaTachometerAlt /> Dashboard
+        </Link>,
+        <Link to="/nurse/medical-events" className={current === "/nurse/medical-events" ? "active" : ""} key="med-events-link">
+            <FaNotesMedical /> Sự kiện y tế
+        </Link>,
+        <Link to="/nurse/health-check-results" className={current === "/nurse/health-check-results" ? "active" : ""} key="health-check-link">
+            <FaStethoscope /> Kết quả khám
+        </Link>,
+        <Link to="/nurse/vaccination-results" className={current === "/nurse/vaccination-results" ? "active" : ""} key="vax-results-link">
+            <FaSyringe /> Kết quả tiêm
+        </Link>,
+        <Link to="/nurse/vaccination-follow-up" className={current === "/nurse/vaccination-follow-up" ? "active" : ""} key="vax-follow-up-link">
+            <FaClipboardCheck /> Theo dõi sau tiêm
+        </Link>,
+        <Link to="/nurse/consultation-schedules" className={current === "/nurse/consultation-schedules" ? "active" : ""} key="consult-schedules-link">
+            <FaCalendarAlt /> Lịch tư vấn
+        </Link>,
+        <Link to="/nurse/medications" className={current === "/nurse/medications" ? "active" : ""} key="medications-link">
+            <FaPills /> Xử lý thuốc
+        </Link>,
     ];
 
     return (

@@ -2,14 +2,16 @@ import React, { useState, useEffect } from "react";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
-import { FaEye, FaEdit, FaPlus } from "react-icons/fa";
+import { FaEye, FaEdit, FaPlus, FaSearch } from "react-icons/fa";
 import "../styles/Dashboard.css";
 
 const HealthResults = () => {
   const [results, setResults] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -32,8 +34,8 @@ const HealthResults = () => {
   const columns = [
     { title: "ID", dataIndex: "healthCheckupRecordId" },
     { title: "Học sinh", dataIndex: "studentName" },
-    { title: "Chiều cao", dataIndex: "height", render: (height) => `${height} cm` },
-    { title: "Cân nặng", dataIndex: "weight", render: (weight) => `${weight} kg` },
+    { title: "Chiều cao", dataIndex: "height", render: (height) => height ? `${height} cm` : "N/A" },
+    { title: "Cân nặng", dataIndex: "weight", render: (weight) => weight ? `${weight} kg` : "N/A" },
     { title: "Kết quả", dataIndex: "result" },
     { title: "Trạng thái", dataIndex: "status", render: (status) => getStatusText(status) }
   ];
@@ -57,11 +59,13 @@ const HealthResults = () => {
     fetchHealthCheckSchedules();
   }, []);
 
-  const fetchHealthCheckResults = async () => {
+  const fetchHealthCheckResults = async (keyword = "") => {
     setLoading(true);
     try {
-      // Assume there's an API endpoint for health check results
-      const response = await API_SERVICE.healthCheckResultAPI.getAll();
+      const response = await API_SERVICE.healthCheckResultAPI.getAll({
+        keyword: keyword,
+        nurseId: localStorage.getItem("userId") || ""
+      });
       setResults(response);
     } catch (error) {
       console.error("Error fetching health check results:", error);
@@ -76,11 +80,31 @@ const HealthResults = () => {
 
   const fetchHealthCheckSchedules = async () => {
     try {
-      // Assume there's an API endpoint for health check schedules
-      const response = await API_SERVICE.healthCheckScheduleAPI.getAll({});
+      const response = await API_SERVICE.healthCheckScheduleAPI.getAll({
+        status: "1" // Chỉ lấy các lịch khám đã hoàn thành
+      });
       setSchedules(response);
     } catch (error) {
       console.error("Error fetching health check schedules:", error);
+      setNotif({
+        message: "Không thể tải danh sách lịch khám sức khỏe",
+        type: "error"
+      });
+    }
+  };
+
+  const handleSearch = async () => {
+    setSearchLoading(true);
+    try {
+      await fetchHealthCheckResults(searchKeyword);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
     }
   };
 
@@ -92,8 +116,31 @@ const HealthResults = () => {
     });
   };
 
+  const validateForm = () => {
+    if (!formData.healthCheckScheduleId) {
+      setNotif({
+        message: "Vui lòng chọn lịch khám",
+        type: "error"
+      });
+      return false;
+    }
+    
+    if (!formData.height || !formData.weight) {
+      setNotif({
+        message: "Vui lòng nhập chiều cao và cân nặng",
+        type: "error"
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleAddResult = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     setLoading(true);
     try {
       await API_SERVICE.healthCheckResultAPI.create(formData);
@@ -118,7 +165,7 @@ const HealthResults = () => {
     } catch (error) {
       console.error("Error adding health check result:", error);
       setNotif({
-        message: "Không thể thêm kết quả khám sức khỏe",
+        message: "Không thể thêm kết quả khám sức khỏe: " + (error.message || "Lỗi không xác định"),
         type: "error"
       });
     } finally {
@@ -128,6 +175,9 @@ const HealthResults = () => {
 
   const handleUpdateResult = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     setLoading(true);
     try {
       await API_SERVICE.healthCheckResultAPI.update(selectedResult.healthCheckupRecordId, formData);
@@ -140,7 +190,7 @@ const HealthResults = () => {
     } catch (error) {
       console.error("Error updating health check result:", error);
       setNotif({
-        message: "Không thể cập nhật kết quả khám sức khỏe",
+        message: "Không thể cập nhật kết quả khám sức khỏe: " + (error.message || "Lỗi không xác định"),
         type: "error"
       });
     } finally {
@@ -192,7 +242,24 @@ const HealthResults = () => {
     <div className="admin-main">
       <div className="admin-header">
         <h2>Quản lý kết quả khám sức khỏe</h2>
-        <div>
+        <div className="admin-header-actions">
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Tìm kiếm kết quả khám..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="admin-search"
+            />
+            <button 
+              className="admin-btn search-btn" 
+              onClick={handleSearch}
+              disabled={searchLoading}
+            >
+              {searchLoading ? "Đang tìm..." : <FaSearch />}
+            </button>
+          </div>
           <button className="admin-btn" onClick={() => setShowAddModal(true)}>
             <FaPlus /> Thêm kết quả khám
           </button>
@@ -229,6 +296,11 @@ const HealthResults = () => {
             )}
           />
         )}
+        {!loading && results.length === 0 && (
+          <div className="no-data-message">
+            Không có kết quả khám sức khỏe nào
+          </div>
+        )}
       </div>
 
       {/* Modal thêm kết quả khám */}
@@ -250,77 +322,77 @@ const HealthResults = () => {
                   className="form-control"
                 >
                   <option value="">-- Chọn lịch khám --</option>
-                  {schedules.map(schedule => (
+                  {schedules.map((schedule) => (
                     <option key={schedule.healthCheckScheduleId} value={schedule.healthCheckScheduleId}>
-                      {schedule.title || `Lịch khám #${schedule.healthCheckScheduleId}`} - {new Date(schedule.checkupDate).toLocaleDateString('vi-VN')}
+                      {schedule.name} - {new Date(schedule.checkDate).toLocaleDateString('vi-VN')}
                     </option>
                   ))}
                 </select>
               </div>
-              <div className="form-group">
-                <label>Chiều cao (cm) <span className="required">*</span></label>
-                <input
-                  type="number"
-                  name="height"
-                  value={formData.height}
-                  onChange={handleInputChange}
-                  required
-                  className="form-control"
-                  min="0"
-                  step="0.1"
-                />
-              </div>
-              <div className="form-group">
-                <label>Cân nặng (kg) <span className="required">*</span></label>
-                <input
-                  type="number"
-                  name="weight"
-                  value={formData.weight}
-                  onChange={handleInputChange}
-                  required
-                  className="form-control"
-                  min="0"
-                  step="0.1"
-                />
-              </div>
               <div className="form-row">
-                <div className="form-group half-width">
-                  <label>Thị lực trái</label>
+                <div className="form-group">
+                  <label>Chiều cao (cm) <span className="required">*</span></label>
                   <input
                     type="number"
+                    name="height"
+                    value={formData.height}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.1"
+                    className="form-control"
+                    placeholder="Nhập chiều cao"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Cân nặng (kg) <span className="required">*</span></label>
+                  <input
+                    type="number"
+                    name="weight"
+                    value={formData.weight}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.1"
+                    className="form-control"
+                    placeholder="Nhập cân nặng"
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Thị lực mắt trái</label>
+                  <input
+                    type="text"
                     name="leftVision"
                     value={formData.leftVision}
                     onChange={handleInputChange}
                     className="form-control"
-                    min="0"
-                    max="10"
-                    step="0.1"
+                    placeholder="Nhập thị lực mắt trái"
                   />
                 </div>
-                <div className="form-group half-width">
-                  <label>Thị lực phải</label>
+                <div className="form-group">
+                  <label>Thị lực mắt phải</label>
                   <input
-                    type="number"
+                    type="text"
                     name="rightVision"
                     value={formData.rightVision}
                     onChange={handleInputChange}
                     className="form-control"
-                    min="0"
-                    max="10"
-                    step="0.1"
+                    placeholder="Nhập thị lực mắt phải"
                   />
                 </div>
               </div>
               <div className="form-group">
-                <label>Kết quả <span className="required">*</span></label>
+                <label>Kết quả</label>
                 <textarea
                   name="result"
                   value={formData.result}
                   onChange={handleInputChange}
-                  required
                   className="form-control"
-                  rows={3}
-                />
+                  placeholder="Nhập kết quả khám"
+                  rows="3"
+                ></textarea>
               </div>
               <div className="form-group">
                 <label>Trạng thái</label>
@@ -342,12 +414,13 @@ const HealthResults = () => {
                   value={formData.note}
                   onChange={handleInputChange}
                   className="form-control"
-                  rows={2}
-                />
+                  placeholder="Nhập ghi chú"
+                  rows="3"
+                ></textarea>
               </div>
-              <div className="modal-footer">
+              <div className="form-actions">
                 <button type="submit" className="admin-btn" disabled={loading}>
-                  {loading ? "Đang lưu..." : "Lưu"}
+                  {loading ? "Đang thêm..." : "Thêm mới"}
                 </button>
                 <button
                   type="button"
@@ -374,66 +447,46 @@ const HealthResults = () => {
             <div className="modal-body">
               <div className="info-grid">
                 <div className="info-item">
-                  <label>ID:</label>
-                  <span>{selectedResult.healthCheckupRecordId}</span>
+                  <strong>ID:</strong> {selectedResult.healthCheckupRecordId}
                 </div>
                 <div className="info-item">
-                  <label>Học sinh:</label>
-                  <span>{selectedResult.studentName}</span>
+                  <strong>Học sinh:</strong> {selectedResult.studentName || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Y tá:</label>
-                  <span>{selectedResult.nurseName}</span>
+                  <strong>Chiều cao:</strong> {selectedResult.height ? `${selectedResult.height} cm` : "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Ngày khám:</label>
-                  <span>{selectedResult.checkupDate && new Date(selectedResult.checkupDate).toLocaleDateString('vi-VN')}</span>
+                  <strong>Cân nặng:</strong> {selectedResult.weight ? `${selectedResult.weight} kg` : "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Chiều cao:</label>
-                  <span>{selectedResult.height} cm</span>
+                  <strong>Thị lực mắt trái:</strong> {selectedResult.leftVision || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Cân nặng:</label>
-                  <span>{selectedResult.weight} kg</span>
+                  <strong>Thị lực mắt phải:</strong> {selectedResult.rightVision || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Thị lực trái:</label>
-                  <span>{selectedResult.leftVision}</span>
+                  <strong>Trạng thái:</strong> {getStatusText(selectedResult.status)}
                 </div>
                 <div className="info-item">
-                  <label>Thị lực phải:</label>
-                  <span>{selectedResult.rightVision}</span>
-                </div>
-                <div className="info-item">
-                  <label>Trạng thái:</label>
-                  <span>{getStatusText(selectedResult.status)}</span>
+                  <strong>Y tá:</strong> {selectedResult.nurseName || "Không có"}
                 </div>
                 <div className="info-item full-width">
-                  <label>Kết quả:</label>
-                  <span>{selectedResult.result}</span>
+                  <strong>Kết quả:</strong> {selectedResult.result || "Không có"}
                 </div>
                 <div className="info-item full-width">
-                  <label>Ghi chú:</label>
-                  <span>{selectedResult.note}</span>
+                  <strong>Ghi chú:</strong> {selectedResult.note || "Không có"}
                 </div>
               </div>
             </div>
             <div className="modal-footer">
-              <button
-                className="admin-btn"
-                onClick={() => {
-                  setShowViewModal(false);
-                  handleEdit(selectedResult);
-                }}
-              >
-                Chỉnh sửa
-              </button>
-              <button
-                className="admin-btn cancel-btn"
-                onClick={() => setShowViewModal(false)}
-              >
+              <button className="admin-btn" onClick={() => setShowViewModal(false)}>
                 Đóng
+              </button>
+              <button className="admin-btn" onClick={() => {
+                setShowViewModal(false);
+                handleEdit(selectedResult);
+              }}>
+                Chỉnh sửa
               </button>
             </div>
           </div>
@@ -450,69 +503,87 @@ const HealthResults = () => {
             </div>
             <form onSubmit={handleUpdateResult}>
               <div className="form-group">
-                <label>Chiều cao (cm) <span className="required">*</span></label>
-                <input
-                  type="number"
-                  name="height"
-                  value={formData.height}
-                  onChange={handleInputChange}
+                <label>Lịch khám <span className="required">*</span></label>
+                <select
+                  name="healthCheckScheduleId"
+                  value={formData.healthCheckScheduleId}
+                  onChange={handleScheduleChange}
                   required
                   className="form-control"
-                  min="0"
-                  step="0.1"
-                />
-              </div>
-              <div className="form-group">
-                <label>Cân nặng (kg) <span className="required">*</span></label>
-                <input
-                  type="number"
-                  name="weight"
-                  value={formData.weight}
-                  onChange={handleInputChange}
-                  required
-                  className="form-control"
-                  min="0"
-                  step="0.1"
-                />
+                  disabled
+                >
+                  <option value="">-- Chọn lịch khám --</option>
+                  {schedules.map((schedule) => (
+                    <option key={schedule.healthCheckScheduleId} value={schedule.healthCheckScheduleId}>
+                      {schedule.name} - {new Date(schedule.checkDate).toLocaleDateString('vi-VN')}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div className="form-row">
-                <div className="form-group half-width">
-                  <label>Thị lực trái</label>
+                <div className="form-group">
+                  <label>Chiều cao (cm) <span className="required">*</span></label>
                   <input
                     type="number"
+                    name="height"
+                    value={formData.height}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.1"
+                    className="form-control"
+                    placeholder="Nhập chiều cao"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Cân nặng (kg) <span className="required">*</span></label>
+                  <input
+                    type="number"
+                    name="weight"
+                    value={formData.weight}
+                    onChange={handleInputChange}
+                    required
+                    min="0"
+                    step="0.1"
+                    className="form-control"
+                    placeholder="Nhập cân nặng"
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
+                  <label>Thị lực mắt trái</label>
+                  <input
+                    type="text"
                     name="leftVision"
                     value={formData.leftVision}
                     onChange={handleInputChange}
                     className="form-control"
-                    min="0"
-                    max="10"
-                    step="0.1"
+                    placeholder="Nhập thị lực mắt trái"
                   />
                 </div>
-                <div className="form-group half-width">
-                  <label>Thị lực phải</label>
+                <div className="form-group">
+                  <label>Thị lực mắt phải</label>
                   <input
-                    type="number"
+                    type="text"
                     name="rightVision"
                     value={formData.rightVision}
                     onChange={handleInputChange}
                     className="form-control"
-                    min="0"
-                    max="10"
-                    step="0.1"
+                    placeholder="Nhập thị lực mắt phải"
                   />
                 </div>
               </div>
               <div className="form-group">
-                <label>Kết quả <span className="required">*</span></label>
+                <label>Kết quả</label>
                 <textarea
                   name="result"
                   value={formData.result}
                   onChange={handleInputChange}
-                  required
                   className="form-control"
-                  rows={3}
-                />
+                  placeholder="Nhập kết quả khám"
+                  rows="3"
+                ></textarea>
               </div>
               <div className="form-group">
                 <label>Trạng thái</label>
@@ -534,12 +605,13 @@ const HealthResults = () => {
                   value={formData.note}
                   onChange={handleInputChange}
                   className="form-control"
-                  rows={2}
-                />
+                  placeholder="Nhập ghi chú"
+                  rows="3"
+                ></textarea>
               </div>
-              <div className="modal-footer">
+              <div className="form-actions">
                 <button type="submit" className="admin-btn" disabled={loading}>
-                  {loading ? "Đang lưu..." : "Lưu thay đổi"}
+                  {loading ? "Đang cập nhật..." : "Cập nhật"}
                 </button>
                 <button
                   type="button"

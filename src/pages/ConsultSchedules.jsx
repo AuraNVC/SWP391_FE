@@ -2,14 +2,16 @@ import React, { useState, useEffect } from "react";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
-import { FaEye, FaEdit, FaTrash, FaPlus } from "react-icons/fa";
+import { FaEye, FaEdit, FaTrash, FaPlus, FaSearch } from "react-icons/fa";
 import "../styles/Dashboard.css";
 
 const ConsultSchedules = () => {
   const [schedules, setSchedules] = useState([]);
   const [parents, setParents] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -33,8 +35,8 @@ const ConsultSchedules = () => {
     { title: "ID", dataIndex: "consultationScheduleId" },
     { title: "Tiêu đề", dataIndex: "title" },
     { title: "Phụ huynh", dataIndex: "parentName" },
-    { title: "Ngày", dataIndex: "consultationDate", render: (date) => new Date(date).toLocaleDateString('vi-VN') },
-    { title: "Thời gian", render: (row) => `${row.startTime} - ${row.endTime}` },
+    { title: "Ngày", dataIndex: "consultationDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" },
+    { title: "Thời gian", render: (row) => `${row.startTime || "N/A"} - ${row.endTime || "N/A"}` },
     { title: "Trạng thái", dataIndex: "status", render: (status) => getStatusText(status) }
   ];
 
@@ -59,11 +61,13 @@ const ConsultSchedules = () => {
     fetchParents();
   }, []);
 
-  const fetchConsultationSchedules = async () => {
+  const fetchConsultationSchedules = async (keyword = "") => {
     setLoading(true);
     try {
-      // Assume there's an API endpoint for consultation schedules
-      const response = await API_SERVICE.consultationScheduleAPI.getAll();
+      const response = await API_SERVICE.consultationScheduleAPI.getAll({
+        keyword: keyword,
+        nurseId: localStorage.getItem("userId") || ""
+      });
       setSchedules(response);
     } catch (error) {
       console.error("Error fetching consultation schedules:", error);
@@ -78,11 +82,29 @@ const ConsultSchedules = () => {
 
   const fetchParents = async () => {
     try {
-      // Assume there's an API endpoint for parents
       const response = await API_SERVICE.parentAPI.getAll({ keyword: "" });
       setParents(response);
     } catch (error) {
       console.error("Error fetching parents:", error);
+      setNotif({
+        message: "Không thể tải danh sách phụ huynh",
+        type: "error"
+      });
+    }
+  };
+
+  const handleSearch = async () => {
+    setSearchLoading(true);
+    try {
+      await fetchConsultationSchedules(searchKeyword);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
     }
   };
 
@@ -94,8 +116,32 @@ const ConsultSchedules = () => {
     });
   };
 
+  const validateForm = () => {
+    if (!formData.title || !formData.consultationDate || !formData.parentId) {
+      setNotif({
+        message: "Vui lòng điền đầy đủ thông tin bắt buộc",
+        type: "error"
+      });
+      return false;
+    }
+    
+    // Kiểm tra thời gian kết thúc phải sau thời gian bắt đầu
+    if (formData.startTime >= formData.endTime) {
+      setNotif({
+        message: "Thời gian kết thúc phải sau thời gian bắt đầu",
+        type: "error"
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleAddSchedule = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     setLoading(true);
     try {
       await API_SERVICE.consultationScheduleAPI.create(formData);
@@ -116,11 +162,11 @@ const ConsultSchedules = () => {
         status: "0",
         note: ""
       });
-      fetchConsultationSchedules();
+      fetchConsultationSchedules(searchKeyword);
     } catch (error) {
       console.error("Error adding consultation schedule:", error);
       setNotif({
-        message: "Không thể thêm lịch tư vấn",
+        message: "Không thể thêm lịch tư vấn: " + (error.message || "Lỗi không xác định"),
         type: "error"
       });
     } finally {
@@ -130,6 +176,9 @@ const ConsultSchedules = () => {
 
   const handleUpdateSchedule = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) return;
+    
     setLoading(true);
     try {
       await API_SERVICE.consultationScheduleAPI.update(selectedSchedule.consultationScheduleId, formData);
@@ -138,11 +187,11 @@ const ConsultSchedules = () => {
         type: "success"
       });
       setShowEditModal(false);
-      fetchConsultationSchedules();
+      fetchConsultationSchedules(searchKeyword);
     } catch (error) {
       console.error("Error updating consultation schedule:", error);
       setNotif({
-        message: "Không thể cập nhật lịch tư vấn",
+        message: "Không thể cập nhật lịch tư vấn: " + (error.message || "Lỗi không xác định"),
         type: "error"
       });
     } finally {
@@ -159,11 +208,11 @@ const ConsultSchedules = () => {
           message: "Xóa lịch tư vấn thành công",
           type: "success"
         });
-        fetchConsultationSchedules();
+        fetchConsultationSchedules(searchKeyword);
       } catch (error) {
         console.error("Error deleting consultation schedule:", error);
         setNotif({
-          message: "Không thể xóa lịch tư vấn",
+          message: "Không thể xóa lịch tư vấn: " + (error.message || "Lỗi không xác định"),
           type: "error"
         });
       } finally {
@@ -198,7 +247,24 @@ const ConsultSchedules = () => {
     <div className="admin-main">
       <div className="admin-header">
         <h2>Quản lý lịch tư vấn</h2>
-        <div>
+        <div className="admin-header-actions">
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Tìm kiếm lịch tư vấn..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="admin-search"
+            />
+            <button 
+              className="admin-btn search-btn" 
+              onClick={handleSearch}
+              disabled={searchLoading}
+            >
+              {searchLoading ? "Đang tìm..." : <FaSearch />}
+            </button>
+          </div>
           <button className="admin-btn" onClick={() => setShowAddModal(true)}>
             <FaPlus /> Thêm lịch tư vấn
           </button>
@@ -242,6 +308,11 @@ const ConsultSchedules = () => {
             )}
           />
         )}
+        {!loading && schedules.length === 0 && (
+          <div className="no-data-message">
+            Không có lịch tư vấn nào
+          </div>
+        )}
       </div>
 
       {/* Modal thêm lịch tư vấn */}
@@ -249,7 +320,7 @@ const ConsultSchedules = () => {
         <div className="modal-overlay">
           <div className="modal-container">
             <div className="modal-header">
-              <h3>Thêm lịch tư vấn mới</h3>
+              <h3>Thêm lịch tư vấn</h3>
               <button className="close-btn" onClick={() => setShowAddModal(false)}>×</button>
             </div>
             <form onSubmit={handleAddSchedule}>
@@ -274,7 +345,7 @@ const ConsultSchedules = () => {
                   className="form-control"
                   rows="3"
                   placeholder="Nhập mô tả tư vấn"
-                />
+                ></textarea>
               </div>
               <div className="form-group">
                 <label>Phụ huynh <span className="required">*</span></label>
@@ -286,7 +357,7 @@ const ConsultSchedules = () => {
                   className="form-control"
                 >
                   <option value="">-- Chọn phụ huynh --</option>
-                  {parents.map(parent => (
+                  {parents.map((parent) => (
                     <option key={parent.parentId} value={parent.parentId}>
                       {parent.fullName}
                     </option>
@@ -305,7 +376,7 @@ const ConsultSchedules = () => {
                 />
               </div>
               <div className="form-row">
-                <div className="form-group half">
+                <div className="form-group">
                   <label>Thời gian bắt đầu <span className="required">*</span></label>
                   <input
                     type="time"
@@ -316,7 +387,7 @@ const ConsultSchedules = () => {
                     className="form-control"
                   />
                 </div>
-                <div className="form-group half">
+                <div className="form-group">
                   <label>Thời gian kết thúc <span className="required">*</span></label>
                   <input
                     type="time"
@@ -341,12 +412,11 @@ const ConsultSchedules = () => {
                 />
               </div>
               <div className="form-group">
-                <label>Trạng thái <span className="required">*</span></label>
+                <label>Trạng thái</label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
-                  required
                   className="form-control"
                 >
                   <option value="0">Chờ xác nhận</option>
@@ -364,11 +434,20 @@ const ConsultSchedules = () => {
                   className="form-control"
                   rows="3"
                   placeholder="Nhập ghi chú (nếu có)"
-                />
+                ></textarea>
               </div>
-              <div className="modal-footer">
-                <button type="submit" className="admin-btn">Lưu</button>
-                <button type="button" className="admin-btn btn-secondary" onClick={() => setShowAddModal(false)}>Hủy</button>
+              <div className="form-actions">
+                <button type="submit" className="admin-btn" disabled={loading}>
+                  {loading ? "Đang thêm..." : "Thêm mới"}
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn cancel-btn"
+                  onClick={() => setShowAddModal(false)}
+                  disabled={loading}
+                >
+                  Hủy
+                </button>
               </div>
             </form>
           </div>
@@ -386,45 +465,44 @@ const ConsultSchedules = () => {
             <div className="modal-body">
               <div className="info-grid">
                 <div className="info-item">
-                  <label>ID:</label>
-                  <span>{selectedSchedule.consultationScheduleId}</span>
+                  <strong>ID:</strong> {selectedSchedule.consultationScheduleId}
                 </div>
                 <div className="info-item">
-                  <label>Tiêu đề:</label>
-                  <span>{selectedSchedule.title}</span>
+                  <strong>Tiêu đề:</strong> {selectedSchedule.title || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Phụ huynh:</label>
-                  <span>{selectedSchedule.parentName}</span>
+                  <strong>Phụ huynh:</strong> {selectedSchedule.parentName || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Ngày tư vấn:</label>
-                  <span>{selectedSchedule.consultationDate && new Date(selectedSchedule.consultationDate).toLocaleDateString('vi-VN')}</span>
+                  <strong>Ngày tư vấn:</strong> {selectedSchedule.consultationDate ? new Date(selectedSchedule.consultationDate).toLocaleDateString('vi-VN') : "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Thời gian:</label>
-                  <span>{selectedSchedule.startTime} - {selectedSchedule.endTime}</span>
+                  <strong>Thời gian:</strong> {selectedSchedule.startTime || "N/A"} - {selectedSchedule.endTime || "N/A"}
                 </div>
                 <div className="info-item">
-                  <label>Địa điểm:</label>
-                  <span>{selectedSchedule.location}</span>
+                  <strong>Địa điểm:</strong> {selectedSchedule.location || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Trạng thái:</label>
-                  <span>{getStatusText(selectedSchedule.status)}</span>
+                  <strong>Trạng thái:</strong> {getStatusText(selectedSchedule.status)}
                 </div>
                 <div className="info-item full-width">
-                  <label>Mô tả:</label>
-                  <span>{selectedSchedule.description}</span>
+                  <strong>Mô tả:</strong> {selectedSchedule.description || "Không có"}
                 </div>
                 <div className="info-item full-width">
-                  <label>Ghi chú:</label>
-                  <span>{selectedSchedule.note}</span>
+                  <strong>Ghi chú:</strong> {selectedSchedule.note || "Không có"}
                 </div>
               </div>
             </div>
             <div className="modal-footer">
-              <button className="admin-btn" onClick={() => setShowViewModal(false)}>Đóng</button>
+              <button className="admin-btn" onClick={() => setShowViewModal(false)}>
+                Đóng
+              </button>
+              <button className="admin-btn" onClick={() => {
+                setShowViewModal(false);
+                handleEdit(selectedSchedule);
+              }}>
+                Chỉnh sửa
+              </button>
             </div>
           </div>
         </div>
@@ -448,6 +526,7 @@ const ConsultSchedules = () => {
                   onChange={handleInputChange}
                   required
                   className="form-control"
+                  placeholder="Nhập tiêu đề tư vấn"
                 />
               </div>
               <div className="form-group">
@@ -458,7 +537,8 @@ const ConsultSchedules = () => {
                   onChange={handleInputChange}
                   className="form-control"
                   rows="3"
-                />
+                  placeholder="Nhập mô tả tư vấn"
+                ></textarea>
               </div>
               <div className="form-group">
                 <label>Phụ huynh <span className="required">*</span></label>
@@ -470,7 +550,7 @@ const ConsultSchedules = () => {
                   className="form-control"
                 >
                   <option value="">-- Chọn phụ huynh --</option>
-                  {parents.map(parent => (
+                  {parents.map((parent) => (
                     <option key={parent.parentId} value={parent.parentId}>
                       {parent.fullName}
                     </option>
@@ -489,7 +569,7 @@ const ConsultSchedules = () => {
                 />
               </div>
               <div className="form-row">
-                <div className="form-group half">
+                <div className="form-group">
                   <label>Thời gian bắt đầu <span className="required">*</span></label>
                   <input
                     type="time"
@@ -500,7 +580,7 @@ const ConsultSchedules = () => {
                     className="form-control"
                   />
                 </div>
-                <div className="form-group half">
+                <div className="form-group">
                   <label>Thời gian kết thúc <span className="required">*</span></label>
                   <input
                     type="time"
@@ -521,15 +601,15 @@ const ConsultSchedules = () => {
                   onChange={handleInputChange}
                   required
                   className="form-control"
+                  placeholder="Nhập địa điểm tư vấn"
                 />
               </div>
               <div className="form-group">
-                <label>Trạng thái <span className="required">*</span></label>
+                <label>Trạng thái</label>
                 <select
                   name="status"
                   value={formData.status}
                   onChange={handleInputChange}
-                  required
                   className="form-control"
                 >
                   <option value="0">Chờ xác nhận</option>
@@ -546,11 +626,21 @@ const ConsultSchedules = () => {
                   onChange={handleInputChange}
                   className="form-control"
                   rows="3"
-                />
+                  placeholder="Nhập ghi chú (nếu có)"
+                ></textarea>
               </div>
-              <div className="modal-footer">
-                <button type="submit" className="admin-btn">Lưu</button>
-                <button type="button" className="admin-btn btn-secondary" onClick={() => setShowEditModal(false)}>Hủy</button>
+              <div className="form-actions">
+                <button type="submit" className="admin-btn" disabled={loading}>
+                  {loading ? "Đang cập nhật..." : "Cập nhật"}
+                </button>
+                <button
+                  type="button"
+                  className="admin-btn cancel-btn"
+                  onClick={() => setShowEditModal(false)}
+                  disabled={loading}
+                >
+                  Hủy
+                </button>
               </div>
             </form>
           </div>

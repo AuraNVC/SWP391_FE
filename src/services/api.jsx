@@ -1,6 +1,38 @@
 // eslint-disable-next-line no-undef
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Kiểm tra kết nối WebSocket
+const checkWebSocketConnection = () => {
+  try {
+    const ws = new WebSocket(`ws://${window.location.hostname}:${window.location.port}`);
+    
+    ws.onopen = () => {
+      console.log("WebSocket connection established");
+      ws.close();
+    };
+    
+    ws.onerror = (error) => {
+      console.log("WebSocket connection error:", error);
+      // Không hiển thị lỗi WebSocket trong console
+      error.preventDefault && error.preventDefault();
+    };
+    
+    return ws;
+  } catch (error) {
+    console.log("Failed to create WebSocket connection:", error);
+    return null;
+  }
+};
+
+// Khởi tạo WebSocket nếu cần
+(() => {
+  try {
+    checkWebSocketConnection();
+  } catch (error) {
+    console.log("WebSocket initialization error:", error);
+  }
+})();
+
 // Dinh nghia endpoint
 const API = {
     BLOG_LIST: `${API_BASE_URL}/blog/search`,
@@ -76,14 +108,85 @@ const API = {
 
 // Ham cha goi API
 async function callApi(url, options = {}) {
-    const res = await fetch(url, options);
-    if (!res.ok) throw new Error("Loi khi goi API");
-    const contentType = res.headers.get("content-type");
-    if (contentType && contentType.includes("application/json")) {
-        return res.json();
+    try {
+        // Add timeout to prevent hanging requests
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+        
+        // Add abort signal to options
+        const fetchOptions = {
+            ...options,
+            signal: controller.signal
+        };
+        
+        // Thêm retry logic
+        let retries = 3;
+        let res = null;
+        
+        while (retries > 0) {
+            try {
+                res = await fetch(url, fetchOptions);
+                break; // Thoát khỏi vòng lặp nếu thành công
+            } catch (error) {
+                retries--;
+                if (retries === 0) throw error; // Nếu hết số lần thử, ném lỗi
+                
+                // Đợi trước khi thử lại (exponential backoff)
+                const waitTime = Math.pow(2, 3 - retries) * 1000;
+                console.log(`API call failed, retrying in ${waitTime}ms... (${retries} attempts left)`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
+        }
+        
+        // Clear timeout since request completed
+        clearTimeout(timeoutId);
+        
+        if (!res.ok) {
+            // Thử đọc lỗi dưới dạng JSON trước
+            let errorData;
+            try {
+                errorData = await res.json();
+            } catch (e) {
+                // Nếu không phải JSON, đọc dưới dạng text
+                const errorText = await res.text();
+                throw new Error(`API error (${res.status}): ${errorText}`);
+            }
+            
+            // Nếu có thông báo lỗi cụ thể từ API, sử dụng nó
+            if (errorData && errorData.message) {
+                throw new Error(`API error (${res.status}): ${errorData.message}`);
+            } else {
+                throw new Error(`API error (${res.status}): ${JSON.stringify(errorData)}`);
+            }
+        }
+        
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            return res.json();
+        }
+        // Neu khong co body (vi du DELETE tra ve 204 No Content)
+        return null;
+    } catch (error) {
+        // Handle specific network errors
+        if (error.name === 'AbortError') {
+            console.error('API request timed out');
+            throw new Error('Yêu cầu API đã hết thời gian chờ. Vui lòng thử lại.');
+        }
+        
+        if (error.message && error.message.includes('Failed to fetch')) {
+            console.error('Network error:', error);
+            throw new Error('Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng của bạn.');
+        }
+        
+        // Xử lý lỗi CORS
+        if (error.message && error.message.includes('CORS')) {
+            console.error('CORS error:', error);
+            throw new Error('Lỗi CORS: Không thể truy cập API từ nguồn hiện tại.');
+        }
+        
+        console.error(`API call failed: ${error.message}`);
+        throw error;
     }
-    // Neu khong co body (vi du DELETE tra ve 204 No Content)
-    return null;
 }
 
 // Cac ham con su dung ham cha
@@ -96,7 +199,7 @@ export const API_SERVICE = {
         }),
         getById: (id) => callApi(API.BLOG_DETAIL(id), {
             method: "GET",
-            header: { "Content-Type": "application/json" }
+            headers: { "Content-Type": "application/json" }
         }),
         delete: (id) => callApi(API.BLOG_DELETE(id), {
             method: "DELETE",
@@ -341,7 +444,7 @@ export const API_SERVICE = {
         }),
         getById: (id) => callApi(API.FORM_DETAIL(id), {
             method: "GET",
-            header: { "Content-Type": "application/json" }
+            headers: { "Content-Type": "application/json" }
         }),
         create: (data) => callApi(API.FORM_CREATE, {
             method: "POST",

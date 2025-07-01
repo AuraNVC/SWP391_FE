@@ -2,13 +2,15 @@ import React, { useState, useEffect } from "react";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
-import { FaEye, FaEdit, FaCheck } from "react-icons/fa";
+import { FaEye, FaEdit, FaCheck, FaSearch } from "react-icons/fa";
 import "../styles/Dashboard.css";
 
 const VaxFollowUp = () => {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchLoading, setSearchLoading] = useState(false);
   const [page, setPage] = useState(1);
+  const [searchKeyword, setSearchKeyword] = useState("");
   const [showViewModal, setShowViewModal] = useState(false);
   const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [selectedResult, setSelectedResult] = useState(null);
@@ -24,7 +26,8 @@ const VaxFollowUp = () => {
     { title: "ID", dataIndex: "vaccinationResultId" },
     { title: "Học sinh", dataIndex: "studentName" },
     { title: "Vaccine", dataIndex: "vaccineName" },
-    { title: "Ngày tiêm", dataIndex: "vaccinationDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" },
+    { title: "Ngày tiêm", dataIndex: "injectionDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" },
+    { title: "Phản ứng", dataIndex: "reaction", render: (reaction) => reaction ? (reaction.length > 30 ? `${reaction.substring(0, 30)}...` : reaction) : "Không có" },
     { title: "Trạng thái theo dõi", dataIndex: "followUpStatus", render: (status) => getFollowUpStatusText(status) }
   ];
 
@@ -57,15 +60,17 @@ const VaxFollowUp = () => {
     fetchVaccinationResults();
   }, []);
 
-  const fetchVaccinationResults = async () => {
+  const fetchVaccinationResults = async (keyword = "") => {
     setLoading(true);
     try {
       // Sử dụng API có sẵn để lấy kết quả tiêm chủng
-      const response = await API_SERVICE.vaccinationResultAPI.getAll();
+      const response = await API_SERVICE.vaccinationResultAPI.getAll({
+        keyword: keyword,
+        nurseId: localStorage.getItem("userId") || "",
+        status: "1" // Chỉ lấy các kết quả tiêm đã hoàn thành
+      });
       
-      // Lọc các kết quả tiêm đã hoàn thành để theo dõi
-      const completedResults = response.filter(result => result.status === "1");
-      setResults(completedResults);
+      setResults(response);
     } catch (error) {
       console.error("Error fetching vaccination results:", error);
       setNotif({
@@ -74,6 +79,21 @@ const VaxFollowUp = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    setSearchLoading(true);
+    try {
+      await fetchVaccinationResults(searchKeyword);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch();
     }
   };
 
@@ -105,11 +125,11 @@ const VaxFollowUp = () => {
       });
       
       setShowFollowUpModal(false);
-      fetchVaccinationResults();
+      fetchVaccinationResults(searchKeyword);
     } catch (error) {
       console.error("Error updating follow-up:", error);
       setNotif({
-        message: "Không thể cập nhật thông tin theo dõi sau tiêm",
+        message: "Không thể cập nhật thông tin theo dõi sau tiêm: " + (error.message || "Lỗi không xác định"),
         type: "error"
       });
     } finally {
@@ -118,29 +138,31 @@ const VaxFollowUp = () => {
   };
 
   const handleCompleteFollowUp = async (result) => {
-    setLoading(true);
-    try {
-      const updatedResult = {
-        ...result,
-        followUpStatus: "2" // Đã hoàn thành theo dõi
-      };
-      
-      await API_SERVICE.vaccinationResultAPI.update(result.vaccinationResultId, updatedResult);
-      
-      setNotif({
-        message: "Hoàn thành theo dõi sau tiêm",
-        type: "success"
-      });
-      
-      fetchVaccinationResults();
-    } catch (error) {
-      console.error("Error completing follow-up:", error);
-      setNotif({
-        message: "Không thể hoàn thành theo dõi sau tiêm",
-        type: "error"
-      });
-    } finally {
-      setLoading(false);
+    if (window.confirm("Bạn có chắc chắn muốn hoàn thành theo dõi sau tiêm này không?")) {
+      setLoading(true);
+      try {
+        const updatedResult = {
+          ...result,
+          followUpStatus: "2" // Đã hoàn thành theo dõi
+        };
+        
+        await API_SERVICE.vaccinationResultAPI.update(result.vaccinationResultId, updatedResult);
+        
+        setNotif({
+          message: "Hoàn thành theo dõi sau tiêm thành công",
+          type: "success"
+        });
+        
+        fetchVaccinationResults(searchKeyword);
+      } catch (error) {
+        console.error("Error completing follow-up:", error);
+        setNotif({
+          message: "Không thể hoàn thành theo dõi sau tiêm: " + (error.message || "Lỗi không xác định"),
+          type: "error"
+        });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -163,6 +185,25 @@ const VaxFollowUp = () => {
     <div className="admin-main">
       <div className="admin-header">
         <h2>Theo dõi sau tiêm</h2>
+        <div className="admin-header-actions">
+          <div className="search-container">
+            <input
+              type="text"
+              placeholder="Tìm kiếm theo dõi sau tiêm..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+              className="admin-search"
+            />
+            <button 
+              className="admin-btn search-btn" 
+              onClick={handleSearch}
+              disabled={searchLoading}
+            >
+              {searchLoading ? "Đang tìm..." : <FaSearch />}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="admin-table-container">
@@ -204,6 +245,11 @@ const VaxFollowUp = () => {
             )}
           />
         )}
+        {!loading && results.length === 0 && (
+          <div className="no-data-message">
+            Không có kết quả theo dõi sau tiêm nào
+          </div>
+        )}
       </div>
 
       {/* Modal xem chi tiết kết quả tiêm */}
@@ -211,55 +257,53 @@ const VaxFollowUp = () => {
         <div className="modal-overlay">
           <div className="modal-container">
             <div className="modal-header">
-              <h3>Chi tiết kết quả tiêm</h3>
+              <h3>Chi tiết theo dõi sau tiêm</h3>
               <button className="close-btn" onClick={() => setShowViewModal(false)}>×</button>
             </div>
             <div className="modal-body">
               <div className="info-grid">
                 <div className="info-item">
-                  <label>ID:</label>
-                  <span>{selectedResult.vaccinationResultId}</span>
+                  <strong>ID:</strong> {selectedResult.vaccinationResultId}
                 </div>
                 <div className="info-item">
-                  <label>Học sinh:</label>
-                  <span>{selectedResult.studentName}</span>
+                  <strong>Học sinh:</strong> {selectedResult.studentName || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Vaccine:</label>
-                  <span>{selectedResult.vaccineName}</span>
+                  <strong>Vaccine:</strong> {selectedResult.vaccineName || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Mũi số:</label>
-                  <span>{selectedResult.doseNumber}</span>
+                  <strong>Mũi số:</strong> {selectedResult.doseNumber || "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Ngày tiêm:</label>
-                  <span>{selectedResult.vaccinationDate && new Date(selectedResult.vaccinationDate).toLocaleDateString('vi-VN')}</span>
+                  <strong>Ngày tiêm:</strong> {selectedResult.injectionDate ? new Date(selectedResult.injectionDate).toLocaleDateString('vi-VN') : "Không có"}
                 </div>
                 <div className="info-item">
-                  <label>Trạng thái tiêm:</label>
-                  <span>{getStatusText(selectedResult.status)}</span>
+                  <strong>Trạng thái tiêm:</strong> {getStatusText(selectedResult.status)}
                 </div>
                 <div className="info-item">
-                  <label>Trạng thái theo dõi:</label>
-                  <span>{getFollowUpStatusText(selectedResult.followUpStatus)}</span>
+                  <strong>Trạng thái theo dõi:</strong> {getFollowUpStatusText(selectedResult.followUpStatus)}
                 </div>
                 <div className="info-item full-width">
-                  <label>Phản ứng sau tiêm:</label>
-                  <span>{selectedResult.reaction || "Không có"}</span>
+                  <strong>Phản ứng sau tiêm:</strong> {selectedResult.reaction || "Không có"}
                 </div>
                 <div className="info-item full-width">
-                  <label>Ghi chú theo dõi:</label>
-                  <span>{selectedResult.followUpNote || "Không có"}</span>
+                  <strong>Ghi chú theo dõi:</strong> {selectedResult.followUpNote || "Không có"}
                 </div>
                 <div className="info-item full-width">
-                  <label>Ghi chú:</label>
-                  <span>{selectedResult.note || "Không có"}</span>
+                  <strong>Ghi chú:</strong> {selectedResult.note || "Không có"}
                 </div>
               </div>
             </div>
             <div className="modal-footer">
-              <button className="admin-btn" onClick={() => setShowViewModal(false)}>Đóng</button>
+              <button className="admin-btn" onClick={() => setShowViewModal(false)}>
+                Đóng
+              </button>
+              <button className="admin-btn" onClick={() => {
+                setShowViewModal(false);
+                handleFollowUp(selectedResult);
+              }}>
+                Cập nhật theo dõi
+              </button>
             </div>
           </div>
         </div>
@@ -278,7 +322,7 @@ const VaxFollowUp = () => {
                 <label>Học sinh:</label>
                 <input
                   type="text"
-                  value={selectedResult.studentName}
+                  value={selectedResult.studentName || ""}
                   disabled
                   className="form-control"
                 />
@@ -287,7 +331,7 @@ const VaxFollowUp = () => {
                 <label>Vaccine:</label>
                 <input
                   type="text"
-                  value={selectedResult.vaccineName}
+                  value={selectedResult.vaccineName || ""}
                   disabled
                   className="form-control"
                 />
@@ -301,7 +345,7 @@ const VaxFollowUp = () => {
                   className="form-control"
                   rows="3"
                   placeholder="Nhập các phản ứng sau tiêm (nếu có)"
-                />
+                ></textarea>
               </div>
               <div className="form-group">
                 <label>Trạng thái theo dõi <span className="required">*</span></label>
@@ -327,11 +371,20 @@ const VaxFollowUp = () => {
                   className="form-control"
                   rows="3"
                   placeholder="Nhập ghi chú theo dõi"
-                />
+                ></textarea>
               </div>
-              <div className="modal-footer">
-                <button type="submit" className="admin-btn">Lưu</button>
-                <button type="button" className="admin-btn btn-secondary" onClick={() => setShowFollowUpModal(false)}>Hủy</button>
+              <div className="form-actions">
+                <button type="submit" className="admin-btn" disabled={loading}>
+                  {loading ? "Đang cập nhật..." : "Cập nhật"}
+                </button>
+                <button 
+                  type="button" 
+                  className="admin-btn cancel-btn" 
+                  onClick={() => setShowFollowUpModal(false)}
+                  disabled={loading}
+                >
+                  Hủy
+                </button>
               </div>
             </form>
           </div>
