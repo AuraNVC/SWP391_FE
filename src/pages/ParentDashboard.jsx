@@ -8,10 +8,10 @@ import ParentEditDialog from "../components/ParentEditDialog";
 import { useNavigate } from "react-router-dom";
 
 const columns = [
-  { title: "Name", dataIndex: "fullName" },
-  { title: "Contact email", dataIndex: "email" },
-  { title: "Phone Number", dataIndex: "phoneNumber" },
-  { title: "Address", dataIndex: "address" }
+  { title: "Họ tên", dataIndex: "fullName" },
+  { title: "Email liên hệ", dataIndex: "email" },
+  { title: "Số điện thoại", dataIndex: "phoneNumber" },
+  { title: "Địa chỉ", dataIndex: "address" }
 ];
 
 const iconStyle = {
@@ -63,12 +63,12 @@ const ParentList = () => {
         setParentList((prev) => prev.filter(p => p.parentId !== deleteTarget.parentId));
         setDeleteTarget(null);
         setNotif({
-          message: "Xóa parent thành công!",
+          message: "Xóa phụ huynh thành công!",
           type: "success",
         });
       } catch (error) {
         setNotif({
-          message: `Xóa parent thất bại! ${error.message}`,
+          message: `Xóa phụ huynh thất bại! ${error.message}`,
           type: "error",
         });
         setDeleteTarget(null);
@@ -99,13 +99,13 @@ const ParentList = () => {
     <div className="admin-main">
       <div className="admin-header">
         <button className="admin-btn" onClick={handleCreateNew}>
-          + Create New Parent
+          + Thêm phụ huynh mới
         </button>
-        <input className="admin-search" type="text" placeholder="Search..." />
+        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
       </div>
       <div className="admin-table-container">
         {loading ? (
-          <div>Loading...</div>
+          <div>Đang tải...</div>
         ) : (
           <TableWithPaging
             columns={columns}
@@ -117,21 +117,21 @@ const ParentList = () => {
               <div className="admin-action-group">
                 <button
                   className="admin-action-btn admin-action-view admin-action-btn-reset"
-                  title="View Detail"
+                  title="Xem chi tiết"
                   onClick={() => handleViewDetail(row)}
                 >
                   <FaEye style={iconStyle.view} size={18} />
                 </button>
                 <button
                   className="admin-action-btn admin-action-edit admin-action-btn-reset"
-                  title="Edit"
+                  title="Sửa"
                   onClick={() => handleEdit(row)}
                 >
                   <FaEdit style={iconStyle.edit} size={18} />
                 </button>
                 <button
                   className="admin-action-btn admin-action-delete admin-action-btn-reset"
-                  title="Delete"
+                  title="Xóa"
                   onClick={() => handleDelete(row)}
                   style={{
                     background: "none",
@@ -152,7 +152,7 @@ const ParentList = () => {
         <div className="parent-delete-modal-overlay">
           <div className="parent-delete-modal-content">
             <div className="parent-delete-modal-title">
-              <strong>Bạn có chắc chắn muốn xóa parent "{deleteTarget.fullName}"?</strong>
+              <strong>Bạn có chắc chắn muốn xóa phụ huynh "{deleteTarget.fullName}"?</strong>
             </div>
             <div className="parent-delete-modal-actions">
               <button className="admin-btn btn-danger" onClick={confirmDelete}>

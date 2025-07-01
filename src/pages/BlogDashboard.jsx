@@ -8,12 +8,12 @@ import BlogEditDialog from "../components/BlogEditDialog";
 import { useNavigate } from "react-router-dom";
 
 const columns = [
-  { title: "ID", dataIndex: "blogId" },
-  { title: "Title", dataIndex: "title" },
-  { title: "Content", dataIndex: "content" },
-  { title: "Date Posted", dataIndex: "datePosted" },
+  { title: "Mã Blog", dataIndex: "blogId" },
+  { title: "Tiêu đề", dataIndex: "title" },
+  { title: "Nội dung", dataIndex: "content" },
+  { title: "Ngày đăng", dataIndex: "datePosted" },
   {
-    title: "Thumbnail",
+    title: "Ảnh thumbnail",
     dataIndex: "thumbnail",
     render: (thumbnail) =>
       thumbnail ? (
@@ -113,13 +113,13 @@ const BlogList = () => {
     <div className="admin-main">
       <div className="admin-header">
         <button className="admin-btn" onClick={handleCreateNew}>
-          + Create New Blog
+          + Thêm blog mới
         </button>
-        <input className="admin-search" type="text" placeholder="Search..." />
+        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
       </div>
       <div className="admin-table-container">
         {loading ? (
-          <div>Loading...</div>
+          <div>Đang tải...</div>
         ) : (
           <TableWithPaging
             columns={columns}
@@ -131,21 +131,21 @@ const BlogList = () => {
               <div className="admin-action-group">
                 <button
                   className="admin-action-btn admin-action-view admin-action-btn-reset"
-                  title="View Detail"
+                  title="Xem chi tiết"
                   onClick={() => handleViewDetail(row)}
                 >
                   <FaEye style={iconStyle.view} size={18} />
                 </button>
                 <button
                   className="admin-action-btn admin-action-edit admin-action-btn-reset"
-                  title="Edit"
+                  title="Sửa"
                   onClick={() => handleEdit(row)}
                 >
                   <FaEdit style={iconStyle.edit} size={18} />
                 </button>
                 <button
                   className="admin-action-btn admin-action-delete admin-action-btn-reset"
-                  title="Delete"
+                  title="Xóa"
                   onClick={() => handleDelete(row)}
                   style={{
                     background: "none",

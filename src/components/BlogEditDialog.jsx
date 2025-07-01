@@ -48,14 +48,14 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
 
       await API_SERVICE.blogAPI.update(blog.blogId, formData);
       setNotif({
-        message: "Blog updated successfully!",
+        message: "Cập nhật blog thành công!",
         type: "success",
       });
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
       setNotif({
-        message: `Failed to update blog. ${error?.response?.data?.message || error.message}`,
+        message: `Cập nhật blog thất bại. ${error?.response?.data?.message || error.message}`,
         type: "error",
       });
     }
@@ -68,7 +68,7 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
     <div className="blog-dialog-overlay" onClick={onClose}>
       <div className="blog-dialog-content blog-edit-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="blog-dialog-header">
-          <h2>Edit Blog</h2>
+          <h2>Sửa Blog</h2>
           <button className="blog-dialog-close" onClick={onClose}>
             ×
           </button>
@@ -76,7 +76,7 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
         
         <form className="blog-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Title<span className="required">*</span></label>
+            <label>Tiêu đề<span className="required">*</span></label>
             <input
               type="text"
               name="title"
@@ -84,11 +84,11 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
               onChange={handleChange}
               required
               className="form-control"
-              placeholder="Enter blog title"
+              placeholder="Nhập tiêu đề blog"
             />
           </div>
           <div className="form-group">
-            <label>Content<span className="required">*</span></label>
+            <label>Nội dung<span className="required">*</span></label>
             <textarea
               name="content"
               value={form.content}
@@ -96,11 +96,11 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
               required
               className="form-control"
               rows="8"
-              placeholder="Enter blog content"
+              placeholder="Nhập nội dung blog"
             />
           </div>
           <div className="form-group">
-            <label>New Thumbnail Image (optional)</label>
+            <label>Ảnh thumbnail mới (không bắt buộc)</label>
             <input
               type="file"
               accept="image/*"
@@ -109,7 +109,7 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
             />
             {selectedFile && (
               <div className="file-preview">
-                <p>Selected file: {selectedFile.name}</p>
+                <p>Đã chọn: {selectedFile.name}</p>
                 <img
                   src={URL.createObjectURL(selectedFile)}
                   alt="Preview"
@@ -119,7 +119,7 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
             )}
             {blog.thumbnail && !selectedFile && (
               <div className="current-thumbnail">
-                <p>Current thumbnail:</p>
+                <p>Ảnh thumbnail hiện tại:</p>
                 <img
                   src={`https://localhost:7024/files/blogs//${blog.thumbnail}`}
                   alt="Current thumbnail"
@@ -131,7 +131,7 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
           
           <div className="blog-dialog-footer">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Updating..." : "Update Blog"}
+              {loading ? "Đang cập nhật..." : "Cập nhật Blog"}
             </button>
             <button
               type="button"
@@ -139,7 +139,7 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </form>

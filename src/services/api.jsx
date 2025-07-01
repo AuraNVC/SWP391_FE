@@ -68,6 +68,11 @@ const API = {
     CONSENT_FORM_REJECT: (id) => `${API_BASE_URL}/consentForm/reject/${id}`,
     CONSULTATION_FORM_ACCEPT: (id) => `${API_BASE_URL}/consultationForm/accept/${id}`,
     CONSULTATION_FORM_REJECT: (id) => `${API_BASE_URL}/consultationForm/reject/${id}`,
+    VACCINATION_SCHEDULE_LIST: `${API_BASE_URL}/vaccinationSchedule/search`,
+    VACCINATION_SCHEDULE_CREATE: `${API_BASE_URL}/vaccinationSchedule/create`,
+    VACCINATION_SCHEDULE_UPDATE: (id) => `${API_BASE_URL}/vaccinationSchedule/${id}`,
+    VACCINATION_SCHEDULE_DETAIL: (id) => `${API_BASE_URL}/vaccinationSchedule/${id}`,
+    VACCINATION_SCHEDULE_DELETE: (id) => `${API_BASE_URL}/vaccinationSchedule/${id}`,
     // Thêm các endpoint khác nếu cần
 };
 
@@ -308,8 +313,29 @@ export const API_SERVICE = {
         getByProfile: (profileId) => callApi(API.VACCINATION_RESULT_BY_PROFILE(profileId)),
     },
     vaccinationScheduleAPI: {
-        get: (scheduleId) => callApi(API.VACCINATION_SCHEDULE(scheduleId)),
-        getByForm: (formId) => callApi(API.VACCINATION_SCHEDULE_BY_FORM(formId)),
+        getAll: (data) => callApi(API.VACCINATION_SCHEDULE_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getById: (id) => callApi(API.VACCINATION_SCHEDULE_DETAIL(id), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        create: (data) => callApi(API.VACCINATION_SCHEDULE_CREATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (id, data) => callApi(API.VACCINATION_SCHEDULE_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        delete: (id) => callApi(API.VACCINATION_SCHEDULE_DELETE(id), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        }),
     },
     medicalEventAPI: {
         getByStudent: (studentId) => callApi(API.MEDICAL_EVENT_BY_STUDENT(studentId)),

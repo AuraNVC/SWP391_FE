@@ -37,6 +37,8 @@ import BlogCreate from './pages/BlogCreate'
 import FormCreate from './pages/FormCreate'
 import HealthCheckScheduleDashboard from './pages/HealthCheckScheduleDashboard'
 import HealthCheckScheduleCreate from './pages/HealthCheckScheduleCreate'
+import VaccinationScheduleDashboard from './pages/VaccinationScheduleDashboard'
+import VaccinationScheduleCreate from './pages/VaccinationScheduleCreate'
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -156,6 +158,8 @@ function AppContent() {
           <Route path="/manager/form/create" element={<FormCreate />} />
           <Route path="/manager/health-check-schedule" element={<HealthCheckScheduleDashboard />} />
           <Route path="/manager/health-check-schedule/create" element={<HealthCheckScheduleCreate />} />
+          <Route path="/manager/vaccination-schedule" element={<VaccinationScheduleDashboard />} />
+          <Route path="/manager/vaccination-schedule/create" element={<VaccinationScheduleCreate />} />
         </Route>
         <Route element={
           <ProtectedRoute roles={["student"]}>

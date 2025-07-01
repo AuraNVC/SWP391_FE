@@ -47,16 +47,16 @@ const BlogCreate = () => {
       }
 
       await API_SERVICE.blogAPI.create(formData);
-      setSuccessMsg("Blog created successfully!");
+      setSuccessMsg("Tạo blog thành công!");
       setNotif({
-        message: "Blog created successfully!",
+        message: "Tạo blog thành công!",
         type: "success",
       });
       setTimeout(() => {
         navigate('/manager/blog');
       }, 1500);
     } catch (error) {
-      const errorMessage = "Failed to create blog. " + (error?.response?.data?.message || error.message);
+      const errorMessage = "Tạo blog thất bại. " + (error?.response?.data?.message || error.message);
       setErrorMsg(errorMessage);
       setNotif({
         message: errorMessage,
@@ -73,16 +73,16 @@ const BlogCreate = () => {
   return (
     <div className="admin-main">
       <div className="admin-header">
-        <h2>Create New Blog</h2>
+        <h2>Thêm blog mới</h2>
         <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Back to Blog List
+          Quay lại danh sách blog
         </button>
       </div>
       
       <div className="blog-create-page-container">
         <form className="blog-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Title<span className="required">*</span></label>
+            <label>Tiêu đề<span className="required">*</span></label>
             <input
               type="text"
               name="title"
@@ -90,11 +90,11 @@ const BlogCreate = () => {
               onChange={handleChange}
               required
               className="form-control"
-              placeholder="Enter blog title"
+              placeholder="Nhập tiêu đề blog"
             />
           </div>
           <div className="form-group">
-            <label>Content<span className="required">*</span></label>
+            <label>Nội dung<span className="required">*</span></label>
             <textarea
               name="content"
               value={form.content}
@@ -102,11 +102,11 @@ const BlogCreate = () => {
               required
               className="form-control"
               rows="10"
-              placeholder="Enter blog content"
+              placeholder="Nhập nội dung blog"
             />
           </div>
           <div className="form-group">
-            <label>Thumbnail Image</label>
+            <label>Ảnh thumbnail</label>
             <input
               type="file"
               accept="image/*"
@@ -115,7 +115,7 @@ const BlogCreate = () => {
             />
             {selectedFile && (
               <div className="file-preview">
-                <p>Selected file: {selectedFile.name}</p>
+                <p>Đã chọn: {selectedFile.name}</p>
                 <img
                   src={URL.createObjectURL(selectedFile)}
                   alt="Preview"
@@ -129,7 +129,7 @@ const BlogCreate = () => {
           {errorMsg && <div className="error-msg">{errorMsg}</div>}
           <div className="form-actions">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Creating..." : "Create Blog"}
+              {loading ? "Đang tạo..." : "Tạo blog"}
             </button>
             <button
               type="button"
@@ -137,7 +137,7 @@ const BlogCreate = () => {
               onClick={handleCancel}
               disabled={loading}
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </form>

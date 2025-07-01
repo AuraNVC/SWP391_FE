@@ -78,7 +78,7 @@ export default function TableWithPaging({
             {columns.map((col) => (
               <th key={col.key || col.dataIndex}>{col.title}</th>
             ))}
-            {renderActions && <th>Action</th>}
+            {renderActions && <th>Hành động</th>}
           </tr>
         </thead>
         <tbody>
@@ -105,7 +105,7 @@ export default function TableWithPaging({
               onClick={() => handlePageChange(currentPage - 1)}
               disabled={currentPage === 1 || loading}
             >
-              Previous
+              Trước
             </button>
           </li>
           {pageNumbers.map((num, idx) =>
@@ -136,7 +136,7 @@ export default function TableWithPaging({
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={currentPage === totalPages || loading}
             >
-              Next
+              Sau
             </button>
           </li>
         </ul>

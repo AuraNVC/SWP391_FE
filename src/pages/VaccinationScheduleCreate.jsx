@@ -1,25 +1,24 @@
 import React, { useState } from "react";
-import "../styles/ParentCreateForm.css";
+import "../styles/StudentDashboard.css";
 import { API_SERVICE } from "../services/api";
-import { useNotification } from "../contexts/NotificationContext";
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
+import { useUserRole } from "../contexts/UserRoleContext";
 
 const initialState = {
-  fullName: "",
-  email: "",
-  phoneNumber: "",
-  address: "",
-  passwordHash: "",
+  formId: "",
+  name: "",
+  scheduleDate: "",
+  location: "",
+  note: "",
 };
 
-const ParentCreate = () => {
+const VaccinationScheduleCreate = () => {
   const [form, setForm] = useState(initialState);
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
-  
-  const { setNotif } = useNotification();
   const navigate = useNavigate();
+  const { userId } = useUserRole();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -32,108 +31,98 @@ const ParentCreate = () => {
     setSuccessMsg("");
     setErrorMsg("");
     try {
-      const payload = {
-        fullName: form.fullName,
-        email: form.email,
-        phoneNumber: form.phoneNumber,
-        address: form.address,
-        passwordHash: form.passwordHash || form.phoneNumber, // Use phone number as default password
-      };
-      await API_SERVICE.parentAPI.create(payload);
-      setSuccessMsg("Tạo phụ huynh thành công!");
-      setNotif({
-        message: "Tạo phụ huynh thành công!",
-        type: "success",
+      await API_SERVICE.vaccinationScheduleAPI.create({
+        ...form,
+        formId: Number(form.formId),
+        managerId: Number(userId),
       });
+      setSuccessMsg("Tạo lịch tiêm chủng thành công!");
       setTimeout(() => {
-        navigate('/manager/parent');
-      }, 1500);
+        navigate('/manager/vaccination-schedule');
+      }, 1200);
     } catch (error) {
-      const errorMessage = "Tạo phụ huynh thất bại. " + (error?.response?.data?.message || error.message);
-      setErrorMsg(errorMessage);
-      setNotif({
-        message: errorMessage,
-        type: "error",
-      });
+      setErrorMsg("Tạo lịch tiêm chủng thất bại! " + (error?.response?.data?.message || error.message));
     }
     setLoading(false);
   };
 
   const handleCancel = () => {
-    navigate('/manager/parent');
+    navigate('/manager/vaccination-schedule');
   };
 
   return (
     <div className="admin-main">
       <div className="admin-header">
-        <h2>Thêm phụ huynh mới</h2>
+        <h2>Tạo lịch tiêm chủng</h2>
         <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Quay lại danh sách phụ huynh
+          Quay lại danh sách
         </button>
       </div>
-      
-      <div className="parent-create-page-container">
-        <form className="parent-create-form" onSubmit={handleSubmit}>
+      <div className="healthcheck-create-page-container">
+        <form className="student-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Họ tên<span className="required">*</span></label>
+            <label>Form ID<span className="required">*</span></label>
             <input
               type="text"
-              name="fullName"
-              value={form.fullName}
+              name="formId"
+              value={form.formId}
               onChange={handleChange}
               required
               className="form-control"
+              placeholder="Nhập Form ID"
             />
           </div>
           <div className="form-group">
-            <label>Email<span className="required">*</span></label>
-            <input
-              type="email"
-              name="email"
-              value={form.email}
-              onChange={handleChange}
-              required
-              className="form-control"
-            />
-          </div>
-          <div className="form-group">
-            <label>Số điện thoại<span className="required">*</span></label>
+            <label>Tên lịch<span className="required">*</span></label>
             <input
               type="text"
-              name="phoneNumber"
-              value={form.phoneNumber}
+              name="name"
+              value={form.name}
+              onChange={handleChange}
+              required
+              className="form-control"
+              placeholder="Nhập tên lịch tiêm"
+            />
+          </div>
+          <div className="form-group">
+            <label>Ngày tiêm<span className="required">*</span></label>
+            <input
+              type="datetime-local"
+              name="scheduleDate"
+              value={form.scheduleDate}
               onChange={handleChange}
               required
               className="form-control"
             />
           </div>
           <div className="form-group">
-            <label>Địa chỉ</label>
-            <textarea
-              name="address"
-              value={form.address}
+            <label>Địa điểm<span className="required">*</span></label>
+            <input
+              type="text"
+              name="location"
+              value={form.location}
               onChange={handleChange}
+              required
               className="form-control"
-              rows="3"
+              placeholder="Nhập địa điểm"
             />
           </div>
           <div className="form-group">
-            <label>Mật khẩu</label>
+            <label>Ghi chú</label>
             <input
-              type="password"
-              name="passwordHash"
-              value={form.passwordHash}
+              type="text"
+              name="note"
+              value={form.note}
               onChange={handleChange}
               className="form-control"
-              placeholder="Để trống để dùng số điện thoại làm mật khẩu"
+              placeholder="Ghi chú (nếu có)"
             />
           </div>
-          
           {successMsg && <div className="success-msg">{successMsg}</div>}
           {errorMsg && <div className="error-msg">{errorMsg}</div>}
           <div className="form-actions">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Đang tạo..." : "Tạo phụ huynh"}
+              {loading ? "Đang tạo..." : "Tạo mới"}
             </button>
             <button
               type="button"
@@ -150,4 +139,4 @@ const ParentCreate = () => {
   );
 };
 
-export default ParentCreate; 
+export default VaccinationScheduleCreate; 

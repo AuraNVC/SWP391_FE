@@ -43,7 +43,7 @@ const StudentCreate = () => {
     try {
       const parent = await API_SERVICE.parentAPI.search({ keyword: form.parentFullName });
       if (parent.length === 0) {
-        setErrorMsg("Parent not found. Please check the parent name.");
+        setErrorMsg("Không tìm thấy phụ huynh. Vui lòng kiểm tra lại tên phụ huynh.");
         setLoading(false);
         return;
       }
@@ -57,16 +57,16 @@ const StudentCreate = () => {
         passwordHash: form.studentNumber,
       };
       await API_SERVICE.studentAPI.create(payload);
-      setSuccessMsg("Student created successfully!");
+      setSuccessMsg("Tạo học sinh thành công!");
       setNotif({
-        message: "Student created successfully!",
+        message: "Tạo học sinh thành công!",
         type: "success",
       });
       setTimeout(() => {
         navigate('/manager/student');
       }, 1500);
     } catch (error) {
-      const errorMessage = "Failed to create student. " + (error?.response?.data?.message || error.message);
+      const errorMessage = "Tạo học sinh thất bại. " + (error?.response?.data?.message || error.message);
       setErrorMsg(errorMessage);
       setNotif({
         message: errorMessage,
@@ -83,16 +83,16 @@ const StudentCreate = () => {
   return (
     <div className="admin-main">
       <div className="admin-header">
-        <h2>Create New Student</h2>
+        <h2>Thêm học sinh mới</h2>
         <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Back to Student List
+          Quay lại danh sách học sinh
         </button>
       </div>
       
       <div className="student-create-page-container">
         <form className="student-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Full Name<span className="required">*</span></label>
+            <label>Họ tên<span className="required">*</span></label>
             <input
               type="text"
               name="fullName"
@@ -103,10 +103,10 @@ const StudentCreate = () => {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="dateOfBirth">Date of Birth<span className="required">*</span></label>
+            <label htmlFor="dateOfBirth">Ngày sinh<span className="required">*</span></label>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
-                label="Date of Birth"
+                label="Ngày sinh"
                 value={dateOfBirth}
                 onChange={(newValue) => {
                   setDateOfBirth(newValue);
@@ -120,7 +120,7 @@ const StudentCreate = () => {
             </LocalizationProvider>
           </div>
           <div className="form-group">
-            <label>Class<span className="required">*</span></label>
+            <label>Lớp<span className="required">*</span></label>
             <input
               type="text"
               name="className"
@@ -128,11 +128,11 @@ const StudentCreate = () => {
               onChange={handleChange}
               required
               className="form-control"
-              placeholder="e.g. 1A"
+              placeholder="VD: 1A"
             />
           </div>
           <div className="form-group">
-            <label>Gender<span className="required">*</span></label>
+            <label>Giới tính<span className="required">*</span></label>
             <select
               name="gender"
               value={form.gender}
@@ -140,13 +140,13 @@ const StudentCreate = () => {
               required
               className="form-control"
             >
-              <option value="">Select gender</option>
+              <option value="">Chọn giới tính</option>
               <option value="Nam">Nam</option>
               <option value="Nữ">Nữ</option>
             </select>
           </div>
           <div className="form-group">
-            <label>Student Number<span className="required">*</span></label>
+            <label>Mã số học sinh<span className="required">*</span></label>
             <input
               type="text"
               name="studentNumber"
@@ -154,13 +154,13 @@ const StudentCreate = () => {
               onChange={handleChange}
               required
               className="form-control"
-              placeholder="e.g. binhan1"
+              placeholder="VD: binhan1"
             />
           </div>
           <hr />
-          <h4>Parent Information</h4>
+          <h4>Thông tin phụ huynh</h4>
           <div className="form-group">
-            <label>Parent Full Name<span className="required">*</span></label>
+            <label>Họ tên phụ huynh<span className="required">*</span></label>
             <input
               type="text"
               name="parentFullName"
@@ -171,7 +171,7 @@ const StudentCreate = () => {
             />
           </div>
           <div className="form-group">
-            <label>Parent Phone Number</label>
+            <label>Số điện thoại phụ huynh</label>
             <input
               type="text"
               name="parentPhoneNumber"
@@ -181,7 +181,7 @@ const StudentCreate = () => {
             />
           </div>
           <div className="form-group">
-            <label>Parent Email</label>
+            <label>Email phụ huynh</label>
             <input
               type="email"
               name="parentEmail"
@@ -191,7 +191,7 @@ const StudentCreate = () => {
             />
           </div>
           <div className="form-group">
-            <label>Parent Address</label>
+            <label>Địa chỉ phụ huynh</label>
             <input
               type="text"
               name="parentAddress"
@@ -204,7 +204,7 @@ const StudentCreate = () => {
           {errorMsg && <div className="error-msg">{errorMsg}</div>}
           <div className="form-actions">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Creating..." : "Create Student"}
+              {loading ? "Đang tạo..." : "Tạo học sinh"}
             </button>
             <button
               type="button"
@@ -212,7 +212,7 @@ const StudentCreate = () => {
               onClick={handleCancel}
               disabled={loading}
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </form>

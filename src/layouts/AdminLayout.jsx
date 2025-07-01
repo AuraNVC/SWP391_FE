@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
-    FaTachometerAlt, FaUser, FaUsers, FaUserTie, FaWpforms, FaBlog, FaStethoscope
+    FaTachometerAlt, FaUser, FaUsers, FaUserTie, FaWpforms, FaBlog, FaStethoscope, FaSyringe
 } from "react-icons/fa";
 
 export default function AdminLayout() {
@@ -16,6 +16,9 @@ export default function AdminLayout() {
         <a href="/manager/blog" className={current === "/manager/blog" ? "active" : ""}><FaBlog /> Blog</a>,
         <a href="/manager/form" className={current === "/manager/form" ? "active" : ""}><FaWpforms  /> Form</a>,
         <a href="/manager/health-check-schedule" className={current === "/manager/health-check-schedule" ? "active" : ""}><FaStethoscope /> Health Checkup</a>,
+        <a href="/manager/vaccination-schedule" className={current === "/manager/vaccination-schedule" ? "active" : ""}>
+            <FaSyringe /> Vaccination Schedule
+        </a>,
     ];
 
     return (

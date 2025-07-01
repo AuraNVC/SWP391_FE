@@ -9,12 +9,12 @@ import FormViewDialog from "../components/FormViewDialog";
 import FormEditDialog from "../components/FormEditDialog";
 
 const columns = [
-    { title: "ID", dataIndex: "formId" },
-    { title: "Title", dataIndex: "title" },
-    { title: "Class", dataIndex: "className" },
-    { title: "Type", dataIndex: "type" },
-    { title: "Sent Date", dataIndex: "sentDate" },
-    { title: "Created At", dataIndex: "createdAt" },
+    { title: "Mã biểu mẫu", dataIndex: "formId" },
+    { title: "Tiêu đề", dataIndex: "title" },
+    { title: "Lớp", dataIndex: "className" },
+    { title: "Loại", dataIndex: "type" },
+    { title: "Ngày gửi", dataIndex: "sentDate" },
+    { title: "Ngày tạo", dataIndex: "createdAt" },
 ];
 
 const iconStyle = {
@@ -53,12 +53,12 @@ const FormDashboard = () => {
                 setFormList((prev) => prev.filter(f => f.formId !== deleteTarget.formId));
                 setDeleteTarget(null);
                 setNotif({
-                    message: "Form deleted successfully!",
+                    message: "Xóa biểu mẫu thành công!",
                     type: "success",
                 });
             } catch (error) {
                 setNotif({
-                    message: `Failed to delete form. ${error?.response?.data?.message || error.message}`,
+                    message: `Xóa biểu mẫu thất bại! ${error?.response?.data?.message || error.message}`,
                     type: "error",
                 });
                 setDeleteTarget(null);
@@ -97,13 +97,13 @@ const FormDashboard = () => {
         <div className="admin-main">
             <div className="admin-header">
                 <button className="admin-btn" onClick={handleCreateNew}>
-                    + Create New Form
+                    + Thêm biểu mẫu mới
                 </button>
-                <input className="admin-search" type="text" placeholder="Search..." />
+                <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
             </div>
             <div className="admin-table-container">
                 {loading ? (
-                    <div>Loading...</div>
+                    <div>Đang tải...</div>
                 ) : (
                     <TableWithPaging
                         columns={columns}
@@ -115,7 +115,7 @@ const FormDashboard = () => {
                             <div style={{ display: "flex", justifyContent: "center", gap: 8 }}>
                                 <button
                                     className="admin-action-btn admin-action-view"
-                                    title="View Detail"
+                                    title="Xem chi tiết"
                                     onClick={() => handleViewDetail(row)}
                                     style={{ background: "none", border: "none", padding: 0 }}
                                 >
@@ -123,7 +123,7 @@ const FormDashboard = () => {
                                 </button>
                                 <button
                                     className="admin-action-btn admin-action-edit"
-                                    title="Edit"
+                                    title="Sửa"
                                     onClick={() => handleEdit(row)}
                                     style={{ background: "none", border: "none", padding: 0 }}
                                 >
@@ -131,7 +131,7 @@ const FormDashboard = () => {
                                 </button>
                                 <button
                                     className="admin-action-btn admin-action-delete"
-                                    title="Delete"
+                                    title="Xóa"
                                     onClick={() => handleDelete(row)}
                                     style={{ background: "none", border: "none", padding: 0 }}
                                 >
@@ -165,14 +165,14 @@ const FormDashboard = () => {
                 <div className="form-delete-modal-overlay">
                     <div className="form-delete-modal-content">
                         <div className="form-delete-modal-title">
-                            <strong>Are you sure you want to delete form "{deleteTarget.title}"?</strong>
+                            <strong>Bạn có chắc chắn muốn xóa biểu mẫu "{deleteTarget.title}"?</strong>
                         </div>
                         <div className="form-delete-modal-actions">
                             <button className="admin-btn btn-danger" onClick={confirmDelete}>
-                                Delete
+                                Xóa
                             </button>
                             <button className="admin-btn btn-secondary" onClick={cancelDelete}>
-                                Cancel
+                                Hủy
                             </button>
                         </div>
                     </div>

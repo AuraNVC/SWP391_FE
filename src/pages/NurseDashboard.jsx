@@ -8,10 +8,10 @@ import NurseEditDialog from "../components/NurseEditDialog";
 import { useNavigate } from "react-router-dom";
 
 const columns = [
-  { title: "ID", dataIndex: "nurseId" },
-  { title: "Name", dataIndex: "fullName" },
-  { title: "Contact email", dataIndex: "email" },
-  { title: "User name", dataIndex: "username" },
+  { title: "Mã YT", dataIndex: "nurseId" },
+  { title: "Họ tên", dataIndex: "fullName" },
+  { title: "Email liên hệ", dataIndex: "email" },
+  { title: "Tên đăng nhập", dataIndex: "username" },
 ];
 
 const iconStyle = {
@@ -63,12 +63,12 @@ const NurseList = () => {
         setNurseList((prev) => prev.filter(n => n.nurseId !== deleteTarget.nurseId));
         setDeleteTarget(null);
         setNotif({
-          message: "Xóa nurse thành công!",
+          message: "Xóa y tá thành công!",
           type: "success",
         });
       } catch (error) {
         setNotif({
-          message: `Xóa nurse thất bại! ${error.message}`,
+          message: `Xóa y tá thất bại! ${error.message}`,
           type: "error",
         });
         setDeleteTarget(null);
@@ -99,13 +99,13 @@ const NurseList = () => {
     <div className="admin-main">
       <div className="admin-header">
         <button className="admin-btn" onClick={handleCreateNew}>
-          + Create New Nurse
+          + Thêm y tá mới
         </button>
-        <input className="admin-search" type="text" placeholder="Search..." />
+        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
       </div>
       <div className="admin-table-container">
         {loading ? (
-          <div>Loading...</div>
+          <div>Đang tải...</div>
         ) : (
           <TableWithPaging
             columns={columns}
@@ -117,21 +117,21 @@ const NurseList = () => {
               <div className="admin-action-group">
                 <button
                   className="admin-action-btn admin-action-view admin-action-btn-reset"
-                  title="View Detail"
+                  title="Xem chi tiết"
                   onClick={() => handleViewDetail(row)}
                 >
                   <FaEye style={iconStyle.view} size={18} />
                 </button>
                 <button
                   className="admin-action-btn admin-action-edit admin-action-btn-reset"
-                  title="Edit"
+                  title="Sửa"
                   onClick={() => handleEdit(row)}
                 >
                   <FaEdit style={iconStyle.edit} size={18} />
                 </button>
                 <button
                   className="admin-action-btn admin-action-delete admin-action-btn-reset"
-                  title="Delete"
+                  title="Xóa"
                   onClick={() => handleDelete(row)}
                   style={{
                     background: "none",
@@ -152,7 +152,7 @@ const NurseList = () => {
         <div className="nurse-delete-modal-overlay">
           <div className="nurse-delete-modal-content">
             <div className="nurse-delete-modal-title">
-              <strong>Bạn có chắc chắn muốn xóa nurse "{deleteTarget.fullName}"?</strong>
+              <strong>Bạn có chắc chắn muốn xóa y tá "{deleteTarget.fullName}"?</strong>
             </div>
             <div className="nurse-delete-modal-actions">
               <button className="admin-btn btn-danger" onClick={confirmDelete}>
