@@ -72,7 +72,7 @@ export default function Login({ setNotif }) {
     if (hasError) return;
 
     // Lấy redirect từ query string, mặc định là '/'
-    const redirectPath = searchParams.get("redirect") || "/";
+    let redirectPath = searchParams.get("redirect") || "/";
     try {
       let data;
       if (role === "manager") {
@@ -83,6 +83,7 @@ export default function Login({ setNotif }) {
         if (!(data && data.user.accessToken && data.user.id)) {
           throw new Error();
         }
+        redirectPath = "/manager/dashboard";
       } else if (role === "student") {
         data = await API_SERVICE.login.student({
           studentNumber: username,
@@ -91,6 +92,7 @@ export default function Login({ setNotif }) {
         if (!(data && data.user.accessToken && data.user.id)) {
           throw new Error();
         }
+        redirectPath = "/";
       } else if (role === "nurse") {
         data = await API_SERVICE.login.nurse({
           email: username,
@@ -99,6 +101,7 @@ export default function Login({ setNotif }) {
         if (!(data && data.user.accessToken && data.user.id)) {
           throw new Error();
         }
+        redirectPath = "/nurse/dashboard";
       } else if (role === "parent") {
         data = await API_SERVICE.login.parent({
           email: username,
@@ -107,7 +110,8 @@ export default function Login({ setNotif }) {
         if (!(data && data.user.accessToken && data.user.id)) {
           throw new Error();
         }
-      } 
+        redirectPath = "/";
+      }
 
       // Nếu tới đây là đăng nhập thành công
       login({
