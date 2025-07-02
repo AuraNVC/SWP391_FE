@@ -84,6 +84,14 @@ const API = {
     HEALTH_CHECK_RESULT_CREATE: `${API_BASE_URL}/healthCheckResult/add`,
     HEALTH_CHECK_RESULT_UPDATE: (id) => `${API_BASE_URL}/healthCheckResult/${id}`,
     HEALTH_CHECK_RESULT_DETAIL: (id) => `${API_BASE_URL}/healthCheckResult/${id}`,
+    HEALTH_CHECK_RESULT_DELETE: (id) => `${API_BASE_URL}/healthCheckResult/${id}`,
+    
+    // Health Profile endpoints
+    HEALTH_PROFILE_LIST: `${API_BASE_URL}/healthProfile/search`,
+    HEALTH_PROFILE_CREATE: `${API_BASE_URL}/healthProfile/add`,
+    HEALTH_PROFILE_UPDATE: (id) => `${API_BASE_URL}/healthProfile/${id}`,
+    HEALTH_PROFILE_DETAIL: (id) => `${API_BASE_URL}/healthProfile/${id}`,
+    HEALTH_PROFILE_DELETE: (id) => `${API_BASE_URL}/healthProfile/${id}`,
     
     // Vaccination Result endpoints
     VACCINATION_RESULT_LIST: `${API_BASE_URL}/vaccinationResult/search`,
@@ -144,28 +152,40 @@ async function callApi(url, options = {}) {
         clearTimeout(timeoutId);
         
         if (!res.ok) {
-            // Thử đọc lỗi dưới dạng JSON trước
-            let errorData;
-            try {
-                errorData = await res.json();
-            } catch (e) {
-                // Nếu không phải JSON, đọc dưới dạng text
-                const errorText = await res.text();
-                throw new Error(`API error (${res.status}): ${errorText}`);
-            }
+            // Chỉ đọc response một lần và lưu lại
+            let responseData;
+            const contentType = res.headers.get("content-type");
             
-            // Nếu có thông báo lỗi cụ thể từ API, sử dụng nó
-            if (errorData && errorData.message) {
-                throw new Error(`API error (${res.status}): ${errorData.message}`);
-            } else {
-                throw new Error(`API error (${res.status}): ${JSON.stringify(errorData)}`);
+            try {
+                // Đọc response dựa trên content-type
+                if (contentType && contentType.includes("application/json")) {
+                    responseData = await res.json();
+                } else {
+                    responseData = await res.text();
+                }
+                
+                // Xử lý lỗi với dữ liệu đã đọc
+                if (typeof responseData === 'object' && responseData.message) {
+                    throw new Error(`API error (${res.status}): ${responseData.message}`);
+                } else if (typeof responseData === 'string') {
+                    throw new Error(`API error (${res.status}): ${responseData}`);
+                } else {
+                    throw new Error(`API error (${res.status}): ${JSON.stringify(responseData)}`);
+                }
+            } catch (e) {
+                if (e.message.includes('API error')) {
+                    throw e; // Nếu đã xử lý lỗi ở trên, ném lại lỗi đó
+                }
+                throw new Error(`API error (${res.status}): ${e.message}`);
             }
         }
         
+        // Đọc response thành công
         const contentType = res.headers.get("content-type");
         if (contentType && contentType.includes("application/json")) {
-            return res.json();
+            return await res.json();
         }
+        
         // Neu khong co body (vi du DELETE tra ve 204 No Content)
         return null;
     } catch (error) {
@@ -265,22 +285,54 @@ export const API_SERVICE = {
         getAll: (data = {}) => callApi(API.HEALTH_CHECK_RESULT_LIST, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            body: JSON.stringify({
+                ...data,
+                // Đảm bảo các tham số mặc định nếu không được cung cấp
+                keyword: data.keyword || "",
+                pageNumber: data.pageNumber || 1,
+                pageSize: data.pageSize || 100,
+                includeDetails: data.includeDetails !== undefined ? data.includeDetails : true,
+                includeStudent: data.includeStudent !== undefined ? data.includeStudent : true,
+                includeNurse: data.includeNurse !== undefined ? data.includeNurse : true,
+                includeProfile: true
+            })
         }),
         getById: (id) => callApi(API.HEALTH_CHECK_RESULT_DETAIL(id), {
             method: "GET",
-            headers: { "Content-Type": "application/json" }
-        }),
-        create: (data) => callApi(API.HEALTH_CHECK_RESULT_CREATE, {
-            method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            params: {
+                includeDetails: true,
+                includeStudent: true,
+                includeNurse: true,
+                includeProfile: true
+            }
         }),
-        update: (id, data) => callApi(API.HEALTH_CHECK_RESULT_UPDATE(id), {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        }),
+        create: (data) => {
+            console.log("Creating health check result with data:", data);
+            return callApi(API.HEALTH_CHECK_RESULT_CREATE, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(data)
+            });
+        },
+        update: (id, data) => {
+            console.log(`Updating health check result ${id} with data:`, data);
+            return callApi(API.HEALTH_CHECK_RESULT_UPDATE(id), {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ...data,
+                    healthCheckupRecordId: id
+                })
+            });
+        },
+        delete: (id) => {
+            console.log(`Deleting health check result ${id}`);
+            return callApi(API.HEALTH_CHECK_RESULT_DELETE(id), {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" }
+            });
+        }
     },
     vaccinationResultAPI: {
         getAll: (data = {}) => callApi(API.VACCINATION_RESULT_LIST, {
@@ -392,6 +444,10 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        getById: (id) => callApi(`${API_BASE_URL}/student/${id}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
         delete: (id) => callApi(API.STUDENT_DELETE(id), {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
@@ -484,10 +540,18 @@ export const API_SERVICE = {
         // Them cac ham khac neu can
     },
     healthCheckScheduleAPI: {
-        getAll: (data) => callApi(API.HEALTH_CHECK_SCHEDULE_LIST, {
+        getAll: (data = {}) => callApi(API.HEALTH_CHECK_SCHEDULE_LIST, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            body: JSON.stringify({
+                ...data,
+                // Đảm bảo các tham số mặc định nếu không được cung cấp
+                keyword: data.keyword || "",
+                pageNumber: data.pageNumber || 1,
+                pageSize: data.pageSize || 100,
+                includeDetails: data.includeDetails !== undefined ? data.includeDetails : true,
+                includeStudent: data.includeStudent !== undefined ? data.includeStudent : true
+            })
         }),
         getById: (id) => callApi(API.HEALTH_CHECK_SCHEDULE_DETAIL(id), {
             method: "GET",
@@ -504,6 +568,43 @@ export const API_SERVICE = {
             body: JSON.stringify(data)
         }),
         delete: (id) => callApi(API.HEALTH_CHECK_SCHEDULE_DELETE(id), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        }),
+    },
+    healthProfileAPI: {
+        getAll: (data = {}) => callApi(API.HEALTH_PROFILE_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                ...data,
+                // Đảm bảo các tham số mặc định nếu không được cung cấp
+                keyword: data.keyword || "",
+                pageNumber: data.pageNumber || 1,
+                pageSize: data.pageSize || 100,
+                includeDetails: data.includeDetails !== undefined ? data.includeDetails : true,
+                includeStudent: data.includeStudent !== undefined ? data.includeStudent : true
+            })
+        }),
+        getById: (id) => callApi(API.HEALTH_PROFILE_DETAIL(id), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            params: {
+                includeDetails: true,
+                includeStudent: true
+            }
+        }),
+        create: (data) => callApi(API.HEALTH_PROFILE_CREATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (id, data) => callApi(API.HEALTH_PROFILE_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        delete: (id) => callApi(API.HEALTH_PROFILE_DELETE(id), {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         }),

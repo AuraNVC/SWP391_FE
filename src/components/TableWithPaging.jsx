@@ -51,9 +51,10 @@ export default function TableWithPaging({
   renderActions,
   loading = false,
   actionColumnTitle = "Thao tác",
+  emptyMessage = "Không có dữ liệu"
 }) {
-  const totalPages = Math.ceil(data.length / pageSize);
-  const currentPage = page;
+  const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
   const startIdx = (currentPage - 1) * pageSize;
   const endIdx = startIdx + pageSize;
   const pageData = data.slice(startIdx, endIdx);
@@ -66,7 +67,7 @@ export default function TableWithPaging({
   };
 
   useEffect(() => {
-    if (page > totalPages) {
+    if (page > totalPages && totalPages > 0) {
       onPageChange(totalPages);
     }
   }, [data, page, totalPages, onPageChange]);
@@ -83,65 +84,76 @@ export default function TableWithPaging({
           </tr>
         </thead>
         <tbody>
-          {pageData.map((row, idx) => (
-            <tr key={row.id || row.studentId || idx}>
-              {columns.map((col) => (
-                <td key={col.key || col.dataIndex}>
-                  {col.render
-                    ? col.render(row[col.dataIndex], row, idx)
-                    : row[col.dataIndex]}
-                </td>
-              ))}
-              {renderActions && <td>{renderActions(row, idx)}</td>}
+          {pageData.length > 0 ? (
+            pageData.map((row, idx) => (
+              <tr key={row.id || row.studentId || idx}>
+                {columns.map((col) => (
+                  <td key={col.key || col.dataIndex}>
+                    {col.render
+                      ? col.render(row[col.dataIndex], row, idx)
+                      : row[col.dataIndex]}
+                  </td>
+                ))}
+                {renderActions && <td>{renderActions(row, idx)}</td>}
+              </tr>
+            ))
+          ) : (
+            <tr>
+              <td colSpan={columns.length + (renderActions ? 1 : 0)} className="text-center py-3">
+                {emptyMessage}
+              </td>
             </tr>
-          ))}
+          )}
         </tbody>
       </table>
-      {/* Bootstrap Pagination with ellipsis */}
-      <nav>
-        <ul className="pagination justify-content-center">
-          <li className={`page-item${currentPage === 1 ? " disabled" : ""}`}>
-            <button
-              className="page-link"
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1 || loading}
-            >
-              Trước
-            </button>
-          </li>
-          {pageNumbers.map((num, idx) =>
-            num === "..." ? (
-              <li key={`ellipsis-${idx}`} className="page-item disabled">
-                <span className="page-link">...</span>
-              </li>
-            ) : (
-              <li
-                key={`page-${num}`}
-                className={`page-item${
-                  currentPage === num ? " active" : ""
-                }`}
+      
+      {/* Chỉ hiển thị phân trang khi có dữ liệu */}
+      {data.length > 0 && (
+        <nav>
+          <ul className="pagination justify-content-center">
+            <li className={`page-item${currentPage === 1 ? " disabled" : ""}`}>
+              <button
+                className="page-link"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1 || loading}
               >
-                <button
-                  className="page-link"
-                  onClick={() => handlePageChange(num)}
-                  disabled={loading || num === page}
+                Trước
+              </button>
+            </li>
+            {pageNumbers.map((num, idx) =>
+              num === "..." ? (
+                <li key={`ellipsis-${idx}`} className="page-item disabled">
+                  <span className="page-link">...</span>
+                </li>
+              ) : (
+                <li
+                  key={`page-${num}`}
+                  className={`page-item${
+                    currentPage === num ? " active" : ""
+                  }`}
                 >
-                  {num}
-                </button>
-              </li>
-            )
-          )}
-          <li className={`page-item${currentPage === totalPages ? " disabled" : ""}`}>
-            <button
-              className="page-link"
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages || loading}
-            >
-              Sau
-            </button>
-          </li>
-        </ul>
-      </nav>
+                  <button
+                    className="page-link"
+                    onClick={() => handlePageChange(num)}
+                    disabled={loading || num === page}
+                  >
+                    {num}
+                  </button>
+                </li>
+              )
+            )}
+            <li className={`page-item${currentPage === totalPages ? " disabled" : ""}`}>
+              <button
+                className="page-link"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages || loading}
+              >
+                Sau
+              </button>
+            </li>
+          </ul>
+        </nav>
+      )}
     </div>
   );
 }
