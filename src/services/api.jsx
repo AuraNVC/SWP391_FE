@@ -1,5 +1,7 @@
 // eslint-disable-next-line no-undef
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5273/api";
+
+console.log("API_BASE_URL:", API_BASE_URL);
 
 // Kiểm tra kết nối WebSocket
 const checkWebSocketConnection = () => {
@@ -73,7 +75,7 @@ const API = {
     // Medical Event endpoints
     MEDICAL_EVENT_LIST: `${API_BASE_URL}/medicalEvent/search`,
     MEDICAL_EVENT_CREATE: `${API_BASE_URL}/medicalEvent/add`,
-    MEDICAL_EVENT_UPDATE: (id) => `${API_BASE_URL}/medicalEvent/${id}`,
+    MEDICAL_EVENT_UPDATE: `${API_BASE_URL}/medicalEvent/update`,
     MEDICAL_EVENT_DETAIL: (id) => `${API_BASE_URL}/medicalEvent/${id}`,
     MEDICAL_EVENT_DELETE: (id) => `${API_BASE_URL}/medicalEvent/${id}`,
     
@@ -219,22 +221,41 @@ export const API_SERVICE = {
         getAll: (data = {}) => callApi(API.MEDICAL_EVENT_LIST, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            body: JSON.stringify({
+                ...data,
+                // Đảm bảo các tham số mặc định nếu không được cung cấp
+                pageNumber: data.pageNumber || 1,
+                pageSize: data.pageSize || 100,
+                includeDetails: data.includeDetails !== undefined ? data.includeDetails : true,
+                includeStudent: data.includeStudent !== undefined ? data.includeStudent : true,
+                includeNurse: data.includeNurse !== undefined ? data.includeNurse : true
+            })
         }),
         getById: (id) => callApi(API.MEDICAL_EVENT_DETAIL(id), {
             method: "GET",
-            headers: { "Content-Type": "application/json" }
+            headers: { "Content-Type": "application/json" },
+            params: {
+                includeDetails: true,
+                includeStudent: true,
+                includeNurse: true
+            }
         }),
         create: (data) => callApi(API.MEDICAL_EVENT_CREATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        update: (id, data) => callApi(API.MEDICAL_EVENT_UPDATE(id), {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        }),
+        update: (id, data) => {
+            console.log(`Calling PUT ${API.MEDICAL_EVENT_UPDATE} with eventId: ${id}`);
+            return callApi(API.MEDICAL_EVENT_UPDATE, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ...data,
+                    eventId: id
+                })
+            });
+        },
         delete: (id) => callApi(API.MEDICAL_EVENT_DELETE(id), {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
