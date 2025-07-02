@@ -364,12 +364,12 @@ const MedEvents = () => {
         await API_SERVICE.medicalEventAPI.update(eventId, eventData);
         
         // Nếu API thành công, cập nhật UI
-        setNotif({
-          message: "Cập nhật sự kiện y tế thành công",
-          type: "success"
-        });
+      setNotif({
+        message: "Cập nhật sự kiện y tế thành công",
+        type: "success"
+      });
         
-        setShowEditModal(false);
+      setShowEditModal(false);
         
         // Tải lại dữ liệu từ server
         await fetchMedicalEvents(searchKeyword);

@@ -1078,11 +1078,11 @@ const HealthResults = () => {
       // Gọi API để cập nhật kết quả khám
       try {
         await API_SERVICE.healthCheckResultAPI.update(selectedResult.healthCheckupRecordId, dataToSubmit);
-        setNotif({
-          message: "Cập nhật kết quả khám sức khỏe thành công",
-          type: "success"
-        });
-        setShowEditModal(false);
+      setNotif({
+        message: "Cập nhật kết quả khám sức khỏe thành công",
+        type: "success"
+      });
+      setShowEditModal(false);
         // Làm mới dữ liệu sau khi cập nhật thành công
         fetchHealthCheckResults(searchKeyword);
       } catch (apiError) {
@@ -1656,33 +1656,33 @@ const HealthResults = () => {
                 </small>
               </div>
               <div className="form-row">
-                <div className="form-group">
-                  <label>Chiều cao (cm) <span className="required">*</span></label>
-                  <input
-                    type="number"
-                    name="height"
-                    value={formData.height}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.1"
+              <div className="form-group">
+                <label>Chiều cao (cm) <span className="required">*</span></label>
+                <input
+                  type="number"
+                  name="height"
+                  value={formData.height}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  step="0.1"
                     className="form-control"
                     placeholder="Nhập chiều cao"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Cân nặng (kg) <span className="required">*</span></label>
-                  <input
-                    type="number"
-                    name="weight"
-                    value={formData.weight}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.1"
+                />
+              </div>
+              <div className="form-group">
+                <label>Cân nặng (kg) <span className="required">*</span></label>
+                <input
+                  type="number"
+                  name="weight"
+                  value={formData.weight}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  step="0.1"
                     className="form-control"
                     placeholder="Nhập cân nặng"
-                  />
+                />
                 </div>
               </div>
               <div className="form-row">
@@ -1826,8 +1826,8 @@ const HealthResults = () => {
                 Đóng
               </button>
               <button className="admin-btn" onClick={() => {
-                setShowViewModal(false);
-                handleEdit(selectedResult);
+                  setShowViewModal(false);
+                  handleEdit(selectedResult);
               }}>
                 Chỉnh sửa
               </button>
@@ -1881,33 +1881,33 @@ const HealthResults = () => {
                 </select>
               </div>
               <div className="form-row">
-                <div className="form-group">
-                  <label>Chiều cao (cm) <span className="required">*</span></label>
-                  <input
-                    type="number"
-                    name="height"
-                    value={formData.height}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.1"
+              <div className="form-group">
+                <label>Chiều cao (cm) <span className="required">*</span></label>
+                <input
+                  type="number"
+                  name="height"
+                  value={formData.height}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  step="0.1"
                     className="form-control"
                     placeholder="Nhập chiều cao"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Cân nặng (kg) <span className="required">*</span></label>
-                  <input
-                    type="number"
-                    name="weight"
-                    value={formData.weight}
-                    onChange={handleInputChange}
-                    required
-                    min="0"
-                    step="0.1"
+                />
+              </div>
+              <div className="form-group">
+                <label>Cân nặng (kg) <span className="required">*</span></label>
+                <input
+                  type="number"
+                  name="weight"
+                  value={formData.weight}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  step="0.1"
                     className="form-control"
                     placeholder="Nhập cân nặng"
-                  />
+                />
                 </div>
               </div>
               <div className="form-row">

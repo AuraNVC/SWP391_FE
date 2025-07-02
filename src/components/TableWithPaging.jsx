@@ -85,18 +85,36 @@ export default function TableWithPaging({
         </thead>
         <tbody>
           {pageData.length > 0 ? (
-            pageData.map((row, idx) => (
-              <tr key={row.id || row.studentId || idx}>
-                {columns.map((col) => (
-                  <td key={col.key || col.dataIndex}>
-                    {col.render
-                      ? col.render(row[col.dataIndex], row, idx)
-                      : row[col.dataIndex]}
-                  </td>
-                ))}
-                {renderActions && <td>{renderActions(row, idx)}</td>}
-              </tr>
-            ))
+            pageData.map((row, idx) => {
+              // Tạo key duy nhất cho mỗi hàng
+              const rowKey = 
+                row.id || 
+                row.consultationScheduleId || 
+                row.studentId || 
+                row.nurseId || 
+                row.blogId || 
+                row.formId || 
+                row.healthCheckScheduleId || 
+                `row-${idx}`;
+              
+              return (
+                <tr key={rowKey}>
+                  {columns.map((col, colIdx) => {
+                    // Tạo key duy nhất cho mỗi ô
+                    const cellKey = `${rowKey}-${col.key || col.dataIndex || colIdx}`;
+                    
+                    return (
+                      <td key={cellKey}>
+                        {col.render
+                          ? col.render(row[col.dataIndex], row, idx)
+                          : row[col.dataIndex]}
+                      </td>
+                    );
+                  })}
+                  {renderActions && <td>{renderActions(row, idx)}</td>}
+                </tr>
+              );
+            })
           ) : (
             <tr>
               <td colSpan={columns.length + (renderActions ? 1 : 0)} className="text-center py-3">

@@ -101,10 +101,21 @@ const API = {
     
     // Consultation Schedule endpoints
     CONSULTATION_SCHEDULE_LIST: `${API_BASE_URL}/consultationSchedule/search`,
-    CONSULTATION_SCHEDULE_CREATE: `${API_BASE_URL}/consultationSchedule/add`,
-    CONSULTATION_SCHEDULE_UPDATE: (id) => `${API_BASE_URL}/consultationSchedule/${id}`,
+    CONSULTATION_SCHEDULE_CREATE: `${API_BASE_URL}/consultationSchedule/create`,
+    CONSULTATION_SCHEDULE_UPDATE: `${API_BASE_URL}/consultationSchedule/update`,
     CONSULTATION_SCHEDULE_DETAIL: (id) => `${API_BASE_URL}/consultationSchedule/${id}`,
     CONSULTATION_SCHEDULE_DELETE: (id) => `${API_BASE_URL}/consultationSchedule/${id}`,
+    CONSULTATION_SCHEDULE_BY_STUDENT: (studentId) => `${API_BASE_URL}/consultationSchedule/getByStudent?studentId=${studentId}`,
+    
+    // Consultation Form endpoints
+    CONSULTATION_FORM_LIST: `${API_BASE_URL}/consultationForm/search`,
+    CONSULTATION_FORM_CREATE: `${API_BASE_URL}/consultationForm/add`,
+    CONSULTATION_FORM_UPDATE: `${API_BASE_URL}/consultationForm/update`,
+    CONSULTATION_FORM_DETAIL: (id) => `${API_BASE_URL}/consultationForm/${id}`,
+    // Thêm endpoint getBySchedule
+    CONSULTATION_FORM_BY_SCHEDULE: (scheduleId) => `${API_BASE_URL}/consultationForm/getBySchedule?scheduleId=${scheduleId}`,
+    CONSULTATION_FORM_BY_STUDENT: (studentId) => `${API_BASE_URL}/consultationForm/getByStudent?studentId=${studentId}`,
+    CONSULTATION_FORM_BY_PARENT: (parentId) => `${API_BASE_URL}/consultationForm/getByParent?parentId=${parentId}`,
     
     // Parent Prescription endpoints
     PARENT_PRESCRIPTION_LIST: `${API_BASE_URL}/parentPrescription/search`,
@@ -181,8 +192,8 @@ async function callApi(url, options = {}) {
         }
         
         // Đọc response thành công
-        const contentType = res.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
             return await res.json();
         }
         
@@ -365,19 +376,62 @@ export const API_SERVICE = {
             method: "GET",
             headers: { "Content-Type": "application/json" }
         }),
+        getByStudent: (studentId) => callApi(API.CONSULTATION_SCHEDULE_BY_STUDENT(studentId), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
         create: (data) => callApi(API.CONSULTATION_SCHEDULE_CREATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        update: (id, data) => callApi(API.CONSULTATION_SCHEDULE_UPDATE(id), {
+        update: (id, data) => callApi(API.CONSULTATION_SCHEDULE_UPDATE, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            body: JSON.stringify({
+                ...data,
+                consultationScheduleId: id
+            })
         }),
         delete: (id) => callApi(API.CONSULTATION_SCHEDULE_DELETE(id), {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
+        }),
+    },
+    consultationFormAPI: {
+        getAll: (data = {}) => callApi(API.CONSULTATION_FORM_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getById: (id) => callApi(API.CONSULTATION_FORM_DETAIL(id), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        getBySchedule: (scheduleId) => callApi(API.CONSULTATION_FORM_BY_SCHEDULE(scheduleId), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        getByStudent: (studentId) => callApi(API.CONSULTATION_FORM_BY_STUDENT(studentId), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        getByParent: (parentId) => callApi(API.CONSULTATION_FORM_BY_PARENT(parentId), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        create: (data) => callApi(API.CONSULTATION_FORM_CREATE, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (id, data) => callApi(API.CONSULTATION_FORM_UPDATE, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                ...data,
+                consultationFormId: id
+            })
         }),
     },
     parentPrescriptionAPI: {
@@ -470,6 +524,10 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        getById: (id) => callApi(`${API_BASE_URL}/parent/${id}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
         delete: (id) => callApi(API.PARENT_DELETE(id), {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
@@ -496,6 +554,10 @@ export const API_SERVICE = {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
+        }),
+        getById: (id) => callApi(`${API_BASE_URL}/nurse/${id}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
         }),
         delete: (id) => callApi(API.NURSE_DELETE(id), {
             method: "DELETE",
