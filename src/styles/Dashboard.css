@@ -32,3 +32,12 @@
   font-weight: 600;
   color: #1976d2;
 }
+
+.dashboard-title {
+  text-align: left;
+  margin-top: 0;
+  margin-bottom: 30px;
+  margin-left: 0;
+  font-size: 2.2rem;
+  font-weight: 700;
+}

@@ -61,9 +61,10 @@ const VaccinationScheduleDashboard = () => {
 
   return (
     <div className="admin-main">
+      <h2 className="dashboard-title">Quản lý Lịch tiêm chủng</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={() => navigate("/manager/vaccination-schedule/create")}>+ Tạo mới lịch tiêm</button>
-        <input className="admin-search" type="text" placeholder="Search..." />
+        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
       </div>
       <div className="admin-table-container">
         <TableWithPaging

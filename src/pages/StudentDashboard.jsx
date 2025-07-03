@@ -105,6 +105,7 @@ const StudentList = () => {
 
   return (
     <div className="admin-main">
+      <h2 className="dashboard-title">Quản lý Học sinh</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={handleCreateNew}>
           + Thêm học sinh mới

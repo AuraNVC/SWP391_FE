@@ -10,7 +10,8 @@ import { useNavigate } from "react-router-dom";
 const columns = [
   { title: "Mã Blog", dataIndex: "blogId" },
   { title: "Tiêu đề", dataIndex: "title" },
-  { title: "Nội dung", dataIndex: "content" },
+  { title: "Chủ đề", dataIndex: "category" },
+  { title: "Nội dung", dataIndex: "content", width: 180, render: (text) => <div style={{ maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{text}</div> },
   { title: "Ngày đăng", dataIndex: "datePosted" },
   {
     title: "Ảnh thumbnail",
@@ -111,6 +112,7 @@ const BlogList = () => {
 
   return (
     <div className="admin-main">
+      <h2 className="dashboard-title">Quản lý Blog</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={handleCreateNew}>
           + Thêm blog mới

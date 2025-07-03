@@ -104,9 +104,10 @@ export const API_SERVICE = {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         }),
-        create: (formData) => callApi(API.BLOG_CREATE, {
+        create: (data) => callApi(API.BLOG_CREATE, {
             method: "POST",
-            body: formData, // Don't set Content-Type for FormData
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
         }),
         update: (id, formData) => callApi(API.BLOG_UPDATE(id), {
             method: "PUT",

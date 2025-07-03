@@ -97,6 +97,7 @@ const ParentList = () => {
 
   return (
     <div className="admin-main">
+      <h2 className="dashboard-title">Quản lý Phụ huynh</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={handleCreateNew}>
           + Thêm phụ huynh mới

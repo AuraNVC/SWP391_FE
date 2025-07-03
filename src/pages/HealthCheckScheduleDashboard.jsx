@@ -61,9 +61,10 @@ const HealthCheckScheduleDashboard = () => {
 
   return (
     <div className="admin-main">
+      <h2 className="dashboard-title">Quản lý Lịch khám sức khỏe</h2>
       <div className="admin-header">
-        <button className="admin-btn" onClick={() => navigate("/manager/health-check-schedule/create")}>+ Create New Health Checkup</button>
-        <input className="admin-search" type="text" placeholder="Search..." />
+        <button className="admin-btn" onClick={() => navigate("/manager/health-check-schedule/create")}>+ Tạo lịch khám mới</button>
+        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
       </div>
       <div className="admin-table-container">
         <TableWithPaging

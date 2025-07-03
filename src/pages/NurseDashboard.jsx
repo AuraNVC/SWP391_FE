@@ -97,6 +97,7 @@ const NurseList = () => {
 
   return (
     <div className="admin-main">
+      <h2 className="dashboard-title">Quản lý Y tá</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={handleCreateNew}>
           + Thêm y tá mới

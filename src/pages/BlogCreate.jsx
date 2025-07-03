@@ -8,7 +8,17 @@ const initialState = {
   title: "",
   content: "",
   thumbnail: null,
+  category: "",
 };
+
+const categoryMap = {
+  "": "Chọn chủ đề",
+  1: "Dinh dưỡng",
+  2: "Tâm lý",
+  3: "Bệnh truyền nhiễm",
+  4: "Thể chất"
+};
+const categories = Object.entries(categoryMap).map(([value, label]) => ({ value, label }));
 
 const BlogCreate = () => {
   const [form, setForm] = useState(initialState);
@@ -22,14 +32,14 @@ const BlogCreate = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: name === 'category' ? (value === '' ? '' : Number(value)) : value }));
   };
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setSelectedFile(file);
-      setForm((prev) => ({ ...prev, thumbnail: file.name }));
+      setForm((prev) => ({ ...prev, thumbnail: null })); // reset thumbnail, chỉ lưu file
     }
   };
 
@@ -39,14 +49,26 @@ const BlogCreate = () => {
     setSuccessMsg("");
     setErrorMsg("");
     try {
-      const formData = new FormData();
-      formData.append('title', form.title);
-      formData.append('content', form.content);
+      let thumbnailName = form.thumbnail;
       if (selectedFile) {
-        formData.append('thumbnail', selectedFile);
+        const uploadForm = new FormData();
+        uploadForm.append('imageFile', selectedFile);
+        const res = await API_SERVICE.blogAPI.uploadImage(uploadForm);
+        thumbnailName = res.fileName || res.data?.fileName || res.data;
       }
-
-      await API_SERVICE.blogAPI.create(formData);
+      // Lấy managerId từ localStorage (hoặc context, hoặc hardcode để test)
+      const managerId = Number(localStorage.getItem("userId")) ;
+      // Lấy ngày hiện tại
+      const datePosted = new Date().toISOString().slice(0, 10);
+      const payload = {
+        managerId,
+        title: form.title,
+        content: form.content,
+        datePosted,
+        thumbnail: thumbnailName,
+        category: form.category
+      };
+      await API_SERVICE.blogAPI.create(payload);
       setSuccessMsg("Tạo blog thành công!");
       setNotif({
         message: "Tạo blog thành công!",
@@ -104,6 +126,20 @@ const BlogCreate = () => {
               rows="10"
               placeholder="Nhập nội dung blog"
             />
+          </div>
+          <div className="form-group">
+            <label>Chủ đề<span className="required">*</span></label>
+            <select
+              name="category"
+              value={form.category}
+              onChange={handleChange}
+              required
+              className="form-control"
+            >
+              {categories.map((c) => (
+                <option key={c.value} value={c.value}>{c.label}</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label>Ảnh thumbnail</label>
