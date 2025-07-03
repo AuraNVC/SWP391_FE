@@ -122,7 +122,7 @@ const FormCreate = () => {
               className="form-control"
             >
               <option value="">Chọn loại biểu mẫu</option>
-              <option value="0">Biểu mẫu khám sức khỏe</option>
+              <option value="2">Biểu mẫu khám sức khỏe</option>
               <option value="1">Biểu mẫu tiêm chủng</option>
             </select>
           </div>

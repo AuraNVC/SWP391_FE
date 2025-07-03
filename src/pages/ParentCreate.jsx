@@ -63,6 +63,8 @@ const ParentCreate = () => {
     navigate('/manager/parent');
   };
 
+  const [showPassword, setShowPassword] = useState(false);
+
   return (
     <div className="admin-main">
       <div className="admin-header">
@@ -119,14 +121,30 @@ const ParentCreate = () => {
           </div>
           <div className="form-group">
             <label>Mật khẩu</label>
-            <input
-              type="password"
-              name="passwordHash"
-              value={form.passwordHash}
-              onChange={handleChange}
-              className="form-control"
-              placeholder="Để trống để dùng số điện thoại làm mật khẩu"
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                name="passwordHash"
+                value={form.passwordHash}
+                onChange={handleChange}
+                className="form-control"
+                placeholder="Để trống để dùng số điện thoại làm mật khẩu"
+              />
+              <span
+                onClick={() => setShowPassword((prev) => !prev)}
+                style={{
+                  position: "absolute",
+                  right: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  cursor: "pointer",
+                  userSelect: "none"
+                }}
+                title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+              >
+                {showPassword ? "🙈" : "👁️"}
+              </span>
+            </div>
           </div>
           
           {successMsg && <div className="success-msg">{successMsg}</div>}
