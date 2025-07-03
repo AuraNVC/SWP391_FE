@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useContext } from "react";
-import { FaSearch, FaPlus, FaEye, FaEdit, FaTrash, FaSync } from "react-icons/fa";
+import { FaSearch, FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
 import "../styles/Dashboard.css";
+import "../styles/StudentDashboard.css";
 
 const MedEvents = () => {
   const [events, setEvents] = useState([]);
@@ -26,14 +27,18 @@ const MedEvents = () => {
     actionTaken: "",
     note: ""
   });
+  const [showConfirmAdd, setShowConfirmAdd] = useState(false);
+  const [showConfirmUpdate, setShowConfirmUpdate] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
 
   const { setNotif } = useNotification();
 
   // Style cho các biểu tượng
   const iconStyle = {
-    view: { color: "#3498db" },
-    edit: { color: "#f39c12" },
-    delete: { color: "#e74c3c" }
+    view: { color: "#007bff" },
+    edit: { color: "#28a745" },
+    delete: { color: "#dc3545" }
   };
 
   const columns = [
@@ -175,7 +180,6 @@ const MedEvents = () => {
       
       // Xử lý dữ liệu để đảm bảo hiển thị đúng
       const processedEvents = Array.isArray(response) ? response.map(event => {
-        console.log("Xử lý sự kiện:", event);
         // Lấy thông tin học sinh
         let studentName = "";
         
@@ -208,9 +212,6 @@ const MedEvents = () => {
           }
         }
         
-        // Log chi tiết về trường note để debug
-        console.log(`Event ID ${event.medicalEventId || event.eventId}, Note: "${event.note}"`);
-        
         return {
           ...event,
           // Đảm bảo các trường dữ liệu đúng tên
@@ -225,26 +226,21 @@ const MedEvents = () => {
         };
       }) : [];
       
-      console.log("Processed events:", processedEvents);
+      // Sắp xếp sự kiện theo ID giảm dần (mới nhất lên đầu)
+      const sortedEvents = [...processedEvents].sort((a, b) => {
+        const idA = a.medicalEventId || 0;
+        const idB = b.medicalEventId || 0;
+        return idB - idA;
+      });
       
-      setEvents(processedEvents);
+      setEvents(sortedEvents);
     } catch (error) {
       console.error("Error fetching medical events:", error);
       setNotif({
         message: "Không thể tải danh sách sự kiện y tế",
         type: "error"
       });
-      
-      // Tạo dữ liệu mẫu khi có lỗi
-      const dummyEvents = [
-        { medicalEventId: 1, title: "Sự kiện 1", eventDate: "2024-03-01T09:30:00.000", studentId: 1, studentName: "Học sinh 1", symptoms: "Sốt, ho", actionTaken: "Cho uống hạ sốt, theo dõi" },
-        { medicalEventId: 2, title: "Sự kiện 2", eventDate: "2024-03-02T10:00:00.000", studentId: 2, studentName: "Học sinh 2", symptoms: "Đau bụng", actionTaken: "Nghỉ ngơi tại phòng y tế" },
-        { medicalEventId: 3, title: "Sự kiện 3", eventDate: "2024-03-03T11:15:00.000", studentId: 3, studentName: "Học sinh 3", symptoms: "Chóng mặt", actionTaken: "Cho uống nước đường" },
-        { medicalEventId: 4, title: "Sự kiện 4", eventDate: "2024-03-04T14:00:00.000", studentId: 4, studentName: "Học sinh 4", symptoms: "Ngã trầy xước", actionTaken: "Sát trùng, băng bó" },
-        { medicalEventId: 5, title: "Sự kiện 5", eventDate: "2024-03-05T08:45:00.000", studentId: 5, studentName: "Học sinh 5", symptoms: "Đau họng", actionTaken: "Cho uống thuốc ho" }
-      ];
-      console.log("Using dummy events data due to error");
-      setEvents(dummyEvents);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -269,21 +265,26 @@ const MedEvents = () => {
   };
 
   const handleSearchKeyDown = (e) => {
-    if (e.key === "Enter") {
+    if (e.key === 'Enter') {
       handleSearch();
     }
   };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: value
-    });
+    }));
   };
 
   const handleAddEvent = async (e) => {
     e.preventDefault();
+    setShowConfirmAdd(true);
+  };
+
+  const confirmAddEvent = async () => {
+    setShowConfirmAdd(false);
     setLoading(true);
     try {
       // Validate form data
@@ -304,7 +305,7 @@ const MedEvents = () => {
 
       await API_SERVICE.medicalEventAPI.create(eventData);
       setNotif({
-        message: "Thêm sự kiện y tế thành công",
+        message: "Thêm sự kiện y tế thành công!",
         type: "success"
       });
       setShowAddModal(false);
@@ -322,7 +323,7 @@ const MedEvents = () => {
     } catch (error) {
       console.error("Error adding medical event:", error);
       setNotif({
-        message: "Không thể thêm sự kiện y tế",
+        message: "Không thể thêm sự kiện y tế. Vui lòng thử lại.",
         type: "error"
       });
     } finally {
@@ -332,6 +333,11 @@ const MedEvents = () => {
 
   const handleUpdateEvent = async (e) => {
     e.preventDefault();
+    setShowConfirmUpdate(true);
+  };
+
+  const confirmUpdateEvent = async () => {
+    setShowConfirmUpdate(false);
     setLoading(true);
     try {
       // Validate form data
@@ -361,15 +367,15 @@ const MedEvents = () => {
         console.log("Cập nhật sự kiện với dữ liệu:", eventData);
         
         // Gọi API update
-        await API_SERVICE.medicalEventAPI.update(eventId, eventData);
+        await API_SERVICE.medicalEventAPI.update(eventData);
         
         // Nếu API thành công, cập nhật UI
-      setNotif({
-        message: "Cập nhật sự kiện y tế thành công",
-        type: "success"
-      });
+        setNotif({
+          message: "Cập nhật sự kiện y tế thành công!",
+          type: "success"
+        });
         
-      setShowEditModal(false);
+        setShowEditModal(false);
         
         // Tải lại dữ liệu từ server
         await fetchMedicalEvents(searchKeyword);
@@ -380,7 +386,7 @@ const MedEvents = () => {
     } catch (error) {
       console.error("Error updating medical event:", error);
       setNotif({
-        message: "Không thể cập nhật sự kiện y tế: " + (error.message || "Lỗi không xác định"),
+        message: "Không thể cập nhật sự kiện y tế. Vui lòng thử lại.",
         type: "error"
       });
     } finally {
@@ -389,57 +395,50 @@ const MedEvents = () => {
   };
 
   const handleDeleteEvent = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa sự kiện này không?")) {
-      setLoading(true);
-      try {
-        console.log("Xóa sự kiện ID:", id);
-        console.log("API endpoint:", `medicalEvent/${id}`);
-        
-        // Gọi API xóa
-        const response = await API_SERVICE.medicalEventAPI.delete(id);
-        console.log("API response:", response);
-        
-        // Nếu API thành công, cập nhật UI
-        setNotif({
-          message: "Xóa sự kiện y tế thành công",
-          type: "success"
-        });
-        
-        // Tải lại dữ liệu từ server
-        fetchMedicalEvents(searchKeyword);
-      } catch (error) {
-        console.error("Error deleting medical event:", error);
-        setNotif({
-          message: "Không thể xóa sự kiện y tế: " + (error.message || "Lỗi không xác định"),
-          type: "error"
-        });
-      } finally {
-        setLoading(false);
-      }
+    setDeleteId(id);
+    setShowConfirmDelete(true);
+  };
+
+  const confirmDeleteEvent = async () => {
+    setShowConfirmDelete(false);
+    setLoading(true);
+    try {
+      console.log("Xóa sự kiện ID:", deleteId);
+      
+      // Gọi API xóa
+      await API_SERVICE.medicalEventAPI.delete(deleteId);
+      
+      // Nếu API thành công, cập nhật UI
+      setNotif({
+        message: "Xóa sự kiện y tế thành công!",
+        type: "success"
+      });
+      
+      // Tải lại dữ liệu từ server
+      fetchMedicalEvents(searchKeyword);
+    } catch (error) {
+      console.error("Error deleting medical event:", error);
+      setNotif({
+        message: "Không thể xóa sự kiện y tế. Vui lòng thử lại.",
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
+      setDeleteId(null);
     }
   };
 
   const handleView = (event) => {
     setSelectedEvent(event);
-    console.log("Chi tiết sự kiện được chọn:", event);
     setShowViewModal(true);
   };
 
   const handleEdit = (event) => {
     setSelectedEvent(event);
-    
-    // Xử lý ngày giờ
-    let eventDateTime = event.eventDate || "";
-    if (eventDateTime) {
-      const date = new Date(eventDateTime);
-      if (!isNaN(date.getTime())) {
-        eventDateTime = date.toISOString().slice(0, 16); // Format: "YYYY-MM-DDTHH:MM"
-      }
-    }
-    
     setFormData({
+      medicalEventId: event.medicalEventId || event.eventId,
       title: event.title || event.eventName || "",
-      eventDate: eventDateTime,
+      eventDate: event.eventDate ? new Date(event.eventDate).toISOString().split('T')[0] + "T" + new Date(event.eventDate).toTimeString().split(' ')[0] : "",
       studentId: event.studentId || "",
       nurseId: event.nurseId || localStorage.getItem("userId") || "",
       symptoms: event.symptoms || "",
@@ -449,89 +448,60 @@ const MedEvents = () => {
     setShowEditModal(true);
   };
 
-  const handleRefresh = async () => {
-    setSearchKeyword("");
-    setPage(1);
-    setLoading(true);
-    try {
-      await Promise.all([fetchStudents(), fetchNurses()]);
-      await fetchMedicalEvents("");
-    } catch (error) {
-      console.error("Error refreshing data:", error);
-      setNotif({
-        message: "Không thể làm mới dữ liệu",
-        type: "error"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="admin-main">
+      <h2 className="dashboard-title">Quản lý sự kiện y tế</h2>
       <div className="admin-header">
-        <h2>Quản lý sự kiện y tế</h2>
-        <div className="admin-header-actions">
-          <div className="search-container">
-            <input
-              type="text"
-              placeholder="Tìm kiếm sự kiện..."
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              className="admin-search"
-            />
-            <button
-              className="admin-btn search-btn" 
-              onClick={handleSearch}
-              disabled={searchLoading}
-            >
-              {searchLoading ? "Đang tìm..." : <FaSearch />}
-            </button>
-            <button
-              className="admin-btn refresh-btn"
-              onClick={handleRefresh}
-              disabled={loading}
-              title="Làm mới dữ liệu"
-            >
-              <FaSync />
-            </button>
-          </div>
-          <button className="admin-btn" onClick={() => setShowAddModal(true)}>
-            <FaPlus /> Thêm sự kiện y tế
+        <button className="admin-btn" onClick={() => setShowAddModal(true)}>
+          + Thêm sự kiện y tế
+        </button>
+        <div className="search-container">
+          <input
+            className="admin-search"
+            type="text"
+            placeholder="Tìm kiếm..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+          />
+          <button className="admin-btn" onClick={handleSearch}>
+            <FaSearch />
           </button>
         </div>
       </div>
-
       <div className="admin-table-container">
         {loading ? (
-          <div className="loading-spinner">Đang tải...</div>
+          <div className="loading-container">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Đang tải...</span>
+            </div>
+            <p>Đang tải dữ liệu...</p>
+          </div>
         ) : (
           <TableWithPaging
             columns={columns}
             data={events}
-            page={page}
             pageSize={10}
+            page={page}
             onPageChange={setPage}
-            actionColumnTitle="Thao tác"
             renderActions={(row) => (
               <div className="admin-action-group">
                 <button
-                  className="admin-action-btn admin-action-view admin-action-btn-reset"
+                  className="admin-action-btn admin-action-btn-reset"
                   title="Xem chi tiết"
                   onClick={() => handleView(row)}
                 >
                   <FaEye style={iconStyle.view} size={18} />
                 </button>
                 <button
-                  className="admin-action-btn admin-action-edit admin-action-btn-reset"
-                  title="Chỉnh sửa"
+                  className="admin-action-btn admin-action-btn-reset"
+                  title="Sửa"
                   onClick={() => handleEdit(row)}
                 >
                   <FaEdit style={iconStyle.edit} size={18} />
                 </button>
                 <button
-                  className="admin-action-btn admin-action-delete admin-action-btn-reset"
+                  className="admin-action-btn admin-action-btn-reset"
                   title="Xóa"
                   onClick={() => handleDeleteEvent(row.medicalEventId || row.eventId)}
                 >
@@ -539,290 +509,321 @@ const MedEvents = () => {
                 </button>
               </div>
             )}
+            loading={loading}
           />
         )}
       </div>
 
-      {/* Modal thêm sự kiện y tế */}
+      {/* Add Event Modal */}
       {showAddModal && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <div className="modal-header">
-              <h3>Thêm sự kiện y tế</h3>
-              <button className="close-btn" onClick={() => setShowAddModal(false)}>×</button>
-            </div>
+        <div className="student-create-modal-overlay">
+          <div className="student-create-modal-content">
+            <h3 className="modal-title">Thêm sự kiện y tế mới</h3>
             <form onSubmit={handleAddEvent}>
-              <div className="form-group">
-                <label>Tiêu đề <span className="required">*</span></label>
+              <div className="mb-3">
+                <label htmlFor="title" className="form-label">Tiêu đề <span className="text-danger">*</span></label>
                 <input
                   type="text"
+                  className="form-control"
+                  id="title"
                   name="title"
                   value={formData.title}
                   onChange={handleInputChange}
                   required
-                  className="form-control"
-                  placeholder="Nhập tiêu đề sự kiện"
                 />
               </div>
-              <div className="form-group">
-                <label>Ngày giờ <span className="required">*</span></label>
+              <div className="mb-3">
+                <label htmlFor="eventDate" className="form-label">Ngày sự kiện <span className="text-danger">*</span></label>
                 <input
                   type="datetime-local"
+                  className="form-control"
+                  id="eventDate"
                   name="eventDate"
                   value={formData.eventDate}
                   onChange={handleInputChange}
                   required
-                  className="form-control"
                 />
               </div>
-              <div className="form-group">
-                <label>Học sinh <span className="required">*</span></label>
+              <div className="mb-3">
+                <label htmlFor="studentId" className="form-label">Học sinh <span className="text-danger">*</span></label>
                 <select
+                  className="form-select"
+                  id="studentId"
                   name="studentId"
                   value={formData.studentId}
                   onChange={handleInputChange}
                   required
-                  className="form-control"
                 >
-                  <option value="">-- Chọn học sinh --</option>
-                  {students.map((student) => (
+                  <option value="">Chọn học sinh</option>
+                  {students.map(student => (
                     <option key={student.studentId} value={student.studentId}>
-                      {student.fullName} - ID: {student.studentId}
+                      {student.fullName} (ID: {student.studentId})
                     </option>
                   ))}
                 </select>
               </div>
-              <div className="form-group">
-                <label>Y tá</label>
+              <div className="mb-3">
+                <label htmlFor="nurseId" className="form-label">Y tá <span className="text-danger">*</span></label>
                 <select
+                  className="form-select"
+                  id="nurseId"
                   name="nurseId"
                   value={formData.nurseId}
                   onChange={handleInputChange}
-                  className="form-control"
+                  required
                 >
-                  <option value="">-- Chọn y tá --</option>
-                  {nurses.map((nurse) => (
+                  <option value="">Chọn y tá</option>
+                  {nurses.map(nurse => (
                     <option key={nurse.nurseId} value={nurse.nurseId}>
-                      {nurse.fullName} - ID: {nurse.nurseId}
+                      {nurse.fullName} (ID: {nurse.nurseId})
                     </option>
                   ))}
                 </select>
               </div>
-              <div className="form-group">
-                <label>Triệu chứng</label>
+              <div className="mb-3">
+                <label htmlFor="symptoms" className="form-label">Triệu chứng <span className="text-danger">*</span></label>
                 <textarea
+                  className="form-control"
+                  id="symptoms"
                   name="symptoms"
                   value={formData.symptoms}
                   onChange={handleInputChange}
-                  className="form-control"
-                  placeholder="Nhập triệu chứng"
-                  rows="2"
+                  rows={3}
+                  required
                 ></textarea>
               </div>
-              <div className="form-group">
-                <label>Xử lý</label>
+              <div className="mb-3">
+                <label htmlFor="actionTaken" className="form-label">Xử lý <span className="text-danger">*</span></label>
                 <textarea
+                  className="form-control"
+                  id="actionTaken"
                   name="actionTaken"
                   value={formData.actionTaken}
                   onChange={handleInputChange}
-                  className="form-control"
-                  placeholder="Nhập cách xử lý"
-                  rows="2"
+                  rows={3}
+                  required
                 ></textarea>
               </div>
-              <div className="form-group">
-                <label>Ghi chú</label>
+              <div className="mb-3">
+                <label htmlFor="note" className="form-label">Ghi chú</label>
                 <textarea
+                  className="form-control"
+                  id="note"
                   name="note"
                   value={formData.note}
                   onChange={handleInputChange}
-                  className="form-control"
-                  placeholder="Nhập ghi chú"
-                  rows="3"
+                  rows={2}
                 ></textarea>
               </div>
-              <div className="form-actions">
-                <button type="submit" className="admin-btn" disabled={loading}>
-                  {loading ? "Đang thêm..." : "Thêm mới"}
-                </button>
-                <button
-                  type="button"
-                  className="admin-btn cancel-btn"
-                  onClick={() => setShowAddModal(false)}
-                >
-                  Hủy
-                </button>
+              <div className="modal-footer">
+                <button type="submit" className="btn btn-primary">Lưu</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Hủy</button>
               </div>
             </form>
           </div>
         </div>
       )}
 
-      {/* Modal xem chi tiết sự kiện y tế */}
+      {/* View Event Modal */}
       {showViewModal && selectedEvent && (
-        <div className="modal-overlay">
-          <div className="modal-container">
+        <div className="student-create-modal-overlay">
+          <div className="student-create-modal-content">
             <div className="modal-header">
-              <h3>Chi tiết sự kiện y tế</h3>
-              <button className="close-btn" onClick={() => setShowViewModal(false)}>×</button>
+              <h3 className="modal-title">Chi tiết sự kiện y tế</h3>
+              <button type="button" className="btn-close" onClick={() => setShowViewModal(false)}></button>
             </div>
             <div className="modal-body">
-              <div className="info-grid">
-                <div className="info-item">
-                  <strong>ID:</strong> {selectedEvent.medicalEventId || selectedEvent.eventId || "N/A"}
-                </div>
-                <div className="info-item">
-                  <strong>Tiêu đề:</strong> {selectedEvent.title || selectedEvent.eventName || "Không có tiêu đề"}
-                </div>
-                <div className="info-item">
-                  <strong>Ngày:</strong> {selectedEvent.eventDate ? new Date(selectedEvent.eventDate).toLocaleDateString('vi-VN') : "N/A"}
-                </div>
-                <div className="info-item">
-                  <strong>Giờ:</strong> {selectedEvent.eventDate ? new Date(selectedEvent.eventDate).toLocaleTimeString('vi-VN') : "N/A"}
-                </div>
-                <div className="info-item">
-                  <strong>Học sinh:</strong> {selectedEvent.studentName || getStudentName(selectedEvent.studentId) || "Không xác định"} (ID: {selectedEvent.studentId || "N/A"})
-                </div>
-                <div className="info-item">
-                  <strong>Y tá:</strong> {selectedEvent.nurseName || getNurseName(selectedEvent.nurseId) || "Không xác định"} (ID: {selectedEvent.nurseId || "N/A"})
-                </div>
-                <div className="info-item full-width">
-                  <strong>Triệu chứng:</strong> {selectedEvent.symptoms || "Không có"}
-                </div>
-                <div className="info-item full-width">
-                  <strong>Xử lý:</strong> {selectedEvent.actionTaken || "Không có"}
-                </div>
-                <div className="info-item full-width">
-                  <strong>Ghi chú:</strong> {selectedEvent.note || "Không có"}
-                </div>
+              <div className="view-event-details">
+                <p><strong>ID:</strong> {selectedEvent.medicalEventId || selectedEvent.eventId}</p>
+                <p><strong>Tiêu đề:</strong> {selectedEvent.title || selectedEvent.eventName}</p>
+                <p><strong>Ngày sự kiện:</strong> {new Date(selectedEvent.eventDate).toLocaleString('vi-VN')}</p>
+                <p><strong>Học sinh:</strong> {selectedEvent.studentName || getStudentName(selectedEvent.studentId)} (ID: {selectedEvent.studentId})</p>
+                <p><strong>Y tá:</strong> {selectedEvent.nurseName || getNurseName(selectedEvent.nurseId)} (ID: {selectedEvent.nurseId})</p>
+                <p><strong>Triệu chứng:</strong> {selectedEvent.symptoms}</p>
+                <p><strong>Xử lý:</strong> {selectedEvent.actionTaken}</p>
+                <p><strong>Ghi chú:</strong> {selectedEvent.note || "Không có"}</p>
               </div>
             </div>
             <div className="modal-footer">
-              <button className="admin-btn" onClick={() => setShowViewModal(false)}>
-                Đóng
-              </button>
-              <button className="admin-btn" onClick={() => {
+              <button className="btn btn-primary" onClick={() => {
                 setShowViewModal(false);
                 handleEdit(selectedEvent);
-              }}>
-                Chỉnh sửa
+              }}>Chỉnh sửa</button>
+              <button className="btn btn-secondary" onClick={() => setShowViewModal(false)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Event Modal */}
+      {showEditModal && selectedEvent && (
+        <div className="student-create-modal-overlay">
+          <div className="student-create-modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">Chỉnh sửa sự kiện y tế</h3>
+              <button type="button" className="btn-close" onClick={() => setShowEditModal(false)}></button>
+            </div>
+            <form onSubmit={handleUpdateEvent}>
+              <div className="modal-body">
+                <input type="hidden" name="medicalEventId" value={formData.medicalEventId} />
+                <div className="mb-3">
+                  <label htmlFor="title" className="form-label">Tiêu đề <span className="text-danger">*</span></label>
+                <input
+                  type="text"
+                    className="form-control"
+                    id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+                <div className="mb-3">
+                  <label htmlFor="eventDate" className="form-label">Ngày sự kiện <span className="text-danger">*</span></label>
+                  <input
+                    type="datetime-local"
+                  className="form-control"
+                    id="eventDate"
+                  name="eventDate"
+                  value={formData.eventDate}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+                <div className="mb-3">
+                  <label htmlFor="studentId" className="form-label">Học sinh <span className="text-danger">*</span></label>
+                  <select
+                    className="form-select"
+                    id="studentId"
+                    name="studentId"
+                    value={formData.studentId}
+                  onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">Chọn học sinh</option>
+                    {students.map(student => (
+                      <option key={student.studentId} value={student.studentId}>
+                        {student.fullName} (ID: {student.studentId})
+                      </option>
+                    ))}
+                  </select>
+              </div>
+                <div className="mb-3">
+                  <label htmlFor="nurseId" className="form-label">Y tá <span className="text-danger">*</span></label>
+                <select
+                    className="form-select"
+                    id="nurseId"
+                    name="nurseId"
+                    value={formData.nurseId}
+                  onChange={handleInputChange}
+                  required
+                  >
+                    <option value="">Chọn y tá</option>
+                    {nurses.map(nurse => (
+                      <option key={nurse.nurseId} value={nurse.nurseId}>
+                        {nurse.fullName} (ID: {nurse.nurseId})
+                      </option>
+                    ))}
+                </select>
+              </div>
+                <div className="mb-3">
+                  <label htmlFor="symptoms" className="form-label">Triệu chứng <span className="text-danger">*</span></label>
+                  <textarea
+                    className="form-control"
+                    id="symptoms"
+                    name="symptoms"
+                    value={formData.symptoms}
+                    onChange={handleInputChange}
+                    rows={3}
+                    required
+                  ></textarea>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="actionTaken" className="form-label">Xử lý <span className="text-danger">*</span></label>
+                <textarea
+                    className="form-control"
+                    id="actionTaken"
+                    name="actionTaken"
+                    value={formData.actionTaken}
+                  onChange={handleInputChange}
+                    rows={3}
+                    required
+                  ></textarea>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="note" className="form-label">Ghi chú</label>
+                  <textarea
+                  className="form-control"
+                    id="note"
+                    name="note"
+                    value={formData.note}
+                    onChange={handleInputChange}
+                    rows={2}
+                  ></textarea>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="submit" className="btn btn-primary">Lưu thay đổi</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Hủy</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Add Dialog */}
+      {showConfirmAdd && (
+        <div className="student-delete-modal-overlay">
+          <div className="student-delete-modal-content">
+            <div className="student-delete-modal-title">
+              <strong>Xác nhận thêm sự kiện y tế mới?</strong>
+            </div>
+            <div className="student-delete-modal-actions">
+              <button className="btn btn-primary" onClick={confirmAddEvent}>
+                Xác nhận
+              </button>
+              <button className="btn btn-secondary" onClick={() => setShowConfirmAdd(false)}>
+                Hủy
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal chỉnh sửa sự kiện y tế */}
-      {showEditModal && selectedEvent && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <div className="modal-header">
-              <h3>Chỉnh sửa sự kiện y tế</h3>
-              <button className="close-btn" onClick={() => setShowEditModal(false)}>×</button>
+      {/* Confirm Update Dialog */}
+      {showConfirmUpdate && (
+        <div className="student-delete-modal-overlay">
+          <div className="student-delete-modal-content">
+            <div className="student-delete-modal-title">
+              <strong>Xác nhận cập nhật sự kiện y tế?</strong>
             </div>
-            <form onSubmit={handleUpdateEvent}>
-              <div className="form-group">
-                <label>Tiêu đề <span className="required">*</span></label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  required
-                  className="form-control"
-                  placeholder="Nhập tiêu đề sự kiện"
-                />
-              </div>
-              <div className="form-group">
-                <label>Ngày giờ <span className="required">*</span></label>
-                <input
-                  type="datetime-local"
-                  name="eventDate"
-                  value={formData.eventDate}
-                  onChange={handleInputChange}
-                  required
-                  className="form-control"
-                />
-              </div>
-              <div className="form-group">
-                <label>Học sinh <span className="required">*</span></label>
-                <select
-                  name="studentId"
-                  value={formData.studentId}
-                  onChange={handleInputChange}
-                  required
-                  className="form-control"
-                >
-                  <option value="">-- Chọn học sinh --</option>
-                  {students.map((student) => (
-                    <option key={student.studentId} value={student.studentId}>
-                      {student.fullName} - ID: {student.studentId}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Y tá</label>
-                <select
-                  name="nurseId"
-                  value={formData.nurseId}
-                  onChange={handleInputChange}
-                  className="form-control"
-                >
-                  <option value="">-- Chọn y tá --</option>
-                  {nurses.map((nurse) => (
-                    <option key={nurse.nurseId} value={nurse.nurseId}>
-                      {nurse.fullName} - ID: {nurse.nurseId}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Triệu chứng</label>
-                <textarea
-                  name="symptoms"
-                  value={formData.symptoms}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  placeholder="Nhập triệu chứng"
-                  rows="2"
-                ></textarea>
-              </div>
-              <div className="form-group">
-                <label>Xử lý</label>
-                <textarea
-                  name="actionTaken"
-                  value={formData.actionTaken}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  placeholder="Nhập cách xử lý"
-                  rows="2"
-                ></textarea>
-              </div>
-              <div className="form-group">
-                <label>Ghi chú</label>
-                <textarea
-                  name="note"
-                  value={formData.note}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  placeholder="Nhập ghi chú"
-                  rows="3"
-                ></textarea>
-              </div>
-              <div className="form-actions">
-                <button type="submit" className="admin-btn" disabled={loading}>
-                  {loading ? "Đang cập nhật..." : "Cập nhật"}
-                </button>
-                <button
-                  type="button"
-                  className="admin-btn cancel-btn"
-                  onClick={() => setShowEditModal(false)}
-                >
-                  Hủy
-                </button>
-              </div>
-            </form>
+            <div className="student-delete-modal-actions">
+              <button className="btn btn-primary" onClick={confirmUpdateEvent}>
+                Xác nhận
+              </button>
+              <button className="btn btn-secondary" onClick={() => setShowConfirmUpdate(false)}>
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Delete Dialog */}
+      {showConfirmDelete && (
+        <div className="student-delete-modal-overlay">
+          <div className="student-delete-modal-content">
+            <div className="student-delete-modal-title">
+              <strong>Xác nhận xóa sự kiện y tế?</strong>
+            </div>
+            <div className="student-delete-modal-actions">
+              <button className="btn btn-danger" onClick={confirmDeleteEvent}>
+                Xác nhận
+              </button>
+              <button className="btn btn-secondary" onClick={() => setShowConfirmDelete(false)}>
+                Hủy
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -52,7 +52,12 @@ const API = {
     HEALTH_CHECK_SCHEDULE: (scheduleId) => `${API_BASE_URL}/healthCheckSchedule/${scheduleId}`,
     VACCINATION_RESULT_BY_PROFILE: (profileId) => `${API_BASE_URL}/vaccinationResult/getResultsByProfile${profileId}`,
     VACCINATION_SCHEDULE: (scheduleId) => `${API_BASE_URL}/vaccinationSchedule/${scheduleId}`,
+    MEDICAL_EVENT_LIST: `${API_BASE_URL}/medicalEvent/search`,
+    MEDICAL_EVENT_ADD: `${API_BASE_URL}/medicalEvent/add`,
+    MEDICAL_EVENT_UPDATE: `${API_BASE_URL}/medicalEvent/update`,
+    MEDICAL_EVENT_DELETE: (id) => `${API_BASE_URL}/medicalEvent/${id}`,
     MEDICAL_EVENT_BY_STUDENT: (studentId) => `${API_BASE_URL}/medicalEvent/getMedicalByStudent?studentId=${studentId}`,
+    MEDICAL_EVENT_DETAIL: (id) => `${API_BASE_URL}/medicalEvent/${id}`,
     PARENT_PRESCRIPTION_ADD: `${API_BASE_URL}/parentPrescription/add`,
     MEDICATION_ADD: `${API_BASE_URL}/medication/add`,
     BLOG_UPLOAD_IMAGE: `${API_BASE_URL}/blog/uploadImage`,
@@ -340,7 +345,26 @@ export const API_SERVICE = {
         getByForm: (formId) => callApi(API.VACCINATION_SCHEDULE_BY_FORM(formId)),
     },
     medicalEventAPI: {
+        getAll: (data) => callApi(API.MEDICAL_EVENT_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
         getByStudent: (studentId) => callApi(API.MEDICAL_EVENT_BY_STUDENT(studentId)),
+        getById: (id) => callApi(API.MEDICAL_EVENT_DETAIL(id)),
+        create: (data) => callApi(API.MEDICAL_EVENT_ADD, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (data) => callApi(API.MEDICAL_EVENT_UPDATE, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        delete: (id) => callApi(API.MEDICAL_EVENT_DELETE(id), {
+            method: "DELETE"
+        }),
     },
     consentFormAPI: {
         getByParent: (parentId) => callApi(API.CONSENT_FORM_BY_PARENT(parentId)),
