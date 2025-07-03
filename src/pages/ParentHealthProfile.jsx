@@ -141,7 +141,7 @@ const ParentHealthProfile = () => {
         results.map(async (result) => {
           if (result.vaccinationScheduleId) {
             try {
-              const scheduleData = await API_SERVICE.vaccinationScheduleAPI.get(result.vaccinationScheduleId);
+              const scheduleData = await API_SERVICE.vaccinationScheduleAPI.getById(result.vaccinationScheduleId);
               return { ...result, schedule: scheduleData };
             } catch (scheduleErr) {
               console.error(`Failed to fetch vaccination schedule for result ${result.resultId}:`, scheduleErr);
@@ -410,7 +410,10 @@ const ParentHealthProfile = () => {
                                       {vaccinationResults.map(result => (
                                         <li key={result.vaccinationResultId} className="list-group-item">
                                           {result.schedule && (
-                                            <p className='mb-1'><strong>Tên vắc xin:</strong> {result.schedule.name || 'Chưa cập nhật'}</p>
+                                            <>
+                                              <p className='mb-1'><strong>Tên vắc xin:</strong> {result.schedule.name || 'Chưa cập nhật'}</p>
+                                              <p className='mb-1'><strong>Liều lượng:</strong> {result.doseNumber || 'Chưa cập nhật'}</p>
+                                            </>
                                           )}
                                           <p className='mb-1'><strong>Ngày tiêm:</strong> {result.schedule ? new Date(result.schedule.scheduleDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
                                           <p className='mb-1'><strong>Địa điểm:</strong> {result.schedule?.location || 'Chưa cập nhật'}</p>
