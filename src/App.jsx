@@ -5,7 +5,6 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Blog from './pages/Blog'
 import BlogDetail from './pages/BlogDetail'
-import NurseList from './pages/NurseDashboard'
 import Dashborad from './pages/Dashborad'
 import ParentNotifications from './pages/ParentNotifications'
 import ParentHealthProfile from './pages/ParentHealthProfile'
@@ -52,7 +51,7 @@ function AdminDashboard() {
 }
 
 function AdminNurse() {
-  return <NurseList />
+  return <Dashborad />
 }
 
 function AdminStudent() {

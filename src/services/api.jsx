@@ -302,98 +302,47 @@ export const API_SERVICE = {
         getAll: (data = {}) => callApi(API.MEDICAL_EVENT_LIST, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                ...data,
-                // Đảm bảo các tham số mặc định nếu không được cung cấp
-                pageNumber: data.pageNumber || 1,
-                pageSize: data.pageSize || 100,
-                includeDetails: data.includeDetails !== undefined ? data.includeDetails : true,
-                includeStudent: data.includeStudent !== undefined ? data.includeStudent : true,
-                includeNurse: data.includeNurse !== undefined ? data.includeNurse : true
-            })
+            body: JSON.stringify(data)
         }),
-        getById: (id) => callApi(API.MEDICAL_EVENT_DETAIL(id), {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            params: {
-                includeDetails: true,
-                includeStudent: true,
-                includeNurse: true
-            }
-        }),
+        getById: (id) => callApi(API.MEDICAL_EVENT_DETAIL(id)),
         create: (data) => callApi(API.MEDICAL_EVENT_CREATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        update: (id, data) => {
-            console.log(`Calling PUT ${API.MEDICAL_EVENT_UPDATE} with eventId: ${id}`);
-            return callApi(API.MEDICAL_EVENT_UPDATE, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...data,
-                    eventId: id
-                })
-            });
-        },
+        update: (id, data) => callApi(API.MEDICAL_EVENT_UPDATE, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...data, medicalEventId: id })
+        }),
         delete: (id) => callApi(API.MEDICAL_EVENT_DELETE(id), {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         }),
+        getByStudent: (studentId) => callApi(API.MEDICAL_EVENT_BY_STUDENT(studentId))
     },
     healthCheckResultAPI: {
         getAll: (data = {}) => callApi(API.HEALTH_CHECK_RESULT_LIST, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                ...data,
-                // Đảm bảo các tham số mặc định nếu không được cung cấp
-                keyword: data.keyword || "",
-                pageNumber: data.pageNumber || 1,
-                pageSize: data.pageSize || 100,
-                includeDetails: data.includeDetails !== undefined ? data.includeDetails : true,
-                includeStudent: data.includeStudent !== undefined ? data.includeStudent : true,
-                includeNurse: data.includeNurse !== undefined ? data.includeNurse : true,
-                includeProfile: true
-            })
+            body: JSON.stringify(data)
         }),
-        getById: (id) => callApi(API.HEALTH_CHECK_RESULT_DETAIL(id), {
-            method: "GET",
+        getById: (id) => callApi(API.HEALTH_CHECK_RESULT_DETAIL(id)),
+        create: (data) => callApi(API.HEALTH_CHECK_RESULT_CREATE, {
+            method: "POST",
             headers: { "Content-Type": "application/json" },
-            params: {
-                includeDetails: true,
-                includeStudent: true,
-                includeNurse: true,
-                includeProfile: true
-            }
+            body: JSON.stringify(data)
         }),
-        create: (data) => {
-            console.log("Creating health check result with data:", data);
-            return callApi(API.HEALTH_CHECK_RESULT_CREATE, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            });
-        },
-        update: (id, data) => {
-            console.log(`Updating health check result ${id} with data:`, data);
-            return callApi(API.HEALTH_CHECK_RESULT_UPDATE(id), {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...data,
-                    healthCheckupRecordId: id
-                })
-            });
-        },
-        delete: (id) => {
-            console.log(`Deleting health check result ${id}`);
-            return callApi(API.HEALTH_CHECK_RESULT_DELETE(id), {
-                method: "DELETE",
-                headers: { "Content-Type": "application/json" }
-            });
-        }
+        update: (id, data) => callApi(API.HEALTH_CHECK_RESULT_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        delete: (id) => callApi(API.HEALTH_CHECK_RESULT_DELETE(id), {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        }),
+        getByProfile: (profileId) => callApi(API.HEALTH_CHECK_RESULT_BY_PROFILE(profileId))
     },
     vaccinationResultAPI: {
         getAll: (data = {}) => callApi(API.VACCINATION_RESULT_LIST, {
@@ -401,10 +350,7 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        getById: (id) => callApi(API.VACCINATION_RESULT_DETAIL(id), {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-        }),
+        getById: (id) => callApi(API.VACCINATION_RESULT_DETAIL(id)),
         create: (data) => callApi(API.VACCINATION_RESULT_CREATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -415,6 +361,7 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        getByProfile: (profileId) => callApi(API.VACCINATION_RESULT_BY_PROFILE(profileId))
     },
     consultationScheduleAPI: {
         getAll: (data = {}) => callApi(API.CONSULTATION_SCHEDULE_LIST, {
@@ -422,14 +369,8 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        getById: (id) => callApi(API.CONSULTATION_SCHEDULE_DETAIL(id), {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-        }),
-        getByStudent: (studentId) => callApi(API.CONSULTATION_SCHEDULE_BY_STUDENT(studentId), {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-        }),
+        getById: (id) => callApi(API.CONSULTATION_SCHEDULE_DETAIL(id)),
+        getByStudent: (studentId) => callApi(API.CONSULTATION_SCHEDULE_BY_STUDENT(studentId)),
         create: (data) => callApi(API.CONSULTATION_SCHEDULE_CREATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -438,15 +379,13 @@ export const API_SERVICE = {
         update: (id, data) => callApi(API.CONSULTATION_SCHEDULE_UPDATE, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                ...data,
-                consultationScheduleId: id
-            })
+            body: JSON.stringify({ ...data, consultationScheduleId: id })
         }),
         delete: (id) => callApi(API.CONSULTATION_SCHEDULE_DELETE(id), {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         }),
+        get: (id) => callApi(API.CONSULTATION_SCHEDULE(id))
     },
     consultationFormAPI: {
         getAll: (data = {}) => callApi(API.CONSULTATION_FORM_LIST, {
@@ -454,22 +393,10 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        getById: (id) => callApi(API.CONSULTATION_FORM_DETAIL(id), {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-        }),
-        getBySchedule: (scheduleId) => callApi(API.CONSULTATION_FORM_BY_SCHEDULE(scheduleId), {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-        }),
-        getByStudent: (studentId) => callApi(API.CONSULTATION_FORM_BY_STUDENT(studentId), {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-        }),
-        getByParent: (parentId) => callApi(API.CONSULTATION_FORM_BY_PARENT(parentId), {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-        }),
+        getById: (id) => callApi(API.CONSULTATION_FORM_DETAIL(id)),
+        getBySchedule: (scheduleId) => callApi(API.CONSULTATION_FORM_BY_SCHEDULE(scheduleId)),
+        getByStudent: (studentId) => callApi(API.CONSULTATION_FORM_BY_STUDENT(studentId)),
+        getByParent: (parentId) => callApi(API.CONSULTATION_FORM_BY_PARENT(parentId)),
         create: (data) => callApi(API.CONSULTATION_FORM_CREATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -478,11 +405,11 @@ export const API_SERVICE = {
         update: (id, data) => callApi(API.CONSULTATION_FORM_UPDATE, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                ...data,
-                consultationFormId: id
-            })
+            body: JSON.stringify({ ...data, consultationFormId: id })
         }),
+        getDetail: (endpoint, id) => callApi(API.CONSULTATION_FORM_DETAIL(endpoint, id)),
+        accept: (id) => callApi(API.CONSULTATION_FORM_ACCEPT(id), { method: 'POST' }),
+        reject: (id) => callApi(API.CONSULTATION_FORM_REJECT(id), { method: 'POST' })
     },
     parentPrescriptionAPI: {
         getAll: (data = {}) => callApi(API.PARENT_PRESCRIPTION_LIST, {
@@ -490,15 +417,19 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        getById: (id) => callApi(API.PARENT_PRESCRIPTION_DETAIL(id), {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-        }),
+        getById: (id) => callApi(API.PARENT_PRESCRIPTION_DETAIL(id)),
         update: (id, data) => callApi(API.PARENT_PRESCRIPTION_UPDATE(id), {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        create: (data) => callApi(API.PARENT_PRESCRIPTION_ADD, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getPrescriptionByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_BY_PARENT(parentId)),
+        getByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_GET_BY_PARENT(parentId))
     },
     vaccinationScheduleAPI: {
         getAll: (data = {}) => callApi(API.VACCINATION_SCHEDULE_LIST, {
@@ -506,10 +437,7 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        getById: (id) => callApi(API.VACCINATION_SCHEDULE_DETAIL(id), {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-        }),
+        getById: (id) => callApi(API.VACCINATION_SCHEDULE_DETAIL(id)),
         create: (data) => callApi(API.VACCINATION_SCHEDULE_CREATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -524,7 +452,7 @@ export const API_SERVICE = {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         }),
-        getByForm: (formId) => callApi(API.VACCINATION_SCHEDULE_BY_FORM(formId)),
+        getByForm: (formId) => callApi(API.VACCINATION_SCHEDULE_BY_FORM(formId))
     },
     userAPI: {
         getProfile: () => callApi(API.USER_PROFILE, { credentials: "include" }),
@@ -717,90 +645,12 @@ export const API_SERVICE = {
         getByParent: (parentId) => callApi(API.PRESCRIPTION_BY_PARENT(parentId)),
     },
     healthProfileAPI: {
-        get: (studentId) => callApi(API.HEALTH_PROFILE(studentId)),
-        update: (healthProfileId, data) => callApi(API.HEALTH_PROFILE_UPDATE, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ healthProfileId, ...data })
-        }),
-    },
-    healthCheckResultAPI: {
-        getByProfile: (profileId) => callApi(API.HEALTH_CHECK_RESULT_BY_PROFILE(profileId)),
-    },
-    vaccinationResultAPI: {
-        getByProfile: (profileId) => callApi(API.VACCINATION_RESULT_BY_PROFILE(profileId)),
-    },
-    vaccinationScheduleAPI: {
-        getAll: (data) => callApi(API.VACCINATION_SCHEDULE_LIST, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        }),
-        getById: (id) => callApi(API.VACCINATION_SCHEDULE_DETAIL(id), {
-            method: "GET",
-            headers: { "Content-Type": "application/json" }
-        }),
-        create: (data) => callApi(API.VACCINATION_SCHEDULE_CREATE, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        }),
-        update: (id, data) => callApi(API.VACCINATION_SCHEDULE_UPDATE(id), {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        }),
-        delete: (id) => callApi(API.VACCINATION_SCHEDULE_DELETE(id), {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json" }
-        }),
-        getByForm: (formId) => callApi(API.VACCINATION_SCHEDULE_BY_FORM(formId)),
-    },
-    medicalEventAPI: {
-        getByStudent: (studentId) => callApi(API.MEDICAL_EVENT_BY_STUDENT(studentId)),
-    },
-    consentFormAPI: {
-        getByParent: (parentId) => callApi(API.CONSENT_FORM_BY_PARENT(parentId)),
-        getDetail: (endpoint, id) => callApi(API.CONSENT_FORM_DETAIL(endpoint, id)),
-        accept: (id) => callApi(API.CONSENT_FORM_ACCEPT(id), { method: 'POST' }),
-        reject: (id) => callApi(API.CONSENT_FORM_REJECT(id), { method: 'POST' }),
-    },
-    consultationFormAPI: {
-        getByStudent: (studentId) => callApi(API.CONSULTATION_FORM_BY_STUDENT(studentId)),
-        getDetail: (endpoint, id) => callApi(API.CONSULTATION_FORM_DETAIL(endpoint, id)),
-        getByParent: (parentId) => callApi(API.CONSULTATION_FORM_BY_PARENT(parentId)),
-        accept: (id) => callApi(API.CONSULTATION_FORM_ACCEPT(id), { method: 'POST' }),
-        reject: (id) => callApi(API.CONSULTATION_FORM_REJECT(id), { method: 'POST' }),
-    },
-    consultationScheduleAPI: {
-        get: (id) => callApi(API.CONSULTATION_SCHEDULE(id)),
-    },
-    parentPrescriptionAPI: {
-        getPrescriptionByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_BY_PARENT(parentId)),
-        getByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_GET_BY_PARENT(parentId)),
-    },
-    healthProfileAPI: {
         getAll: (data = {}) => callApi(API.HEALTH_PROFILE_LIST, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                ...data,
-                // Đảm bảo các tham số mặc định nếu không được cung cấp
-                keyword: data.keyword || "",
-                pageNumber: data.pageNumber || 1,
-                pageSize: data.pageSize || 100,
-                includeDetails: data.includeDetails !== undefined ? data.includeDetails : true,
-                includeStudent: data.includeStudent !== undefined ? data.includeStudent : true
-            })
+            body: JSON.stringify(data)
         }),
-        getById: (id) => callApi(API.HEALTH_PROFILE_DETAIL(id), {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-            params: {
-                includeDetails: true,
-                includeStudent: true
-            }
-        }),
+        getById: (id) => callApi(API.HEALTH_PROFILE_DETAIL(id)),
         create: (data) => callApi(API.HEALTH_PROFILE_CREATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -815,6 +665,7 @@ export const API_SERVICE = {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         }),
+        get: (studentId) => callApi(API.HEALTH_PROFILE(studentId))
     },
 };
 
