@@ -337,6 +337,7 @@ export const API_SERVICE = {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         }),
+        getByForm: (formId) => callApi(API.VACCINATION_SCHEDULE_BY_FORM(formId)),
     },
     medicalEventAPI: {
         getByStudent: (studentId) => callApi(API.MEDICAL_EVENT_BY_STUDENT(studentId)),

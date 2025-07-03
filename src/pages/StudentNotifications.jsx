@@ -50,6 +50,7 @@ export default function StudentNotifications() {
               ? API_SERVICE.vaccinationScheduleAPI.getByForm(formId)
               : Promise.resolve([]);
           }
+          console.log(schedulePromises)
           return Promise.resolve([]);
         });
         const schedulesPerForm = await Promise.all(schedulePromises);
