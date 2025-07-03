@@ -149,6 +149,16 @@ export default function ParentNotifications() {
       return dateA - dateB;
     });
 
+  // Thêm hàm xử lý xác nhận trước khi đổi trạng thái
+  const handleStatusChange = (consentFormId, isAccept, currentStatus) => {
+    // Chỉ cho phép đổi khi còn Pending
+    if (currentStatus !== 'Pending') return;
+    const actionText = isAccept ? 'đồng ý' : 'từ chối';
+    if (window.confirm(`Bạn có chắc chắn muốn ${actionText} biểu mẫu này? Sau khi xác nhận sẽ không thể thay đổi lại.`)) {
+      updateConsentFormStatus(consentFormId, isAccept);
+    }
+  };
+
   if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
   if (error) return <div className="text-red-500 text-center p-4">{error}</div>;
 
@@ -226,6 +236,9 @@ export default function ParentNotifications() {
                     form.form.className === 'Tất cả' || student.className === form.form.className
                   );
                   
+                  // Chỉ cho phép đổi khi còn Pending
+                  const isStatusFinal = form.status !== 'Pending';
+
                   return (
                     <div key={form.consentFormId} className="card mb-3">
                       <div className="card-body">
@@ -276,21 +289,21 @@ export default function ParentNotifications() {
                           <div className="text-end">
                             <button
                               className={`btn btn-sm me-2 ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
-                              onClick={() => updateConsentFormStatus(form.consentFormId, true)}
-                              disabled={isTooLateToChange || isUpdating}
+                              onClick={() => handleStatusChange(form.consentFormId, true, form.status)}
+                              disabled={isTooLateToChange || isUpdating || isStatusFinal}
                             >
                               {isUpdating ? 'Đang xử lý...' : 'Đồng ý'}
                             </button>
                             <button
                               className={`btn btn-sm ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
-                              onClick={() => updateConsentFormStatus(form.consentFormId, false)}
-                              disabled={isTooLateToChange || isUpdating}
+                              onClick={() => handleStatusChange(form.consentFormId, false, form.status)}
+                              disabled={isTooLateToChange || isUpdating || isStatusFinal}
                             >
                               {isUpdating ? 'Đang xử lý...' : 'Từ chối'}
                             </button>
                             <p className="text-muted fst-italic mt-1 mb-0">
                               <small>
-                                {isTooLateToChange ? 'Đã hết hạn thay đổi.' : 'Có thể thay đổi đến trước ngày diễn ra.'}
+                                {isTooLateToChange ? 'Đã hết hạn thay đổi.' : ''}
                               </small>
                             </p>
                           </div>
