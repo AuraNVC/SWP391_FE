@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { API_SERVICE } from "../services/api";
-import HealthCheckScheduleViewDialog from "../components/HealthCheckScheduleViewDialog";
-import HealthCheckScheduleEditDialog from "../components/HealthCheckScheduleEditDialog";
+import VaccinationScheduleViewDialog from "../components/VaccinationScheduleViewDialog";
+import VaccinationScheduleEditDialog from "../components/VaccinationScheduleEditDialog";
 import { useNavigate } from "react-router-dom";
 import TableWithPaging from "../components/TableWithPaging";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import "../styles/TableWithPaging.css";
 
-const HealthCheckScheduleDashboard = () => {
+const VaccinationScheduleDashboard = () => {
   const [schedules, setSchedules] = useState([]);
   const [selected, setSelected] = useState(null);
   const [viewOpen, setViewOpen] = useState(false);
@@ -31,7 +31,7 @@ const HealthCheckScheduleDashboard = () => {
   const fetchSchedules = async () => {
     setLoading(true);
     try {
-      const res = await API_SERVICE.healthCheckScheduleAPI.getAll({ keyword: "" });
+      const res = await API_SERVICE.vaccinationScheduleAPI.getAll({ keyword: "" });
       setSchedules(res);
       setPage(1);
     } catch (e) {
@@ -54,23 +54,23 @@ const HealthCheckScheduleDashboard = () => {
 
   const handleDelete = async (id) => {
     if (window.confirm("Bạn có chắc muốn xóa?")) {
-      await API_SERVICE.healthCheckScheduleAPI.delete(id);
+      await API_SERVICE.vaccinationScheduleAPI.delete(id);
       fetchSchedules();
     }
   };
 
   return (
     <div className="admin-main">
-      <h2 className="dashboard-title">Quản lý Lịch khám sức khỏe</h2>
+      <h2 className="dashboard-title">Quản lý Lịch tiêm chủng</h2>
       <div className="admin-header">
-        <button className="admin-btn" onClick={() => navigate("/manager/health-check-schedule/create")}>+ Tạo lịch khám mới</button>
+        <button className="admin-btn" onClick={() => navigate("/manager/vaccination-schedule/create")}>+ Tạo mới lịch tiêm</button>
         <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
       </div>
       <div className="admin-table-container">
         <TableWithPaging
           columns={[
             { title: "Tên lịch", dataIndex: "name" },
-            { title: "Ngày khám", dataIndex: "checkDate" },
+            { title: "Ngày tiêm", dataIndex: "scheduleDate" },
             { title: "Địa điểm", dataIndex: "location" },
           ]}
           data={schedules}
@@ -96,7 +96,7 @@ const HealthCheckScheduleDashboard = () => {
               <button
                 className="admin-action-btn admin-action-delete admin-action-btn-reset"
                 title="Xóa"
-                onClick={() => handleDelete(item.healthCheckScheduleId)}
+                onClick={() => handleDelete(item.vaccinationScheduleId)}
               >
                 <FaTrash style={iconStyle.delete} size={18} />
               </button>
@@ -107,10 +107,10 @@ const HealthCheckScheduleDashboard = () => {
         {loading && <div>Đang tải dữ liệu...</div>}
       </div>
       {viewOpen && (
-        <HealthCheckScheduleViewDialog open={viewOpen} onClose={() => setViewOpen(false)} data={selected} />
+        <VaccinationScheduleViewDialog open={viewOpen} onClose={() => setViewOpen(false)} data={selected} />
       )}
       {editOpen && (
-        <HealthCheckScheduleEditDialog
+        <VaccinationScheduleEditDialog
           open={editOpen}
           onClose={() => setEditOpen(false)}
           data={selected}
@@ -121,4 +121,4 @@ const HealthCheckScheduleDashboard = () => {
   );
 };
 
-export default HealthCheckScheduleDashboard; 
+export default VaccinationScheduleDashboard; 

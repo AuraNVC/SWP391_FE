@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
+import { API_SERVICE } from '../services/api';
 
 export default function ParentPrescriptions() {
   const [prescriptions, setPrescriptions] = useState([]);
@@ -32,16 +33,13 @@ export default function ParentPrescriptions() {
 
   const getStudentForPrescription = async (prescriptionId) => {
     try {
-      let response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medication/getMedicalByPrescription?prescriptionId=${prescriptionId}`);
-      if (!response.ok) {
-        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getMedicalByPrescription?prescriptionId=${prescriptionId}`);
+      let meds = await API_SERVICE.medicationAPI.getByPrescription(prescriptionId);
+      if (!meds || meds.length === 0) {
+        meds = await API_SERVICE.prescriptionAPI.getByPrescription(prescriptionId);
       }
-      if (response.ok) {
-        const data = await response.json();
-        if (data && data.length > 0 && data[0].studentId) {
-          const student = students.find(s => s.studentId == data[0].studentId);
-          return student ? student.fullName : 'Không rõ';
-        }
+      if (meds && meds.length > 0 && meds[0].studentId) {
+        const student = students.find(s => s.studentId == meds[0].studentId);
+        return student ? student.fullName : 'Không rõ';
       }
     } catch (err) {
       console.error('Error fetching student info:', err);
@@ -55,19 +53,31 @@ export default function ParentPrescriptions() {
     try {
       const parentId = localStorage.getItem('userId');
       if (!parentId) throw new Error('Parent ID not found');
-      let response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${parentId}`);
-      if (!response.ok) {
-        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parentPrescription/getByParent?parentId=${parentId}`);
+      let data = await API_SERVICE.parentPrescriptionAPI.getPrescriptionByParent(parentId);
+      console.log('parentPrescriptionAPI.getPrescriptionByParent:', data);
+      if (data && !Array.isArray(data) && data.prescriptions) {
+        data = data.prescriptions;
       }
-      if (!response.ok) {
-        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getPrescriptionByParent?parentId=${parentId}`);
+      if (!data || data.length === 0) {
+        data = await API_SERVICE.parentPrescriptionAPI.getByParent(parentId);
+        console.log('parentPrescriptionAPI.getByParent:', data);
+        if (data && !Array.isArray(data) && data.prescriptions) {
+          data = data.prescriptions;
+        }
       }
-      if (!response.ok) throw new Error('Không thể lấy danh sách đơn thuốc');
-      const data = await response.json();
-      setPrescriptions(data);
-      
+      if (!data || data.length === 0) {
+        data = await API_SERVICE.prescriptionAPI.getByParent(parentId);
+        console.log('prescriptionAPI.getByParent:', data);
+        if (data && !Array.isArray(data) && data.prescriptions) {
+          data = data.prescriptions;
+        }
+      }
+      setPrescriptions(Array.isArray(data) ? data : []);
+      if (!data || data.length === 0) {
+        setError('Không có đơn thuốc nào cho phụ huynh này.');
+      }
       const studentInfo = {};
-      for (const prescription of data) {
+      for (const prescription of Array.isArray(data) ? data : []) {
         const presId = prescription.parentPrescriptionId || prescription.prescriptionId;
         studentInfo[presId] = await getStudentForPrescription(presId);
       }
@@ -90,16 +100,15 @@ export default function ParentPrescriptions() {
 
   useEffect(() => {
     if (userRole === 'parent') {
-      const parentId = localStorage.getItem('userId');
-      if (parentId) {
-        fetch(`${import.meta.env.VITE_API_BASE_URL}/student/getParent${parentId}`)
-          .then(res => res.ok ? res.json() : [])
-          .then(data => {
-            setStudents(data);
-            if (data.length > 0) setSelectedStudentId(data[0].studentId);
-          })
-          .catch(() => setStudents([]));
-      }
+      const fetchStudents = async () => {
+        const parentId = localStorage.getItem('userId');
+        if (parentId) {
+          const data = await API_SERVICE.parentAPI.getParent(parentId);
+          setStudents(data);
+          if (data.length > 0) setSelectedStudentId(data[0].studentId);
+        }
+      };
+      fetchStudents();
     }
   }, [userRole]);
 
@@ -158,13 +167,12 @@ export default function ParentPrescriptions() {
     setLoadingMedicals(true);
     setSelectedPrescription(prescriptionId);
     try {
-      let response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medication/getMedicalByPrescription?prescriptionId=${prescriptionId}`);
-      if (!response.ok) {
-        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescription/getMedicalByPrescription?prescriptionId=${prescriptionId}`);
+      let meds = await API_SERVICE.medicationAPI.getByPrescription(prescriptionId);
+      if (!meds || meds.length === 0) {
+        meds = await API_SERVICE.prescriptionAPI.getByPrescription(prescriptionId);
       }
-      if (!response.ok) throw new Error('Không thể lấy chi tiết thuốc');
-      const data = await response.json();
-      setMedicals(data);
+      if (!meds) throw new Error('Không thể lấy chi tiết thuốc');
+      setMedicals(meds);
     } catch (err) {
       setError(err.message);
       setMedicals([]);

@@ -38,16 +38,16 @@ const NurseCreate = () => {
         passwordHash: form.passwordHash || form.username, // Use username as default password
       };
       await API_SERVICE.nurseAPI.create(payload);
-      setSuccessMsg("Nurse created successfully!");
+      setSuccessMsg("Tạo y tá thành công!");
       setNotif({
-        message: "Nurse created successfully!",
+        message: "Tạo y tá thành công!",
         type: "success",
       });
       setTimeout(() => {
         navigate('/manager/nurse');
       }, 1500);
     } catch (error) {
-      const errorMessage = "Failed to create nurse. " + (error?.response?.data?.message || error.message);
+      const errorMessage = "Tạo y tá thất bại. " + (error?.response?.data?.message || error.message);
       setErrorMsg(errorMessage);
       setNotif({
         message: errorMessage,
@@ -64,16 +64,16 @@ const NurseCreate = () => {
   return (
     <div className="admin-main">
       <div className="admin-header">
-        <h2>Create New Nurse</h2>
+        <h2>Thêm y tá mới</h2>
         <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Back to Nurse List
+          Quay lại danh sách y tá
         </button>
       </div>
       
       <div className="nurse-create-page-container">
         <form className="nurse-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Full Name<span className="required">*</span></label>
+            <label>Họ tên<span className="required">*</span></label>
             <input
               type="text"
               name="fullName"
@@ -95,7 +95,7 @@ const NurseCreate = () => {
             />
           </div>
           <div className="form-group">
-            <label>Username<span className="required">*</span></label>
+            <label>Tên đăng nhập<span className="required">*</span></label>
             <input
               type="text"
               name="username"
@@ -106,14 +106,14 @@ const NurseCreate = () => {
             />
           </div>
           <div className="form-group">
-            <label>Password</label>
+            <label>Mật khẩu</label>
             <input
               type="password"
               name="passwordHash"
               value={form.passwordHash}
               onChange={handleChange}
               className="form-control"
-              placeholder="Leave empty to use username as password"
+              placeholder="Để trống để dùng tên đăng nhập làm mật khẩu"
             />
           </div>
           
@@ -121,7 +121,7 @@ const NurseCreate = () => {
           {errorMsg && <div className="error-msg">{errorMsg}</div>}
           <div className="form-actions">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Creating..." : "Create Nurse"}
+              {loading ? "Đang tạo..." : "Tạo y tá"}
             </button>
             <button
               type="button"
@@ -129,7 +129,7 @@ const NurseCreate = () => {
               onClick={handleCancel}
               disabled={loading}
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </form>

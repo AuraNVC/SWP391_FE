@@ -1,7 +1,7 @@
 import { Outlet, useLocation, Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
-    FaTachometerAlt, FaNotesMedical, FaStethoscope, FaSyringe, FaCalendarAlt, FaPills, FaClipboardCheck
+    FaNotesMedical, FaStethoscope, FaSyringe, FaCalendarAlt, FaPills, FaClipboardCheck
 } from "react-icons/fa";
 
 export default function NurseLayout() {
@@ -9,9 +9,6 @@ export default function NurseLayout() {
     const current = location.pathname;
 
     const extraLinks = [
-        <Link to="/nurse/dashboard" className={current === "/nurse/dashboard" ? "active" : ""} key="dashboard-link">
-            <FaTachometerAlt /> Dashboard
-        </Link>,
         <Link to="/nurse/medical-events" className={current === "/nurse/medical-events" ? "active" : ""} key="med-events-link">
             <FaNotesMedical /> Sự kiện y tế
         </Link>,

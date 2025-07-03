@@ -54,16 +54,16 @@ const FormCreate = () => {
       console.log("Form payload:", payload);
 
       await API_SERVICE.formAPI.create(payload);
-      setSuccessMsg("Form created successfully!");
+      setSuccessMsg("Tạo biểu mẫu thành công!");
       setNotif({
-        message: "Form created successfully!",
+        message: "Tạo biểu mẫu thành công!",
         type: "success",
       });
       setTimeout(() => {
         navigate('/manager/form');
       }, 1500);
     } catch (error) {
-      const errorMessage = "Failed to create form. " + (error?.response?.data?.message || error.message);
+      const errorMessage = "Tạo biểu mẫu thất bại. " + (error?.response?.data?.message || error.message);
       setErrorMsg(errorMessage);
       setNotif({
         message: errorMessage,
@@ -80,16 +80,16 @@ const FormCreate = () => {
   return (
     <div className="admin-main">
       <div className="admin-header">
-        <h2>Create New Form</h2>
+        <h2>Thêm biểu mẫu mới</h2>
         <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Back to Form List
+          Quay lại danh sách biểu mẫu
         </button>
       </div>
 
       <div className="form-create-page-container">
         <form className="form-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Title<span className="required">*</span></label>
+            <label>Tiêu đề<span className="required">*</span></label>
             <input
               type="text"
               name="title"
@@ -97,11 +97,11 @@ const FormCreate = () => {
               onChange={handleChange}
               required
               className="form-control"
-              placeholder="Enter form title"
+              placeholder="Nhập tiêu đề biểu mẫu"
             />
           </div>
           <div className="form-group">
-            <label>Class<span className="required">*</span></label>
+            <label>Lớp<span className="required">*</span></label>
             <input
               type="text"
               name="className"
@@ -109,11 +109,11 @@ const FormCreate = () => {
               onChange={handleChange}
               required
               className="form-control"
-              placeholder="e.g. 1A, 2B"
+              placeholder="VD: 1A, 2B"
             />
           </div>
           <div className="form-group">
-            <label>Type<span className="required">*</span></label>
+            <label>Loại<span className="required">*</span></label>
             <select
               name="type"
               value={form.type}
@@ -121,13 +121,13 @@ const FormCreate = () => {
               required
               className="form-control"
             >
-              <option value="">Select form type</option>
-              <option value="0">Health Check Form</option>
-              <option value="1">Vaccination Form</option>
+              <option value="">Chọn loại biểu mẫu</option>
+              <option value="0">Biểu mẫu khám sức khỏe</option>
+              <option value="1">Biểu mẫu tiêm chủng</option>
             </select>
           </div>
           <div className="form-group">
-            <label>Content<span className="required">*</span></label>
+            <label>Nội dung<span className="required">*</span></label>
             <textarea
               name="content"
               value={form.content}
@@ -135,7 +135,7 @@ const FormCreate = () => {
               required
               className="form-control"
               rows="8"
-              placeholder="Enter form content"
+              placeholder="Nhập nội dung biểu mẫu"
             />
           </div>
 
@@ -143,7 +143,7 @@ const FormCreate = () => {
           {errorMsg && <div className="error-msg">{errorMsg}</div>}
           <div className="form-actions">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Creating..." : "Create Form"}
+              {loading ? "Đang tạo..." : "Tạo biểu mẫu"}
             </button>
             <button
               type="button"
@@ -151,7 +151,7 @@ const FormCreate = () => {
               onClick={handleCancel}
               disabled={loading}
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </form>

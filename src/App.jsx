@@ -44,7 +44,8 @@ import VaxResults from './pages/VaxResults'
 import VaxFollowUp from './pages/VaxFollowUp'
 import ConsultSchedules from './pages/ConsultSchedules'
 import Medications from './pages/Medications'
-import NurseDashboard from './pages/NurseDashboard'
+import VaccinationScheduleDashboard from './pages/VaccinationScheduleDashboard'
+import VaccinationScheduleCreate from './pages/VaccinationScheduleCreate'
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -145,8 +146,7 @@ function AppContent() {
             <NurseLayout />
           </ProtectedRoute>
         }>
-          <Route path="/nurse" element={<Navigate to="/nurse/dashboard" replace />} />
-          <Route path="/nurse/dashboard" element={<NurseDashboard />} />
+          <Route path="/nurse" element={<Navigate to="/nurse/medical-events" replace />} />
           <Route path="/nurse/medical-events" element={<MedEvents />} />
           <Route path="/nurse/health-check-results" element={<HealthResults />} />
           <Route path="/nurse/vaccination-results" element={<VaxResults />} />
@@ -180,6 +180,8 @@ function AppContent() {
           <Route path="/manager/form/create" element={<FormCreate />} />
           <Route path="/manager/health-check-schedule" element={<HealthCheckScheduleDashboard />} />
           <Route path="/manager/health-check-schedule/create" element={<HealthCheckScheduleCreate />} />
+          <Route path="/manager/vaccination-schedule" element={<VaccinationScheduleDashboard />} />
+          <Route path="/manager/vaccination-schedule/create" element={<VaccinationScheduleCreate />} />
         </Route>
         <Route element={
           <ProtectedRoute roles={["student"]}>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
+import { API_SERVICE } from '../services/api';
 
 export default function StudentNotifications() {
   const [notifications, setNotifications] = useState([]);
@@ -21,9 +22,7 @@ export default function StudentNotifications() {
           throw new Error('Student ID not found. Please login again.');
         }
         // Lấy thông tin học sinh để lấy parentId
-        const studentRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/${studentId}`);
-        if (!studentRes.ok) throw new Error('Không thể lấy thông tin học sinh');
-        const studentData = await studentRes.json();
+        const studentData = await API_SERVICE.studentAPI.getById(studentId);
         setStudent(studentData);
         // Lấy parentId từ studentData.parent.parentId
         let parentIds = [];
@@ -34,28 +33,24 @@ export default function StudentNotifications() {
         // Lấy tất cả consent form của các phụ huynh
         let allForms = [];
         for (const pid of parentIds) {
-          const notificationsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${pid}`);
-          if (notificationsResponse.ok) {
-            const forms = await notificationsResponse.json();
-            allForms = allForms.concat(forms);
-          }
+          const forms = await API_SERVICE.consentFormAPI.getByParent(pid);
+          allForms = allForms.concat(forms);
         }
         setNotifications(allForms);
         // Lấy schedules cho các form
         const schedulePromises = allForms.map(form => {
           const formId = form.form.formId;
           const formType = form.form.type;
-          let scheduleUrl = '';
           if (formType === 'HealthCheck') {
-            scheduleUrl = `${import.meta.env.VITE_API_BASE_URL}/healthCheckSchedule/getByForm${formId}`;
+            return API_SERVICE.healthCheckScheduleAPI.getByForm
+              ? API_SERVICE.healthCheckScheduleAPI.getByForm(formId)
+              : Promise.resolve([]);
           } else if (formType === 'Vaccine' || formType === 'Vaccination') {
-            scheduleUrl = `${import.meta.env.VITE_API_BASE_URL}/vaccinationSchedule/getByForm${formId}`;
+            return API_SERVICE.vaccinationScheduleAPI.getByForm
+              ? API_SERVICE.vaccinationScheduleAPI.getByForm(formId)
+              : Promise.resolve([]);
           }
-          if (scheduleUrl) {
-            return fetch(scheduleUrl)
-              .then(res => (res.ok ? res.json() : []))
-              .catch(() => []);
-          }
+          console.log(schedulePromises)
           return Promise.resolve([]);
         });
         const schedulesPerForm = await Promise.all(schedulePromises);

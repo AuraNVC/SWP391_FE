@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { useUserRole } from "../contexts/UserRoleContext";
 import logoSchoolCare from "../assets/logoSchoolCare.png";
 import { API_SERVICE } from "../services/api";
@@ -16,6 +16,7 @@ export default function Login({ setNotif }) {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const { login } = useUserRole();
 
   useEffect(() => {
@@ -70,7 +71,8 @@ export default function Login({ setNotif }) {
     }
     if (hasError) return;
 
-    let redirectPath = "/";
+    // Lấy redirect từ query string, mặc định là '/'
+    let redirectPath = searchParams.get("redirect") || "/";
     try {
       let data;
       if (role === "manager") {
@@ -109,7 +111,7 @@ export default function Login({ setNotif }) {
           throw new Error();
         }
         redirectPath = "/";
-      } 
+      }
 
       // Nếu tới đây là đăng nhập thành công
       login({

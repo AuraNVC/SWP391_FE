@@ -9,17 +9,17 @@ import StudentEditDialog from "../components/StudentEditDialog";
 import { useNavigate } from "react-router-dom";
 
 const columns = [
-  { title: "ID", dataIndex: "studentId" },
-  { title: "Name", dataIndex: "fullName" },
-  { title: "Gender", dataIndex: "gender" },
-  { title: "Class", dataIndex: "className" },
-  { title: "Student number", dataIndex: "studentNumber" },
+  { title: "Mã HS", dataIndex: "studentId" },
+  { title: "Họ tên", dataIndex: "fullName" },
+  { title: "Giới tính", dataIndex: "gender" },
+  { title: "Lớp", dataIndex: "className" },
+  { title: "Mã số học sinh", dataIndex: "studentNumber" },
   {
-    title: "Parent",
+    title: "Phụ huynh",
     dataIndex: "parent",
     render: (parent) => parent?.fullName || "",
   },
-  { title: "Date of birth", dataIndex: "dateOfBirth" },
+  { title: "Ngày sinh", dataIndex: "dateOfBirth" },
 ];
 
 const iconStyle = {
@@ -71,12 +71,12 @@ const StudentList = () => {
         setStudentList((prev) => prev.filter(s => s.studentId !== deleteTarget.studentId));
         setDeleteTarget(null);
         setNotif({
-          message: "Xóa student thành công!",
+          message: "Xóa học sinh thành công!",
           type: "success",
         });
       } catch (error) {
         setNotif({
-          message: `Xóa student thất bại! ${error.message}`,
+          message: `Xóa học sinh thất bại! ${error.message}`,
           type: "error",
         });
         setDeleteTarget(null);
@@ -105,15 +105,16 @@ const StudentList = () => {
 
   return (
     <div className="admin-main">
+      <h2 className="dashboard-title">Quản lý Học sinh</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={handleCreateNew}>
-          + Create New Student
+          + Thêm học sinh mới
         </button>
-        <input className="admin-search" type="text" placeholder="Search..." />
+        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
       </div>
       <div className="admin-table-container">
         {loading ? (
-          <div>Loading...</div>
+          <div>Đang tải...</div>
         ) : (
           <TableWithPaging
             columns={columns}
@@ -125,21 +126,21 @@ const StudentList = () => {
               <div className="admin-action-group">
                 <button
                   className="admin-action-btn admin-action-view admin-action-btn-reset"
-                  title="View Detail"
+                  title="Xem chi tiết"
                   onClick={() => handleViewDetail(row)}
                 >
                   <FaEye style={iconStyle.view} size={18} />
                 </button>
                 <button
                   className="admin-action-btn admin-action-edit admin-action-btn-reset"
-                  title="Edit"
+                  title="Sửa"
                   onClick={() => handleEdit(row)}
                 >
                   <FaEdit style={iconStyle.edit} size={18} />
                 </button>
                 <button
                   className="admin-action-btn admin-action-delete admin-action-btn-reset"
-                  title="Delete"
+                  title="Xóa"
                   onClick={() => handleDelete(row)}
                   style={{
                     background: "none",
@@ -160,7 +161,7 @@ const StudentList = () => {
         <div className="student-delete-modal-overlay">
           <div className="student-delete-modal-content">
             <div className="student-delete-modal-title">
-              <strong>Bạn có chắc chắn muốn xóa student "{deleteTarget.fullName}"?</strong>
+              <strong>Bạn có chắc chắn muốn xóa học sinh "{deleteTarget.fullName}"?</strong>
             </div>
             <div className="student-delete-modal-actions">
               <button className="admin-btn btn-danger" onClick={confirmDelete}>

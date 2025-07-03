@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { API_SERVICE } from '../services/api';
 
 const ParentStudents = () => {
   const [students, setStudents] = useState([]);
@@ -15,22 +16,15 @@ const ParentStudents = () => {
         }
 
         // Fetch students
-        const studentsResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/student/parent/${parentId}`);
-        if (!studentsResponse.ok) {
-          throw new Error('Failed to fetch students');
-        }
-        const studentsData = await studentsResponse.json();
+        const studentsData = await API_SERVICE.studentAPI.getByParent(parentId);
         setStudents(studentsData);
 
         // Fetch prescriptions for each student
         const prescriptionsData = {};
         for (const student of studentsData) {
-          const prescriptionResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/parent-prescription/student/${student.id}`);
-          if (prescriptionResponse.ok) {
-            const prescriptionData = await prescriptionResponse.json();
-            if (prescriptionData.length > 0) {
-              prescriptionsData[student.id] = prescriptionData[0]; // Get the latest prescription
-            }
+          const prescriptionData = await API_SERVICE.parentPrescriptionAPI.getByStudent(student.id);
+          if (prescriptionData && prescriptionData.length > 0) {
+            prescriptionsData[student.id] = prescriptionData[0]; // Get the latest prescription
           }
         }
         setPrescriptions(prescriptionsData);

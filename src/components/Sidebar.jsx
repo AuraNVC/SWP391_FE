@@ -26,7 +26,7 @@ const Sidebar = ({ extraLinks = [] }) => {
                 ))}
                 <li className="navbar-logout">
                     <a href="#" onClick={handleLogout}>
-                        <FaSignOutAlt /> Logout
+                        <FaSignOutAlt /> Đăng xuất
                     </a>
                 </li>
             </ul>
@@ -34,7 +34,7 @@ const Sidebar = ({ extraLinks = [] }) => {
                 <img src="https://i.pravatar.cc/40?img=3" alt="Admin" />
                 <div>
                     <div className="navbar-profile-name">Admin</div>
-                    <div className="navbar-profile-link"><a href="/admin/profile">View profile</a></div>
+                    <div className="navbar-profile-link"><a href="/admin/profile">Xem chi tiết</a></div>
                 </div>
             </div>
         </nav>
