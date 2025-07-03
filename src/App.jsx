@@ -5,6 +5,7 @@ import Home from './pages/Home'
 import Login from './pages/Login'
 import Blog from './pages/Blog'
 import BlogDetail from './pages/BlogDetail'
+import NurseList from './pages/NurseDashboard'
 import Dashborad from './pages/Dashborad'
 import ParentNotifications from './pages/ParentNotifications'
 import ParentHealthProfile from './pages/ParentHealthProfile'
@@ -37,21 +38,20 @@ import BlogCreate from './pages/BlogCreate'
 import FormCreate from './pages/FormCreate'
 import HealthCheckScheduleDashboard from './pages/HealthCheckScheduleDashboard'
 import HealthCheckScheduleCreate from './pages/HealthCheckScheduleCreate'
+import VaccinationScheduleDashboard from './pages/VaccinationScheduleDashboard'
+import VaccinationScheduleCreate from './pages/VaccinationScheduleCreate'
 import MedEvents from './pages/MedEvents'
 import HealthResults from './pages/HealthResults'
 import VaxResults from './pages/VaxResults'
-import VaxFollowUp from './pages/VaxFollowUp'
 import ConsultSchedules from './pages/ConsultSchedules'
 import Medications from './pages/Medications'
-import VaccinationScheduleDashboard from './pages/VaccinationScheduleDashboard'
-import VaccinationScheduleCreate from './pages/VaccinationScheduleCreate'
 
 function AdminDashboard() {
   return <Dashborad/>
 }
 
 function AdminNurse() {
-  return <Dashborad />
+  return <NurseList />
 }
 
 function AdminStudent() {
@@ -149,7 +149,6 @@ function AppContent() {
           <Route path="/nurse/medical-events" element={<MedEvents />} />
           <Route path="/nurse/health-check-results" element={<HealthResults />} />
           <Route path="/nurse/vaccination-results" element={<VaxResults />} />
-          <Route path="/nurse/vaccination-follow-up" element={<VaxFollowUp />} />
           <Route path="/nurse/consultation-schedules" element={<ConsultSchedules />} />
           <Route path="/nurse/medications" element={<Medications />} />
         </Route>

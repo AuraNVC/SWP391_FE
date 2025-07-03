@@ -18,9 +18,6 @@ export default function NurseLayout() {
         <Link to="/nurse/vaccination-results" className={current === "/nurse/vaccination-results" ? "active" : ""} key="vax-results-link">
             <FaSyringe /> Kết quả tiêm
         </Link>,
-        <Link to="/nurse/vaccination-follow-up" className={current === "/nurse/vaccination-follow-up" ? "active" : ""} key="vax-follow-up-link">
-            <FaClipboardCheck /> Theo dõi sau tiêm
-        </Link>,
         <Link to="/nurse/consultation-schedules" className={current === "/nurse/consultation-schedules" ? "active" : ""} key="consult-schedules-link">
             <FaCalendarAlt /> Lịch tư vấn
         </Link>,

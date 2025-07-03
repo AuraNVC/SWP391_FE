@@ -2,7 +2,7 @@ import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useUserRole } from "../contexts/UserRoleContext";
 
-export default function ProtectedRoute({ children, roles, requiredRole }) {
+export default function ProtectedRoute({ children, roles }) {
   const { userRole } = useUserRole();
   const location = useLocation();
 
@@ -15,19 +15,6 @@ export default function ProtectedRoute({ children, roles, requiredRole }) {
       />
     );
   }
-  
-  // Kiểm tra nếu có requiredRole cụ thể
-  if (requiredRole && userRole !== requiredRole) {
-    return (
-      <Navigate
-        to="/"
-        replace
-        state={{ notif: { message: "Bạn không có quyền truy cập trang này!", type: "error" }, from: location.pathname }}
-      />
-    );
-  }
-  
-  // Kiểm tra nếu có mảng roles
   if (roles && !roles.includes(userRole)) {
     return (
       <Navigate
@@ -37,6 +24,5 @@ export default function ProtectedRoute({ children, roles, requiredRole }) {
       />
     );
   }
-  
   return children;
 }
