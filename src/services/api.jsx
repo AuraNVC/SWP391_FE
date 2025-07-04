@@ -47,6 +47,7 @@ const API = {
     PRESCRIPTION_BY_PARENT: (parentId) => `${API_BASE_URL}/prescription/getPrescriptionByParent?parentId=${parentId}`,
     PARENT_GET: (parentId) => `${API_BASE_URL}/student/getParent${parentId}`,
     HEALTH_PROFILE: (studentId) => `${API_BASE_URL}/healthProfile/${studentId}`,
+    HEALTH_PROFILE_LIST: `${API_BASE_URL}/healthProfile/search`,
     HEALTH_PROFILE_UPDATE: `${API_BASE_URL}/healthProfile/update`,
     HEALTH_CHECK_RESULT_BY_PROFILE: (profileId) => `${API_BASE_URL}/healthCheckResult/getResultsByProfile${profileId}`,
     HEALTH_CHECK_SCHEDULE: (scheduleId) => `${API_BASE_URL}/healthCheckSchedule/${scheduleId}`,
@@ -78,6 +79,11 @@ const API = {
     VACCINATION_SCHEDULE_UPDATE: (id) => `${API_BASE_URL}/vaccinationSchedule/${id}`,
     VACCINATION_SCHEDULE_DETAIL: (id) => `${API_BASE_URL}/vaccinationSchedule/${id}`,
     VACCINATION_SCHEDULE_DELETE: (id) => `${API_BASE_URL}/vaccinationSchedule/${id}`,
+    HEALTH_CHECK_RESULT_LIST: `${API_BASE_URL}/healthCheckResult/search`,
+    HEALTH_CHECK_RESULT_ADD: `${API_BASE_URL}/healthCheckResult/add`,
+    HEALTH_CHECK_RESULT_UPDATE: `${API_BASE_URL}/healthCheckResult/update`,
+    HEALTH_CHECK_RESULT_DELETE: (id) => `${API_BASE_URL}/healthCheckResult/${id}`,
+    HEALTH_CHECK_RESULT_DETAIL: (id) => `${API_BASE_URL}/healthCheckResult/${id}`,
     // Thêm các endpoint khác nếu cần
 };
 
@@ -306,6 +312,12 @@ export const API_SERVICE = {
     },
     healthProfileAPI: {
         get: (studentId) => callApi(API.HEALTH_PROFILE(studentId)),
+        getById: (id) => callApi(API.HEALTH_PROFILE(id)),
+        getAll: (data) => callApi(API.HEALTH_PROFILE_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
         update: (healthProfileId, data) => callApi(API.HEALTH_PROFILE_UPDATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -313,7 +325,26 @@ export const API_SERVICE = {
         }),
     },
     healthCheckResultAPI: {
+        getAll: (data) => callApi(API.HEALTH_CHECK_RESULT_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
         getByProfile: (profileId) => callApi(API.HEALTH_CHECK_RESULT_BY_PROFILE(profileId)),
+        getById: (id) => callApi(API.HEALTH_CHECK_RESULT_DETAIL(id)),
+        create: (data) => callApi(API.HEALTH_CHECK_RESULT_ADD, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (data) => callApi(API.HEALTH_CHECK_RESULT_UPDATE, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        delete: (id) => callApi(API.HEALTH_CHECK_RESULT_DELETE(id), {
+            method: "DELETE"
+        }),
     },
     vaccinationResultAPI: {
         getByProfile: (profileId) => callApi(API.VACCINATION_RESULT_BY_PROFILE(profileId)),

@@ -62,7 +62,7 @@ export default function TableWithPaging({
 
   // Generate page numbers for pagination
   const pageNumbers = getPageNumbers(currentPage, totalPages);
-  
+
   const handlePageChange = (newPage) => {
     // Simple validation
     if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
@@ -87,10 +87,10 @@ export default function TableWithPaging({
       <table className="table table-striped">
         <thead>
           <tr>
-            {columns.map((col) => (
-              <th key={col.key || col.dataIndex}>{col.title}</th>
+            {columns.map((col, colIdx) => (
+              <th key={`header-${col.key || col.dataIndex || colIdx}-${colIdx}`}>{col.title}</th>
             ))}
-            {renderActions && <th>Hành động</th>}
+            {renderActions && <th key="header-actions-column">Hành động</th>}
           </tr>
         </thead>
         <tbody>
@@ -102,16 +102,16 @@ export default function TableWithPaging({
             </tr>
           ) : (
             pageData.map((row, idx) => (
-              <tr key={`row-${row.id || row.medicalEventId || row.studentId || idx}`}>
-                {columns.map((col) => (
-                  <td key={`cell-${col.key || col.dataIndex}-${idx}`}>
-                    {col.render
-                      ? col.render(row[col.dataIndex], row, idx)
-                      : row[col.dataIndex]}
-                  </td>
-                ))}
-                {renderActions && <td>{renderActions(row, idx)}</td>}
-              </tr>
+              <tr key={`row-${row.id || row.healthCheckupRecordId || row.medicalEventId || row.studentId || row.vaccinationResultId || idx}`}>
+                {columns.map((col, colIdx) => (
+                  <td key={`cell-${col.key || col.dataIndex || colIdx}-${idx}-${colIdx}`}>
+                  {col.render
+                    ? col.render(row[col.dataIndex], row, idx)
+                    : row[col.dataIndex]}
+                </td>
+              ))}
+                {renderActions && <td key={`actions-${idx}-row`}>{renderActions(row, idx)}</td>}
+            </tr>
             ))
           )}
         </tbody>
@@ -119,50 +119,50 @@ export default function TableWithPaging({
       
       {/* Bootstrap Pagination with ellipsis */}
       {totalPages > 1 && (
-        <nav>
-          <ul className="pagination justify-content-center">
-            <li className={`page-item${currentPage === 1 ? " disabled" : ""}`}>
-              <button
-                className="page-link"
-                onClick={() => handlePageChange(currentPage - 1)}
-                disabled={currentPage === 1 || loading}
+      <nav>
+        <ul className="pagination justify-content-center">
+            <li className={`page-item${currentPage === 1 ? " disabled" : ""}`} key="prev-button">
+            <button
+              className="page-link"
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1 || loading}
+            >
+              Trước
+            </button>
+          </li>
+          {pageNumbers.map((num, idx) =>
+            num === "..." ? (
+              <li key={`ellipsis-${idx}-pagination`} className="page-item disabled">
+                <span className="page-link">...</span>
+              </li>
+            ) : (
+              <li
+                  key={`page-${num}-${idx}-pagination`}
+                className={`page-item${
+                  currentPage === num ? " active" : ""
+                }`}
               >
-                Trước
-              </button>
-            </li>
-            {pageNumbers.map((num, idx) =>
-              num === "..." ? (
-                <li key={`ellipsis-${idx}`} className="page-item disabled">
-                  <span className="page-link">...</span>
-                </li>
-              ) : (
-                <li
-                  key={`page-${num}`}
-                  className={`page-item${
-                    currentPage === num ? " active" : ""
-                  }`}
-                >
-                  <button
-                    className="page-link"
-                    onClick={() => handlePageChange(num)}
+                <button
+                  className="page-link"
+                  onClick={() => handlePageChange(num)}
                     disabled={loading || currentPage === num}
-                  >
-                    {num}
-                  </button>
-                </li>
-              )
-            )}
-            <li className={`page-item${currentPage === totalPages ? " disabled" : ""}`}>
-              <button
-                className="page-link"
-                onClick={() => handlePageChange(currentPage + 1)}
-                disabled={currentPage === totalPages || loading}
-              >
-                Sau
-              </button>
-            </li>
-          </ul>
-        </nav>
+                >
+                  {num}
+                </button>
+              </li>
+            )
+          )}
+            <li className={`page-item${currentPage === totalPages ? " disabled" : ""}`} key="next-button">
+            <button
+              className="page-link"
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages || loading}
+            >
+              Sau
+            </button>
+          </li>
+        </ul>
+      </nav>
       )}
     </div>
   );
