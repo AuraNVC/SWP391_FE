@@ -95,13 +95,13 @@ function AppContent() {
   const { userRole } = useUserRole();
 
   // Sử dụng context notification
-  const { notif, setNotif } = useNotification();
+  const { notif, setNotif, clearNotif } = useNotification();
 
   useEffect(() => {
     setIsLoggedIn(!!userRole)
   }, [userRole])
 
-  const handleNotifClose = () => setNotif(null);
+  const handleNotifClose = () => clearNotif();
 
   return (
     <>
@@ -112,6 +112,7 @@ function AppContent() {
             message={notif.message}
             type={notif.type}
             onClose={handleNotifClose}
+            duration={notif.duration || 3000}
           />
         </div>
       )}
