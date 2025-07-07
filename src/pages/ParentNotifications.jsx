@@ -304,6 +304,11 @@ export default function ParentNotifications() {
                               <p className="card-text">
                                 <strong>Địa điểm:</strong> {schedule.location}
                               </p>
+                              {schedule.note && (
+                                <p className="card-text">
+                                  <strong>Ghi chú:</strong> {schedule.note}
+                                </p>
+                              )}
                             </>
                           )}
 
