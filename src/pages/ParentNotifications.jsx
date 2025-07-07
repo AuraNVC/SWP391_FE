@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
 import { API_SERVICE } from '../services/api';
+import '../styles/ParentNotifications.css';
 
 export default function ParentNotifications() {
   const [consentForms, setConsentForms] = useState([]);
@@ -14,6 +15,10 @@ export default function ParentNotifications() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
+  
+  // Thêm state cho confirmation modal
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const updateConsentFormStatus = async (consentFormId, isAccept) => {
     // Prevent multiple clicks
@@ -153,170 +158,222 @@ export default function ParentNotifications() {
   const handleStatusChange = (consentFormId, isAccept, currentStatus) => {
     // Chỉ cho phép đổi khi còn Pending
     if (currentStatus !== 'Pending') return;
-    const actionText = isAccept ? 'đồng ý' : 'từ chối';
-    if (window.confirm(`Bạn có chắc chắn muốn ${actionText} biểu mẫu này? Sau khi xác nhận sẽ không thể thay đổi lại.`)) {
-      updateConsentFormStatus(consentFormId, isAccept);
+    
+    // Hiển thị custom confirmation modal
+    setConfirmAction({
+      consentFormId,
+      isAccept,
+      actionText: isAccept ? 'đồng ý' : 'từ chối'
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmAction) {
+      updateConsentFormStatus(confirmAction.consentFormId, confirmAction.isAccept);
+      setShowConfirmModal(false);
+      setConfirmAction(null);
     }
+  };
+
+  const handleCancelAction = () => {
+    setShowConfirmModal(false);
+    setConfirmAction(null);
   };
 
   if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
   if (error) return <div className="text-red-500 text-center p-4">{error}</div>;
 
   return (
-    <div className="min-vh-100 d-flex flex-column">
-      <main className="container-fluid py-5 px-10 flex-grow-1" style={{ marginTop: "80px" }}>
-        <div className="container">
-          <div className="row justify-content-center">
-            <div className="col-md-8">
-              <div className="text-center mb-5">
-                <h1 className="display-4 mb-3 fw-bold">Thông báo</h1>
-                <p className="lead text-muted">Thông tin về lịch khám sức khỏe và tiêm chủng của học sinh</p>
-              </div>
+    <>
+      <div className="min-vh-100 d-flex flex-column">
+        <main className="container-fluid py-5 px-10 flex-grow-1" style={{ marginTop: "80px" }}>
+          <div className="container">
+            <div className="row justify-content-center">
+              <div className="col-md-8">
+                <div className="text-center mb-5">
+                  <h1 className="display-4 mb-3 fw-bold">Thông báo</h1>
+                  <p className="lead text-muted">Thông tin về lịch khám sức khỏe và tiêm chủng của học sinh</p>
+                </div>
 
-              <div className="row mb-4 g-3">
-                <div className="col-md-5">
-                  <input
-                    type="text"
-                    className="form-control"
-                    placeholder="Tìm kiếm theo tiêu đề, nội dung..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
+                <div className="row mb-4 g-3">
+                  <div className="col-md-5">
+                    <input
+                      type="text"
+                      className="form-control"
+                      placeholder="Tìm kiếm theo tiêu đề, nội dung..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <div className="col-md-4">
+                    <select className="form-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                      <option value="all">Tất cả trạng thái</option>
+                      <option value="Pending">Chờ xác nhận</option>
+                      <option value="Accepted">Đã chấp nhận</option>
+                      <option value="Rejected">Đã từ chối</option>
+                    </select>
+                  </div>
+                  <div className="col-md-3">
+                    <select className="form-select" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
+                      <option value="newest">Sắp xếp: Mới nhất</option>
+                      <option value="oldest">Sắp xếp: Cũ nhất</option>
+                    </select>
+                  </div>
                 </div>
-                <div className="col-md-4">
-                  <select className="form-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                    <option value="all">Tất cả trạng thái</option>
-                    <option value="Pending">Chờ xác nhận</option>
-                    <option value="Accepted">Đã chấp nhận</option>
-                    <option value="Rejected">Đã từ chối</option>
-                  </select>
-                </div>
-                <div className="col-md-3">
-                  <select className="form-select" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
-                    <option value="newest">Sắp xếp: Mới nhất</option>
-                    <option value="oldest">Sắp xếp: Cũ nhất</option>
-                  </select>
-                </div>
-              </div>
-              
-              {/* Success Message */}
-              {successMessage && (
-                <div className="alert alert-success alert-dismissible fade show" role="alert">
-                  {successMessage}
-                  <button type="button" className="btn-close" onClick={() => setSuccessMessage(null)}></button>
-                </div>
-              )}
-              
-              {filteredAndSortedForms.length === 0 ? (
-                <div className="text-center text-muted">
-                  <p>Không có thông báo nào phù hợp.</p>
-                </div>
-              ) : (
-                filteredAndSortedForms.map((form) => {
-                  const isUpdating = updatingForms.has(form.consentFormId);
-                  const schedule = schedulesMap[form.form.formId];
-                  
-                  let isTooLateToChange = false;
-                  if (schedule) {
-                    const scheduleDate = (schedule.checkDate || schedule.scheduleDate).substring(0, 10); // YYYY-MM-DD
+                
+                {/* Success Message */}
+                {successMessage && (
+                  <div className="alert alert-success alert-dismissible fade show" role="alert">
+                    {successMessage}
+                    <button type="button" className="btn-close" onClick={() => setSuccessMessage(null)}></button>
+                  </div>
+                )}
+                
+                {filteredAndSortedForms.length === 0 ? (
+                  <div className="text-center text-muted">
+                    <p>Không có thông báo nào phù hợp.</p>
+                  </div>
+                ) : (
+                  filteredAndSortedForms.map((form) => {
+                    const isUpdating = updatingForms.has(form.consentFormId);
+                    const schedule = schedulesMap[form.form.formId];
                     
-                    const today = new Date();
-                    const year = today.getFullYear();
-                    const month = (today.getMonth() + 1).toString().padStart(2, '0');
-                    const day = today.getDate().toString().padStart(2, '0');
-                    const todayString = `${year}-${month}-${day}`;
-                    
-                    if (scheduleDate <= todayString) {
-                      isTooLateToChange = true;
+                    let isTooLateToChange = false;
+                    if (schedule) {
+                      const scheduleDate = (schedule.checkDate || schedule.scheduleDate).substring(0, 10); // YYYY-MM-DD
+                      
+                      const today = new Date();
+                      const year = today.getFullYear();
+                      const month = (today.getMonth() + 1).toString().padStart(2, '0');
+                      const day = today.getDate().toString().padStart(2, '0');
+                      const todayString = `${year}-${month}-${day}`;
+                      
+                      if (scheduleDate <= todayString) {
+                        isTooLateToChange = true;
+                      }
                     }
-                  }
 
-                  // Find matching students
-                  const matchingStudents = students.filter(student => 
-                    form.form.className === 'Tất cả' || student.className === form.form.className
-                  );
-                  
-                  // Chỉ cho phép đổi khi còn Pending
-                  const isStatusFinal = form.status !== 'Pending';
+                    // Find matching students
+                    const matchingStudents = students.filter(student => 
+                      form.form.className === 'Tất cả' || student.className === form.form.className
+                    );
+                    
+                    // Chỉ cho phép đổi khi còn Pending
+                    const isStatusFinal = form.status !== 'Pending';
 
-                  return (
-                    <div key={form.consentFormId} className="card mb-3">
-                      <div className="card-body">
-                        <h5 className="card-title">{form.form.title}</h5>
-                        {matchingStudents.length > 0 && (
-                          <p className="card-text text-primary fw-bold">
-                            <i className="bi bi-person-check-fill me-2"></i>
-                            Dành cho học sinh: {matchingStudents.map(s => s.fullName).join(', ')}
+                    return (
+                      <div key={form.consentFormId} className="card mb-3">
+                        <div className="card-body">
+                          <h5 className="card-title">{form.form.title}</h5>
+                          {matchingStudents.length > 0 && (
+                            <p className="card-text text-primary fw-bold">
+                              <i className="bi bi-person-check-fill me-2"></i>
+                              Dành cho học sinh: {matchingStudents.map(s => s.fullName).join(', ')}
+                            </p>
+                          )}
+                          <p className="card-text">
+                            <strong>Lớp:</strong> {form.form.className}
                           </p>
-                        )}
-                        <p className="card-text">
-                          <strong>Lớp:</strong> {form.form.className}
-                        </p>
-                        <p className="card-text">
-                          <strong>Trạng thái:</strong>{' '}
-                          <span className={`badge ${
-                            form.status === 'Pending' ? 'bg-warning' :
-                            form.status === 'Accepted' ? 'bg-success' :
-                            'bg-danger'
-                          }`}>
-                            {form.status === 'Pending' ? 'Chờ xác nhận' :
-                             form.status === 'Accepted' ? 'Đã đồng ý' :
-                             'Đã từ chối'}
-                          </span>
-                        </p>
-                        <p className="card-text">
-                          <strong>Nội dung:</strong> {form.form.content}
-                        </p>
-                        
-                        {schedule && (
-                          <>
-                            {form.form.type === 'Vaccine' || form.form.type === 'Vaccination' ? (
+                          <p className="card-text">
+                            <strong>Trạng thái:</strong>{' '}
+                            <span className={`badge ${
+                              form.status === 'Pending' ? 'bg-warning' :
+                              form.status === 'Accepted' ? 'bg-success' :
+                              'bg-danger'
+                            }`}>
+                              {form.status === 'Pending' ? 'Chờ xác nhận' :
+                               form.status === 'Accepted' ? 'Đã đồng ý' :
+                               'Đã từ chối'}
+                            </span>
+                          </p>
+                          <p className="card-text">
+                            <strong>Nội dung:</strong> {form.form.content}
+                          </p>
+                          
+                          {schedule && (
+                            <>
+                              {form.form.type === 'Vaccine' || form.form.type === 'Vaccination' ? (
+                                <p className="card-text">
+                                  <strong>Tên vắc xin:</strong> {schedule.name || 'Chưa cập nhật'}
+                                </p>
+                              ) : null}
                               <p className="card-text">
-                                <strong>Tên vắc xin:</strong> {schedule.name || 'Chưa cập nhật'}
+                                <strong>Thời gian:</strong> {new Date(schedule.checkDate || schedule.scheduleDate).toLocaleDateString('vi-VN')} - {new Date(schedule.checkDate || schedule.scheduleDate).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
                               </p>
-                            ) : null}
-                            <p className="card-text">
-                              <strong>Thời gian:</strong> {new Date(schedule.checkDate || schedule.scheduleDate).toLocaleDateString('vi-VN')} - {new Date(schedule.checkDate || schedule.scheduleDate).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                            <p className="card-text">
-                              <strong>Địa điểm:</strong> {schedule.location}
-                            </p>
-                          </>
-                        )}
+                              <p className="card-text">
+                                <strong>Địa điểm:</strong> {schedule.location}
+                              </p>
+                            </>
+                          )}
 
-                        {/* Action buttons */}
-                        <div className="d-flex justify-content-end mt-3">
-                          <div className="text-end">
-                            <button
-                              className={`btn btn-sm me-2 ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
-                              onClick={() => handleStatusChange(form.consentFormId, true, form.status)}
-                              disabled={isTooLateToChange || isUpdating || isStatusFinal}
-                            >
-                              {isUpdating ? 'Đang xử lý...' : 'Đồng ý'}
-                            </button>
-                            <button
-                              className={`btn btn-sm ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
-                              onClick={() => handleStatusChange(form.consentFormId, false, form.status)}
-                              disabled={isTooLateToChange || isUpdating || isStatusFinal}
-                            >
-                              {isUpdating ? 'Đang xử lý...' : 'Từ chối'}
-                            </button>
-                            <p className="text-muted fst-italic mt-1 mb-0">
-                              <small>
-                                {isTooLateToChange ? 'Đã hết hạn thay đổi.' : ''}
-                              </small>
-                            </p>
+                          {/* Action buttons */}
+                          <div className="d-flex justify-content-end mt-3">
+                            <div className="text-end">
+                              <button
+                                className={`btn btn-sm me-2 ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
+                                onClick={() => handleStatusChange(form.consentFormId, true, form.status)}
+                                disabled={isTooLateToChange || isUpdating || isStatusFinal}
+                              >
+                                {isUpdating ? 'Đang xử lý...' : 'Đồng ý'}
+                              </button>
+                              <button
+                                className={`btn btn-sm ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
+                                onClick={() => handleStatusChange(form.consentFormId, false, form.status)}
+                                disabled={isTooLateToChange || isUpdating || isStatusFinal}
+                              >
+                                {isUpdating ? 'Đang xử lý...' : 'Từ chối'}
+                              </button>
+                              <p className="text-muted fst-italic mt-1 mb-0">
+                                <small>
+                                  {isTooLateToChange ? 'Đã hết hạn thay đổi.' : ''}
+                                </small>
+                              </p>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })
-              )}
+                    );
+                  })
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+
+        {/* Custom Confirmation Modal */}
+        {showConfirmModal && (
+          <div className="confirm-modal-overlay">
+            <div className="confirm-modal-content">
+              <div className="confirm-modal-header">
+                <h5 className="confirm-modal-title">Xác nhận hành động</h5>
+              </div>
+              <div className="confirm-modal-body">
+                <p>
+                  Bạn có chắc chắn muốn {confirmAction?.actionText} biểu mẫu này?
+                </p>
+                <p className="text-muted">
+                  <small>Sau khi xác nhận sẽ không thể thay đổi lại.</small>
+                </p>
+              </div>
+              <div className="confirm-modal-footer">
+                <button 
+                  className="btn btn-secondary me-2" 
+                  onClick={handleCancelAction}
+                >
+                  Hủy
+                </button>
+                <button 
+                  className={`btn ${confirmAction?.isAccept ? 'btn-success' : 'btn-danger'}`}
+                  onClick={handleConfirmAction}
+                >
+                  {confirmAction?.actionText}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 } 

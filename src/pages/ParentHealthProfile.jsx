@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { API_SERVICE } from '../services/api';
+import { useNotification } from '../contexts/NotificationContext';
 
 const ParentHealthProfile = () => {
+  const { setNotif } = useNotification();
   const [students, setStudents] = useState([]);
   const [healthProfiles, setHealthProfiles] = useState({});
   const [loading, setLoading] = useState(true);
@@ -69,7 +71,7 @@ const ParentHealthProfile = () => {
     setSelectedStudentForMedicalEvents(null);
     setMedicalEvents([]);
     if (!profile || !profile.healthProfileId) {
-      alert('Không tìm thấy hồ sơ sức khỏe cho học sinh này.');
+      setNotif({ message: 'Không tìm thấy hồ sơ sức khỏe cho học sinh này.', type: 'error' });
       return;
     }
 
@@ -119,7 +121,7 @@ const ParentHealthProfile = () => {
     setSelectedStudentForMedicalEvents(null);
     setMedicalEvents([]);
     if (!profile || !profile.healthProfileId) {
-      alert('Không tìm thấy hồ sơ sức khỏe cho học sinh này.');
+      setNotif({ message: 'Không tìm thấy hồ sơ sức khỏe cho học sinh này.', type: 'error' });
       return;
     }
 
@@ -166,7 +168,7 @@ const ParentHealthProfile = () => {
     setSelectedStudentForVaccination(null);
     setVaccinationResults([]);
     if (!profile || !profile.studentId) {
-      alert('Không tìm thấy học sinh này.');
+      setNotif({ message: 'Không tìm thấy học sinh này.', type: 'error' });
       return;
     }
     if (selectedStudentForMedicalEvents?.studentId === profile.studentId) {
@@ -220,9 +222,9 @@ const ParentHealthProfile = () => {
         }
       }));
       setShowModal(false);
-      alert('Cập nhật thành công!');
+      setNotif({ message: 'Cập nhật thành công!', type: 'success' });
     } catch (err) {
-      alert(err.message);
+      setNotif({ message: err.message, type: 'error' });
     }
   };
 
