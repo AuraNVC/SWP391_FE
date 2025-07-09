@@ -54,9 +54,6 @@ const HealthCheckScheduleCreate = () => {
     <div className="admin-main">
       <div className="admin-header">
         <h2>Tạo lịch khám sức khỏe</h2>
-        <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Quay lại danh sách
-        </button>
       </div>
       <div className="healthcheck-create-page-container">
         <form className="student-create-form" onSubmit={handleSubmit}>

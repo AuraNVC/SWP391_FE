@@ -84,9 +84,6 @@ const StudentCreate = () => {
     <div className="admin-main">
       <div className="admin-header">
         <h2>Thêm học sinh mới</h2>
-        <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Quay lại danh sách học sinh
-        </button>
       </div>
       
       <div className="student-create-page-container">

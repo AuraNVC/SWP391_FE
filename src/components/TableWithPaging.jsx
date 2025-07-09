@@ -71,7 +71,7 @@ export default function TableWithPaging({
   }, [data, page, totalPages, onPageChange]);
 
   return (
-    <div>
+    <div className="table-container-with-paging">
       <table className="table table-striped">
         <thead>
           <tr>

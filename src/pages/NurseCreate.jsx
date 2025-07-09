@@ -65,9 +65,6 @@ const NurseCreate = () => {
     <div className="admin-main">
       <div className="admin-header">
         <h2>Thêm y tá mới</h2>
-        <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Quay lại danh sách y tá
-        </button>
       </div>
       
       <div className="nurse-create-page-container">

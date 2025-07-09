@@ -2,14 +2,15 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useUserRole } from "../contexts/UserRoleContext";
 import logoSchoolCare from '../assets/logoSchoolCare.png';
+import Popover from '@mui/material/Popover';
+import Button from '@mui/material/Button';
 
 const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const avatarRef = useRef(null);
   const { logout, userRole, userId } = useUserRole();
-  const [userInfo, setUserInfo] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [anchorEl, setAnchorEl] = useState(null);
 
   const handleLoginClick = () => {
     navigate("/login");
@@ -20,10 +21,17 @@ const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
     navigate("/login");
   };
 
+  const handleAvatarClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handlePopoverClose = () => {
+    setAnchorEl(null);
+  };
+  const open = Boolean(anchorEl);
+
   // Fetch user info based on role and userId
   useEffect(() => {
     if (isLoggedIn && userRole && userId) {
-      setLoading(true);
       const fetchUserInfo = async () => {
         try {
           const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -51,30 +59,12 @@ const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
           });
 
           if (response.ok) {
-            const user = await response.json();
-            let fullName = '';
-            switch (userRole) {
-              case 'manager':
-                fullName = user.fullName || 'Quản lý';
-                break;
-              case 'nurse':
-                fullName = user.fullName || 'Y tá';
-                break;
-              case 'parent':
-                fullName = user.fullName || 'Phụ huynh';
-                break;
-              case 'student':
-                fullName = user.fullName || 'Học sinh';
-                break;
-              default:
-                fullName = 'Người dùng';
-            }
-            setUserInfo({ fullName });
+            await response.json(); // fetch nhưng không dùng nữa
           }
         } catch (error) {
           console.error('Error fetching user info:', error);
         } finally {
-          setLoading(false);
+          // setLoading(false); // This line was removed as per the edit hint
         }
       };
       fetchUserInfo();
@@ -141,31 +131,26 @@ const Navbar = ({ isLoggedIn, avatarUrl, extraLinks = [] }) => {
                 alt="avatar"
                 className="rounded-circle border border-white shadow"
                 style={{ width: 40, height: 40, cursor: "pointer" }}
-                onClick={(e) => {
-                  e.preventDefault();
-                  setShowMenu((prev) => !prev);
-                }}
+                onClick={handleAvatarClick}
                 ref={avatarRef}
               />
-              {showMenu && (
-                <div
-                  className="position-absolute mt-2 p-2 bg-white shadow rounded"
-                  style={{
-                    minWidth: 120,
-                    zIndex: 1000,
-                    top: "70%",
-                    right: 60,
-                  }}
+              <Popover
+                open={open}
+                anchorEl={anchorEl}
+                onClose={handlePopoverClose}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+                transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+                PaperProps={{ style: { minWidth: 140, padding: 8 } }}
+              >
+                <Button
+                  variant="text"
+                  color="error"
+                  fullWidth
+                  onClick={() => { handleLogout(); handlePopoverClose(); }}
                 >
-                  <button
-                    type="button"
-                    className="dropdown-item text-danger"
-                    onClick={handleLogout}
-                  >
-                    Đăng xuất
-                  </button>
-                </div>
-              )}
+                  Đăng xuất
+                </Button>
+              </Popover>
             </>
           )}
         </div>

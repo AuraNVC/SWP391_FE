@@ -96,9 +96,6 @@ const BlogCreate = () => {
     <div className="admin-main">
       <div className="admin-header">
         <h2>Thêm blog mới</h2>
-        <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Quay lại danh sách blog
-        </button>
       </div>
       
       <div className="blog-create-page-container">
