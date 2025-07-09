@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useUserRole } from '../contexts/UserRoleContext';
 import { API_SERVICE } from '../services/api';
+import { useNotification } from '../contexts/NotificationContext';
+import '../styles/ParentNotifications.css';
 
 export default function ParentConsultations() {
   const [consultations, setConsultations] = useState([]);
@@ -13,6 +15,11 @@ export default function ParentConsultations() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("newest");
+  const { setNotif } = useNotification();
+
+  // Modal xác nhận
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
 
   const updateConsultationStatus = async (consultationFormId, isAccept) => {
     if (updatingForms.has(consultationFormId)) return;
@@ -30,6 +37,7 @@ export default function ParentConsultations() {
 
       const action = isAccept ? 'chấp nhận' : 'từ chối';
       setSuccessMessage(`Đã ${action} lịch tư vấn thành công!`);
+      setNotif({ message: `Đã ${action} lịch tư vấn thành công!`, type: 'success' });
 
       // Refresh the list after update
       const parentId = localStorage.getItem('userId');
@@ -41,6 +49,7 @@ export default function ParentConsultations() {
     } catch (err) {
       console.error('Error updating status:', err);
       setError('Không thể cập nhật trạng thái. Vui lòng thử lại sau.');
+      setNotif({ message: 'Không thể cập nhật trạng thái. Vui lòng thử lại sau.', type: 'error' });
     } finally {
       setUpdatingForms(prev => {
         const newSet = new Set(prev);
@@ -48,6 +57,30 @@ export default function ParentConsultations() {
         return newSet;
       });
     }
+  };
+
+  // Hàm gọi khi bấm Chấp nhận/Từ chối
+  const handleStatusChange = (consultationFormId, isAccept, currentStatus) => {
+    if (currentStatus !== 'Pending') return;
+    setConfirmAction({
+      consultationFormId,
+      isAccept,
+      actionText: isAccept ? 'chấp nhận' : 'từ chối'
+    });
+    setShowConfirmModal(true);
+  };
+
+  const handleConfirmAction = () => {
+    if (confirmAction) {
+      updateConsultationStatus(confirmAction.consultationFormId, confirmAction.isAccept);
+      setShowConfirmModal(false);
+      setConfirmAction(null);
+    }
+  };
+
+  const handleCancelAction = () => {
+    setShowConfirmModal(false);
+    setConfirmAction(null);
   };
 
   useEffect(() => {
@@ -236,24 +269,24 @@ export default function ParentConsultations() {
                           <div className="d-flex gap-2">
                               <button
                                   className={`btn btn-sm ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
-                                  onClick={() => updateConsultationStatus(form.consultationFormId, true)}
-                                  disabled={isTooLateToChange || isUpdating}
+                                  onClick={() => handleStatusChange(form.consultationFormId, true, form.status)}
+                                  disabled={isUpdating || form.status !== 'Pending'}
                               >
                                   {isUpdating ? 'Đang xử lý...' : 'Chấp nhận'}
                               </button>
                               <button
                                   className={`btn btn-sm ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
-                                  onClick={() => updateConsultationStatus(form.consultationFormId, false)}
-                                  disabled={isTooLateToChange || isUpdating}
+                                  onClick={() => handleStatusChange(form.consultationFormId, false, form.status)}
+                                  disabled={isUpdating || form.status !== 'Pending'}
                               >
                                   {isUpdating ? 'Đang xử lý...' : 'Từ chối'}
                               </button>
                           </div>
-                          <p className="text-muted fst-italic mb-0">
-                            <small>
-                              {isTooLateToChange ? 'Đã hết hạn thay đổi.' : 'Có thể thay đổi đến trước ngày diễn ra.'}
-                            </small>
-                          </p>
+                          {isTooLateToChange && (
+                            <p className="text-muted fst-italic mb-0">
+                              <small>Đã hết hạn thay đổi.</small>
+                            </p>
+                          )}
                         </div>
                       </div>
                     );
@@ -264,6 +297,31 @@ export default function ParentConsultations() {
           </div>
         </div>
       </main>
+
+      {/* Modal xác nhận */}
+      {showConfirmModal && confirmAction && (
+        <div className="confirm-modal-overlay">
+          <div className="confirm-modal-content">
+            <div className="confirm-modal-header">
+              <h5 className="confirm-modal-title">Xác nhận hành động</h5>
+            </div>
+            <div className="confirm-modal-body">
+              <p>
+                Bạn có chắc chắn muốn {confirmAction.actionText} lịch tư vấn này?
+              </p>
+              <p className="text-muted">
+                <small>Sau khi xác nhận sẽ không thể thay đổi lại.</small>
+              </p>
+            </div>
+            <div className="confirm-modal-footer">
+              <button className="btn btn-secondary me-2" onClick={handleCancelAction}>Hủy</button>
+              <button className={`btn ${confirmAction.isAccept ? 'btn-success' : 'btn-danger'}`} onClick={handleConfirmAction}>
+                {confirmAction.isAccept ? 'Đồng ý' : 'Từ chối'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

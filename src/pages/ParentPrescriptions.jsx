@@ -446,6 +446,7 @@ export default function ParentPrescriptions() {
                                       <th>Tên thuốc</th>
                                       <th>Liều dùng</th>
                                       <th>Số lượng</th>
+                                      <th>Số lượng còn lại</th>
                                     </tr>
                                   </thead>
                                   <tbody>
@@ -454,6 +455,7 @@ export default function ParentPrescriptions() {
                                         <td>{med.medicationName}</td>
                                         <td>{med.dosage}</td>
                                         <td>{med.quantity}</td>
+                                        <td>{med.remainingQuantity ?? "Không rõ"}</td>
                                       </tr>
                                     ))}
                                   </tbody>

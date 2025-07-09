@@ -1,0 +1,65 @@
+.confirm-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1050;
+}
+
+.confirm-modal-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-width: 400px;
+  width: 90%;
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+.confirm-modal-header {
+  padding: 20px 20px 0 20px;
+  border-bottom: 1px solid #e9ecef;
+}
+
+.confirm-modal-title {
+  margin: 0;
+  color: #333;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.confirm-modal-body {
+  padding: 20px;
+}
+
+.confirm-modal-body p {
+  margin-bottom: 10px;
+}
+
+.confirm-modal-footer {
+  padding: 0 20px 20px 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.btn:disabled, .btn[disabled] {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  pointer-events: none;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+} 
