@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { API_SERVICE } from "../services/api";
+import { API_SERVICE, API, callApi } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
 import { FaEye, FaEdit, FaTrash, FaPlus, FaSearch, FaSync } from "react-icons/fa";
 import "../styles/Dashboard.css";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const ConsultSchedules = () => {
   const [schedules, setSchedules] = useState([]);
@@ -26,6 +28,8 @@ const ConsultSchedules = () => {
     studentId: "",
     nurseId: localStorage.getItem("userId") || "",
   });
+  const [deleteId, setDeleteId] = useState(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
   const { setNotif } = useNotification();
 
@@ -73,20 +77,11 @@ const ConsultSchedules = () => {
     try {
       console.log("Fetching consultation schedules with keyword:", keyword);
       
-      // Kiểm tra xem API có tồn tại không
-      if (!API_SERVICE || !API_SERVICE.consultationScheduleAPI || !API_SERVICE.consultationScheduleAPI.getAll) {
-        console.error("API_SERVICE.consultationScheduleAPI.getAll is not available");
-        setNotif({
-          message: "API không khả dụng. Vui lòng kiểm tra kết nối.",
-          type: "error"
-        });
-        setLoading(false);
-        return;
-      }
-      
-      // Gọi API với SearchConsultationScheduleRequest
-      const response = await API_SERVICE.consultationScheduleAPI.getAll({
-        keyword: keyword || ""
+      // Gọi API để lấy danh sách lịch tư vấn
+      const response = await callApi(`${API_BASE_URL}/consultationSchedule/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword: keyword || "" })
       });
       
       console.log("API response:", response);
@@ -116,7 +111,7 @@ const ConsultSchedules = () => {
         let studentName = "";
         if (schedule.studentId) {
           try {
-            const studentData = await API_SERVICE.studentAPI.getById(schedule.studentId);
+            const studentData = await callApi(`${API_BASE_URL}/student/${schedule.studentId}`);
             if (studentData) {
               studentName = studentData.fullName || `${studentData.firstName || ''} ${studentData.lastName || ''}`.trim();
             }
@@ -138,7 +133,7 @@ const ConsultSchedules = () => {
             // Nếu không tìm thấy, thử tải thông tin y tá từ API
             else {
               try {
-                const nurseResponse = await API_SERVICE.nurseAPI.getById(schedule.nurseId);
+                const nurseResponse = await callApi(`${API_BASE_URL}/nurse/${schedule.nurseId}`);
                 if (nurseResponse) {
                   nurseData = nurseResponse;
                   nurseName = nurseResponse.fullName || `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim();
@@ -183,7 +178,11 @@ const ConsultSchedules = () => {
   const fetchStudents = async () => {
     try {
       console.log("Fetching students...");
-      const response = await API_SERVICE.studentAPI.getAll({ keyword: "" });
+      const response = await callApi(`${API_BASE_URL}/student/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword: "" })
+      });
       
       let studentsData = [];
       if (Array.isArray(response)) {
@@ -209,7 +208,11 @@ const ConsultSchedules = () => {
   const fetchNurses = async () => {
     try {
       console.log("Fetching nurses...");
-      const response = await API_SERVICE.nurseAPI.getAll({ keyword: "" });
+      const response = await callApi(`${API_BASE_URL}/nurse/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword: "" })
+      });
       
       let nursesData = [];
       if (Array.isArray(response)) {
@@ -300,16 +303,6 @@ const ConsultSchedules = () => {
     }
     
     try {
-      // Kiểm tra API có tồn tại không
-      if (!API_SERVICE || !API_SERVICE.consultationScheduleAPI || !API_SERVICE.consultationScheduleAPI.create) {
-        console.error("API_SERVICE.consultationScheduleAPI.create is not available");
-        setNotif({
-          message: "API không khả dụng. Vui lòng kiểm tra kết nối.",
-          type: "error"
-        });
-        return;
-      }
-      
       // Chuẩn bị dữ liệu để gửi đi
       const consultDate = new Date(`${formData.consultationDate}T${formData.consultationTime}`);
       
@@ -323,7 +316,11 @@ const ConsultSchedules = () => {
       console.log("Submitting data:", dataToSubmit);
       
       // Gọi API để tạo lịch tư vấn mới
-      const response = await API_SERVICE.consultationScheduleAPI.create(dataToSubmit);
+      const response = await callApi(`${API_BASE_URL}/consultationSchedule/create`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataToSubmit)
+      });
       
       console.log("API response:", response);
       
@@ -363,16 +360,6 @@ const ConsultSchedules = () => {
     }
     
     try {
-      // Kiểm tra API có tồn tại không
-      if (!API_SERVICE || !API_SERVICE.consultationScheduleAPI || !API_SERVICE.consultationScheduleAPI.update) {
-        console.error("API_SERVICE.consultationScheduleAPI.update is not available");
-        setNotif({
-          message: "API không khả dụng. Vui lòng kiểm tra kết nối.",
-          type: "error"
-        });
-        return;
-      }
-      
       // Kết hợp ngày và giờ thành một đối tượng Date
       const consultDate = new Date(`${formData.consultationDate}T${formData.consultationTime}`);
       
@@ -388,7 +375,11 @@ const ConsultSchedules = () => {
       console.log("Updating schedule with data:", dataToSubmit);
       
       // Gọi API để cập nhật lịch tư vấn
-      const response = await API_SERVICE.consultationScheduleAPI.update(selectedSchedule.consultationScheduleId, dataToSubmit);
+      const response = await callApi(`${API_BASE_URL}/consultationSchedule/update`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(dataToSubmit)
+      });
       
       console.log("API response:", response);
       
@@ -411,27 +402,38 @@ const ConsultSchedules = () => {
   };
 
   const handleDeleteSchedule = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa lịch tư vấn này không?")) {
-      setLoading(true);
-      try {
-        console.log("Deleting schedule with ID:", id);
-        await API_SERVICE.consultationScheduleAPI.delete(id);
-        
-        setNotif({
-          message: "Xóa lịch tư vấn thành công",
-          type: "success"
-        });
-        
-        fetchConsultationSchedules(searchKeyword);
-      } catch (error) {
-        console.error("Error deleting consultation schedule:", error);
-        setNotif({
-          message: "Không thể xóa lịch tư vấn: " + (error.message || "Lỗi không xác định"),
-          type: "error"
-        });
-      } finally {
-        setLoading(false);
-      }
+    setDeleteId(id);
+    setShowConfirmDelete(true);
+  };
+
+  const confirmDeleteSchedule = async () => {
+    setLoading(true);
+    try {
+      console.log(`Deleting consultation schedule with ID: ${deleteId}`);
+      
+      // Gọi API để xóa lịch tư vấn
+      await callApi(`${API_BASE_URL}/consultationSchedule/${deleteId}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" }
+      });
+      
+      // Hiển thị thông báo thành công
+      setNotif({
+        message: "Xóa lịch tư vấn thành công",
+        type: "success"
+      });
+      
+      // Đóng modal và cập nhật danh sách
+      setShowConfirmDelete(false);
+      fetchConsultationSchedules();
+    } catch (error) {
+      console.error("Error deleting consultation schedule:", error);
+      setNotif({
+        message: "Không thể xóa lịch tư vấn: " + (error.message || "Lỗi không xác định"),
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -458,7 +460,7 @@ const ConsultSchedules = () => {
       
       // Sử dụng endpoint getBySchedule trực tiếp
       try {
-        const response = await API_SERVICE.consultationFormAPI.getBySchedule(scheduleId);
+        const response = await callApi(`${API_BASE_URL}/consultationForm/getBySchedule?scheduleId=${scheduleId}`);
         console.log("Consultation form by schedule ID response:", response);
         
         if (response) {
@@ -477,7 +479,7 @@ const ConsultSchedules = () => {
         
         // Thử cách thay thế nếu endpoint getBySchedule không hoạt động
         try {
-          const directForm = await API_SERVICE.consultationFormAPI.getById(scheduleId);
+          const directForm = await callApi(`${API_BASE_URL}/consultationForm/${scheduleId}`);
           console.log("Direct form by ID:", directForm);
           if (directForm && !directForm.error) {
             matchingForm = directForm;
@@ -489,7 +491,7 @@ const ConsultSchedules = () => {
         // Nếu vẫn không tìm thấy và có studentId, thử lấy form theo studentId
         if (!matchingForm && schedule && schedule.studentId) {
           try {
-            const studentForms = await API_SERVICE.consultationFormAPI.getByStudent(schedule.studentId);
+            const studentForms = await callApi(`${API_BASE_URL}/consultationForm/getByStudent?studentId=${schedule.studentId}`);
             console.log("Forms by student:", studentForms);
             
             if (Array.isArray(studentForms) && studentForms.length > 0) {
@@ -522,7 +524,7 @@ const ConsultSchedules = () => {
             } else {
               // Nếu không tìm thấy trong danh sách đã tải, thử tải thông tin y tá từ API
               try {
-                const nurseResponse = await API_SERVICE.nurseAPI.getById(schedule.nurseId);
+                const nurseResponse = await callApi(`${API_BASE_URL}/nurse/${schedule.nurseId}`);
                 if (nurseResponse) {
                   nurseName = nurseResponse.fullName || `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim();
                 }
@@ -537,7 +539,7 @@ const ConsultSchedules = () => {
         let parentName = "";
         try {
           if (matchingForm.parentId) {
-            const parentResponse = await API_SERVICE.parentAPI.getById(matchingForm.parentId);
+            const parentResponse = await callApi(`${API_BASE_URL}/parent/${matchingForm.parentId}`);
             if (parentResponse) {
               parentName = parentResponse.fullName || `${parentResponse.firstName || ''} ${parentResponse.lastName || ''}`.trim();
             }
@@ -579,48 +581,38 @@ const ConsultSchedules = () => {
           let studentName = schedule.studentName || "";
           if (!studentName && schedule.studentId) {
             try {
-              const studentData = await API_SERVICE.studentAPI.getById(schedule.studentId);
+              const studentData = await callApi(`${API_BASE_URL}/student/${schedule.studentId}`);
               if (studentData) {
                 studentName = studentData.fullName || `${studentData.firstName || ''} ${studentData.lastName || ''}`.trim();
               }
-            } catch (error) {
-              console.error(`Error fetching student with ID ${schedule.studentId}:`, error);
+            } catch (studentError) {
+              console.error(`Error fetching student with ID ${schedule.studentId}:`, studentError);
             }
           }
           
-          const formData = {
-            consultationFormId: null,
+          // Hiển thị thông tin lịch tư vấn
+          setConsultationForm({
             consultationScheduleId: scheduleId,
-            parentId: null,
-            parentName: "Chưa có thông tin",
-            title: `Tư vấn cho học sinh ${studentName || schedule.studentId}`,
-            content: "Lịch tư vấn này chưa có form tư vấn đi kèm.",
-            status: "Pending",
-            nurseName: nurseName || "Y tá phụ trách",
-            studentName: studentName || `ID: ${schedule.studentId}`
-          };
-          
-          // Lưu thông tin debug vào console nhưng không hiển thị trên UI
-          console.debug("Form data debug info:", {
-            matchMethod: "not_found",
-            schedule: { ...schedule }
+            studentName: studentName || `ID: ${schedule.studentId}`,
+            nurseName: nurseName || "Chưa phân công",
+            consultDate: schedule.consultDate,
+            location: schedule.location,
+            noForm: true // Đánh dấu là không có form
           });
-          
-          setConsultationForm(formData);
         } else {
-          throw new Error("Không tìm thấy lịch tư vấn");
+          setNotif({
+            message: "Không tìm thấy thông tin lịch tư vấn",
+            type: "error"
+          });
+          setShowFormModal(false);
         }
       }
     } catch (error) {
-      console.error("Error in fetchConsultationForm:", error);
-      
-      // Thông báo lỗi cho người dùng
+      console.error("Error fetching consultation form:", error);
       setNotif({
-        message: "Không thể lấy dữ liệu form tư vấn: " + (error.message || "Lỗi không xác định"),
+        message: "Không thể tải thông tin form tư vấn: " + (error.message || "Lỗi không xác định"),
         type: "error"
       });
-      
-      // Đóng modal nếu không có dữ liệu
       setShowFormModal(false);
     } finally {
       setLoading(false);
@@ -1074,6 +1066,29 @@ const ConsultSchedules = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal xác nhận xóa lịch tư vấn */}
+      {showConfirmDelete && deleteId && (
+        <div className="modal-overlay">
+          <div className="modal-container" style={{ maxWidth: "400px" }}>
+            <div className="modal-header">
+              <h3>Xác nhận xóa lịch tư vấn</h3>
+              <button className="close-btn" onClick={() => setShowConfirmDelete(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>Bạn có chắc chắn muốn xóa lịch tư vấn này không?</p>
+            </div>
+            <div className="modal-footer">
+              <button className="admin-btn" onClick={confirmDeleteSchedule} disabled={loading}>
+                {loading ? "Đang xóa..." : "Xóa"}
+              </button>
+              <button className="admin-btn cancel-btn" onClick={() => setShowConfirmDelete(false)} disabled={loading}>
+                Hủy
+              </button>
+            </div>
           </div>
         </div>
       )}

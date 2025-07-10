@@ -132,6 +132,9 @@ async function callApi(url, options = {}) {
     }
 }
 
+// Export API và callApi để sử dụng trong các file khác
+export { API, callApi };
+
 // Các hàm con sử dụng hàm cha
 export const API_SERVICE = {
     blogAPI: {
