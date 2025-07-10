@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { API_SERVICE } from '../services/api';
+import { useNotification } from '../contexts/NotificationContext';
 
 const ParentHealthProfile = () => {
+  const { setNotif } = useNotification();
   const [students, setStudents] = useState([]);
   const [healthProfiles, setHealthProfiles] = useState({});
   const [loading, setLoading] = useState(true);
@@ -69,7 +71,7 @@ const ParentHealthProfile = () => {
     setSelectedStudentForMedicalEvents(null);
     setMedicalEvents([]);
     if (!profile || !profile.healthProfileId) {
-      alert('Không tìm thấy hồ sơ sức khỏe cho học sinh này.');
+      setNotif({ message: 'Không tìm thấy hồ sơ sức khỏe cho học sinh này.', type: 'error' });
       return;
     }
 
@@ -119,7 +121,7 @@ const ParentHealthProfile = () => {
     setSelectedStudentForMedicalEvents(null);
     setMedicalEvents([]);
     if (!profile || !profile.healthProfileId) {
-      alert('Không tìm thấy hồ sơ sức khỏe cho học sinh này.');
+      setNotif({ message: 'Không tìm thấy hồ sơ sức khỏe cho học sinh này.', type: 'error' });
       return;
     }
 
@@ -141,7 +143,7 @@ const ParentHealthProfile = () => {
         results.map(async (result) => {
           if (result.vaccinationScheduleId) {
             try {
-              const scheduleData = await API_SERVICE.vaccinationScheduleAPI.get(result.vaccinationScheduleId);
+              const scheduleData = await API_SERVICE.vaccinationScheduleAPI.getById(result.vaccinationScheduleId);
               return { ...result, schedule: scheduleData };
             } catch (scheduleErr) {
               console.error(`Failed to fetch vaccination schedule for result ${result.resultId}:`, scheduleErr);
@@ -166,7 +168,7 @@ const ParentHealthProfile = () => {
     setSelectedStudentForVaccination(null);
     setVaccinationResults([]);
     if (!profile || !profile.studentId) {
-      alert('Không tìm thấy học sinh này.');
+      setNotif({ message: 'Không tìm thấy học sinh này.', type: 'error' });
       return;
     }
     if (selectedStudentForMedicalEvents?.studentId === profile.studentId) {
@@ -220,9 +222,9 @@ const ParentHealthProfile = () => {
         }
       }));
       setShowModal(false);
-      alert('Cập nhật thành công!');
+      setNotif({ message: 'Cập nhật thành công!', type: 'success' });
     } catch (err) {
-      alert(err.message);
+      setNotif({ message: err.message, type: 'error' });
     }
   };
 
@@ -410,7 +412,10 @@ const ParentHealthProfile = () => {
                                       {vaccinationResults.map(result => (
                                         <li key={result.vaccinationResultId} className="list-group-item">
                                           {result.schedule && (
-                                            <p className='mb-1'><strong>Tên vắc xin:</strong> {result.schedule.name || 'Chưa cập nhật'}</p>
+                                            <>
+                                              <p className='mb-1'><strong>Tên vắc xin:</strong> {result.schedule.name || 'Chưa cập nhật'}</p>
+                                              <p className='mb-1'><strong>Liều lượng:</strong> {result.doseNumber || 'Chưa cập nhật'}</p>
+                                            </>
                                           )}
                                           <p className='mb-1'><strong>Ngày tiêm:</strong> {result.schedule ? new Date(result.schedule.scheduleDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
                                           <p className='mb-1'><strong>Địa điểm:</strong> {result.schedule?.location || 'Chưa cập nhật'}</p>
