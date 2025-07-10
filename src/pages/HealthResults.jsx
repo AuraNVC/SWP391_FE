@@ -88,7 +88,7 @@ const StudentNameCell = ({ studentId, initialName, healthProfileId, showIdInTabl
     };
     
     // Luôn gọi API để lấy tên học sinh từ ID
-    fetchName();
+      fetchName();
   }, [studentId, initialName, healthProfileId]);
 
   return (
@@ -369,19 +369,19 @@ const HealthResults = () => {
       });
       
       console.log("Health check results API response:", response);
-      
+
       let resultsData = response;
       if (!Array.isArray(response) && response && response.data && Array.isArray(response.data)) {
         resultsData = response.data;
       }
-      
+
       if (Array.isArray(resultsData) && resultsData.length > 0) {
         // Xử lý dữ liệu bằng hàm processHealthCheckResults
         console.log("Processing health check results data...");
         const processedResults = await processHealthCheckResults(resultsData);
         
         // Loại bỏ cột trạng thái nếu có
-        setColumns(prevColumns => prevColumns.filter(col => col.dataIndex !== 'status'));
+          setColumns(prevColumns => prevColumns.filter(col => col.dataIndex !== 'status'));
         
         if (keyword && keyword.trim() !== "") {
           // Lọc kết quả dựa trên từ khóa tìm kiếm
@@ -423,7 +423,7 @@ const HealthResults = () => {
             });
           }
         } else {
-          setResults(processedResults);
+        setResults(processedResults);
         }
       } else {
         console.warn("No health check results found or API returned empty data");
@@ -638,7 +638,7 @@ const HealthResults = () => {
         // Thay vào đó, sử dụng ID để hiển thị
         studentName = "";
         studentId = "";
-        healthProfileId = result.healthProfileId;
+          healthProfileId = result.healthProfileId;
         console.log(`Using health profile ID for later processing: ${result.healthProfileId}`);
       } else {
         console.log("No student information found in result");
@@ -813,13 +813,13 @@ const HealthResults = () => {
     
     for (const { field, message } of requiredFields) {
       if (!formData[field]) {
-        setNotif({
+      setNotif({
           message,
           type: "error",
           autoDismiss: true,
           duration: 5000
-        });
-        return false;
+      });
+      return false;
       }
     }
     
@@ -914,27 +914,27 @@ const HealthResults = () => {
           };
           
           await API_SERVICE.healthCheckResultAPI.create(alternativeData);
-          setNotif({
-            message: "Thêm kết quả khám sức khỏe thành công",
+      setNotif({
+        message: "Thêm kết quả khám sức khỏe thành công",
             type: "success",
             autoDismiss: true,
             duration: 5000
-          });
-          setShowAddModal(false);
-          setFormData({
-            healthCheckScheduleId: "",
-            healthProfileId: "",
-            studentId: "",
-            nurseId: localStorage.getItem("userId") || "",
-            nurseName: "",
-            height: "",
-            weight: "",
-            leftVision: "",
-            rightVision: "",
-            result: "",
-            status: "1",
-            note: ""
-          });
+      });
+      setShowAddModal(false);
+      setFormData({
+        healthCheckScheduleId: "",
+        healthProfileId: "",
+        studentId: "",
+        nurseId: localStorage.getItem("userId") || "",
+        nurseName: "",
+        height: "",
+        weight: "",
+        leftVision: "",
+        rightVision: "",
+        result: "",
+        status: "1",
+        note: ""
+      });
           await fetchHealthCheckResults();
         } else {
           throw apiError; // Re-throw for the outer catch
@@ -1157,7 +1157,7 @@ const HealthResults = () => {
       let scheduleInfo = null;
       if (record.healthCheckScheduleId) {
         scheduleInfo = schedules.find(s => String(s.healthCheckScheduleId) === String(record.healthCheckScheduleId));
-        
+    
         // If schedule not found in state, try to fetch it
         if (!scheduleInfo && API_SERVICE.healthCheckScheduleAPI) {
           try {
@@ -1213,8 +1213,8 @@ const HealthResults = () => {
           });
           setShowViewModal(true);
           return;
-        }
-      }
+            }
+          }
 
         // Nếu không có studentId hoặc không tìm được thông tin học sinh, thử dùng healthProfileId
       if (record.healthProfileId) {
@@ -1226,9 +1226,9 @@ const HealthResults = () => {
             const studentResponse = await API_SERVICE.studentAPI.getById(profileData.studentId);
             if (studentResponse) {
               const name = studentResponse.fullName || 
-                        `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
-                        studentResponse.name || 
-                        `Học sinh ID: ${profileData.studentId}`;
+                          `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
+                          studentResponse.name || 
+                          `Học sinh ID: ${profileData.studentId}`;
               
               setSelectedResult({
                 ...record,
@@ -1405,11 +1405,11 @@ const HealthResults = () => {
                 studentName: `Học sinh ID: ${profileData.studentId}`,
                 studentId: profileData.studentId
               };
-              
+    
               setSelectedResult(updatedRecord);
               
               // Cập nhật formData cho chỉnh sửa
-              setFormData({
+    setFormData({
                 healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "",
                 healthProfileId: record.healthProfileId || "",
                 studentId: profileData.studentId || "",
@@ -1487,10 +1487,10 @@ const HealthResults = () => {
           result: record.result || "",
           status: String(record.status) || "1",
           note: record.note === null || record.note === undefined ? "" : record.note
-        });
+    });
       }
     
-      setShowEditModal(true);
+    setShowEditModal(true);
     } catch (error) {
       console.error("Error preparing edit data:", error);
       setNotif({
@@ -1636,7 +1636,7 @@ const HealthResults = () => {
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               onKeyDown={handleSearchKeyDown}
-          />
+            />
           <button className="admin-btn" onClick={handleSearch} disabled={searchLoading}>
               {searchLoading ? "Đang tìm..." : <FaSearch />}
             </button>
@@ -1857,21 +1857,21 @@ const HealthResults = () => {
                         name="nurseId"
                         id="edit-nurseId"
                         value={formData.nurseId}
-                        onChange={handleInputChange}
-                        required
-                        className="form-control"
+                  onChange={handleInputChange}
+                  required
+                  className="form-control"
                         style={{ backgroundColor: '#f8f9fa' }}
                       >
                         <option value={localStorage.getItem("userId") || ""}>
                           {getNurseName(localStorage.getItem("userId"))} (ID: {localStorage.getItem("userId")})
-                        </option>
+                    </option>
                         {nurses.filter(n => n.nurseId !== parseInt(localStorage.getItem("userId"))).map((nurse) => (
                           <option key={nurse.nurseId} value={nurse.nurseId}>
                             {nurse.fullName || `Y tá`} (ID: {nurse.nurseId})
                           </option>
                         ))}
-                      </select>
-                    </div>
+                </select>
+              </div>
                   </div>
                 </div>
                 <div className="student-info-section">
@@ -2054,21 +2054,21 @@ const HealthResults = () => {
                         name="nurseId"
                         id="nurseId"
                         value={formData.nurseId}
-                        onChange={handleInputChange}
-                        required
-                        className="form-control"
+                  onChange={handleInputChange}
+                  required
+                  className="form-control"
                         style={{ backgroundColor: '#f8f9fa' }}
-                      >
+                >
                         <option value={localStorage.getItem("userId") || ""}>
                           {getNurseName(localStorage.getItem("userId"))} (ID: {localStorage.getItem("userId")})
-                        </option>
+                    </option>
                         {nurses.filter(n => n.nurseId !== parseInt(localStorage.getItem("userId"))).map((nurse) => (
                           <option key={nurse.nurseId} value={nurse.nurseId}>
                             {nurse.fullName || `Y tá`} (ID: {nurse.nurseId})
                           </option>
                         ))}
-                      </select>
-                    </div>
+                </select>
+              </div>
                   </div>
                 </div>
                 <div className="student-info-section">
@@ -2185,11 +2185,11 @@ const HealthResults = () => {
             <div className="student-delete-modal-actions">
               <button className="btn btn-primary" onClick={confirmAddResult}>
                 Xác nhận
-              </button>
+                </button>
               <button className="btn btn-secondary" onClick={() => setShowConfirmAdd(false)}>
-                Hủy
-              </button>
-            </div>
+                  Hủy
+                </button>
+              </div>
           </div>
         </div>
       )}

@@ -98,21 +98,36 @@ export default function TableWithPaging({
             <tr>
               <td colSpan={columns.length + (renderActions ? 1 : 0)} className="text-center">
                 {loading ? "Đang tải dữ liệu..." : "Không có dữ liệu"}
-              </td>
+                </td>
             </tr>
           ) : (
-            pageData.map((row, idx) => (
-              <tr key={`row-${row.id || row.healthCheckupRecordId || row.medicalEventId || row.studentId || row.vaccinationResultId || idx}`}>
-                {columns.map((col, colIdx) => (
-                  <td key={`cell-${col.key || col.dataIndex || colIdx}-${idx}-${colIdx}`}>
-                  {col.render
-                    ? col.render(row[col.dataIndex], row, idx)
-                    : row[col.dataIndex]}
-                </td>
-              ))}
-                {renderActions && <td key={`actions-${idx}-row`}>{renderActions(row, idx)}</td>}
-            </tr>
-            ))
+            pageData.map((row, idx) => {
+              // Create a truly unique key for each row by combining the row ID with the index
+              const rowKey = `row-${row.id || row.healthCheckupRecordId || row.medicalEventId || row.studentId || row.vaccinationResultId || row.nurseId || row.parentId || row.healthProfileId || row.formId || ''}-${startIdx + idx}`;
+              
+              return (
+                <tr key={rowKey}>
+                  {columns.map((col, colIdx) => (
+                    <td key={`cell-${col.key || col.dataIndex || colIdx}-${rowKey}`}>
+                      {(() => {
+                        console.log(`Rendering cell for column ${col.dataIndex}:`, {
+                          value: row[col.dataIndex],
+                          row: row,
+                          hasRender: !!col.render
+                        });
+                        
+                        if (col.render) {
+                          return col.render(row[col.dataIndex], row, idx);
+                        } else {
+                          return row[col.dataIndex];
+                        }
+                      })()}
+                    </td>
+                  ))}
+                  {renderActions && <td key={`actions-${rowKey}`}>{renderActions(row, idx)}</td>}
+                </tr>
+              );
+            })
           )}
         </tbody>
       </table>
