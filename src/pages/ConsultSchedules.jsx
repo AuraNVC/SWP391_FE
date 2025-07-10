@@ -72,8 +72,21 @@ const ConsultSchedules = () => {
     setLoading(true);
     try {
       console.log("Fetching consultation schedules with keyword:", keyword);
+      
+      // Kiểm tra xem API có tồn tại không
+      if (!API_SERVICE || !API_SERVICE.consultationScheduleAPI || !API_SERVICE.consultationScheduleAPI.getAll) {
+        console.error("API_SERVICE.consultationScheduleAPI.getAll is not available");
+        setNotif({
+          message: "API không khả dụng. Vui lòng kiểm tra kết nối.",
+          type: "error"
+        });
+        setLoading(false);
+        return;
+      }
+      
+      // Gọi API với SearchConsultationScheduleRequest
       const response = await API_SERVICE.consultationScheduleAPI.getAll({
-        keyword: keyword
+        keyword: keyword || ""
       });
       
       console.log("API response:", response);
@@ -84,12 +97,16 @@ const ConsultSchedules = () => {
         schedulesData = response;
       } else if (response && Array.isArray(response.data)) {
         schedulesData = response.data;
+      } else if (response && typeof response === 'object') {
+        // Trường hợp API trả về một đối tượng không phải mảng
+        schedulesData = [response];
       } else {
-        console.warn("API did not return an array:", response);
+        console.warn("API did not return an array or valid object:", response);
         setNotif({
           message: "API không trả về dữ liệu đúng định dạng",
           type: "error"
         });
+        setLoading(false);
         return;
       }
       
@@ -277,97 +294,119 @@ const ConsultSchedules = () => {
   const handleAddSchedule = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    // Kiểm tra dữ liệu hợp lệ
+    if (!validateForm()) {
+      return;
+    }
     
-    setLoading(true);
     try {
-      // Kết hợp ngày và giờ thành một đối tượng Date
-      const [year, month, day] = formData.consultationDate.split('-');
-      const [hour, minute] = formData.consultationTime.split(':');
-      const consultDateTime = new Date(year, month - 1, day, hour, minute);
+      // Kiểm tra API có tồn tại không
+      if (!API_SERVICE || !API_SERVICE.consultationScheduleAPI || !API_SERVICE.consultationScheduleAPI.create) {
+        console.error("API_SERVICE.consultationScheduleAPI.create is not available");
+        setNotif({
+          message: "API không khả dụng. Vui lòng kiểm tra kết nối.",
+          type: "error"
+        });
+        return;
+      }
       
-      // Chuẩn bị dữ liệu gửi đi
+      // Chuẩn bị dữ liệu để gửi đi
+      const consultDate = new Date(`${formData.consultationDate}T${formData.consultationTime}`);
+      
       const dataToSubmit = {
-        nurseId: parseInt(formData.nurseId) || null,
-        studentId: parseInt(formData.studentId) || null,
+        consultDate: consultDate.toISOString(),
         location: formData.location,
-        consultDate: consultDateTime.toISOString()
+        studentId: parseInt(formData.studentId),
+        nurseId: parseInt(formData.nurseId)
       };
       
       console.log("Submitting data:", dataToSubmit);
       
-      // Gọi API để tạo lịch tư vấn
+      // Gọi API để tạo lịch tư vấn mới
       const response = await API_SERVICE.consultationScheduleAPI.create(dataToSubmit);
+      
       console.log("API response:", response);
       
+      // Hiển thị thông báo thành công
       setNotif({
-        message: "Thêm lịch tư vấn thành công",
+        message: "Tạo lịch tư vấn thành công",
         type: "success"
       });
       
+      // Đóng modal và cập nhật danh sách
       setShowAddModal(false);
+      fetchConsultationSchedules();
+      
+      // Reset form data
       setFormData({
         consultationDate: new Date().toISOString().split('T')[0],
         consultationTime: "08:00",
         location: "Phòng y tế",
         studentId: "",
-        nurseId: localStorage.getItem("userId") || ""
+        nurseId: localStorage.getItem("userId") || "",
       });
-      
-      fetchConsultationSchedules(searchKeyword);
     } catch (error) {
       console.error("Error adding consultation schedule:", error);
       setNotif({
-        message: "Không thể thêm lịch tư vấn: " + (error.message || "Lỗi không xác định"),
+        message: "Không thể tạo lịch tư vấn: " + (error.message || "Lỗi không xác định"),
         type: "error"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleUpdateSchedule = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    // Kiểm tra dữ liệu hợp lệ
+    if (!validateForm()) {
+      return;
+    }
     
-    setLoading(true);
     try {
-      // Kết hợp ngày và giờ thành một đối tượng Date
-      const [year, month, day] = formData.consultationDate.split('-');
-      const [hour, minute] = formData.consultationTime.split(':');
-      const consultDateTime = new Date(year, month - 1, day, hour, minute);
+      // Kiểm tra API có tồn tại không
+      if (!API_SERVICE || !API_SERVICE.consultationScheduleAPI || !API_SERVICE.consultationScheduleAPI.update) {
+        console.error("API_SERVICE.consultationScheduleAPI.update is not available");
+        setNotif({
+          message: "API không khả dụng. Vui lòng kiểm tra kết nối.",
+          type: "error"
+        });
+        return;
+      }
       
-      // Chuẩn bị dữ liệu gửi đi
+      // Kết hợp ngày và giờ thành một đối tượng Date
+      const consultDate = new Date(`${formData.consultationDate}T${formData.consultationTime}`);
+      
+      // Chuẩn bị dữ liệu để gửi đi
       const dataToSubmit = {
         consultationScheduleId: selectedSchedule.consultationScheduleId,
-        nurseId: parseInt(formData.nurseId) || null,
-        studentId: parseInt(formData.studentId) || null,
+        consultDate: consultDate.toISOString(),
         location: formData.location,
-        consultDate: consultDateTime.toISOString()
+        studentId: parseInt(formData.studentId),
+        nurseId: parseInt(formData.nurseId)
       };
       
-      console.log("Updating with data:", dataToSubmit);
+      console.log("Updating schedule with data:", dataToSubmit);
       
       // Gọi API để cập nhật lịch tư vấn
       const response = await API_SERVICE.consultationScheduleAPI.update(selectedSchedule.consultationScheduleId, dataToSubmit);
+      
       console.log("API response:", response);
       
+      // Hiển thị thông báo thành công
       setNotif({
         message: "Cập nhật lịch tư vấn thành công",
         type: "success"
       });
       
+      // Đóng modal và cập nhật danh sách
       setShowEditModal(false);
-      fetchConsultationSchedules(searchKeyword);
+      fetchConsultationSchedules();
     } catch (error) {
       console.error("Error updating consultation schedule:", error);
       setNotif({
         message: "Không thể cập nhật lịch tư vấn: " + (error.message || "Lỗi không xác định"),
         type: "error"
       });
-    } finally {
-      setLoading(false);
     }
   };
 

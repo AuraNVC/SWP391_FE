@@ -478,7 +478,41 @@ export const API_SERVICE = {
         reject: (id) => callApi(API.CONSULTATION_FORM_REJECT(id), { method: 'POST' }),
     },
     consultationScheduleAPI: {
-        get: (id) => callApi(API.CONSULTATION_SCHEDULE(id)),
+        get: (id) => callApi(`${API_BASE_URL}${API_ENDPOINTS.CONSULTATION_SCHEDULE_GET_BY_ID}/${id}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        getAll: (data) => callApi(`${API_BASE_URL}${API_ENDPOINTS.CONSULTATION_SCHEDULE_GET_ALL}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getByStudent: (studentId) => callApi(`${API_BASE_URL}${API_ENDPOINTS.CONSULTATION_SCHEDULE_GET_BY_STUDENT}?studentId=${studentId}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        create: (data) => callApi(`${API_BASE_URL}${API_ENDPOINTS.CONSULTATION_SCHEDULE_CREATE}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (id, data) => {
+            // Đảm bảo ID trong payload
+            const payload = {
+                ...data,
+                consultationScheduleId: parseInt(id)
+            };
+            
+            return callApi(`${API_BASE_URL}${API_ENDPOINTS.CONSULTATION_SCHEDULE_UPDATE}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+        },
+        delete: (id) => callApi(`${API_BASE_URL}${API_ENDPOINTS.CONSULTATION_SCHEDULE_DELETE}/${id}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        })
     },
     parentPrescriptionAPI: {
         getPrescriptionByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_BY_PARENT(parentId)),
