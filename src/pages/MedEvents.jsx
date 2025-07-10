@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useContext } from "react";
 import { FaSearch, FaPlus, FaEye, FaEdit, FaTrash } from "react-icons/fa";
-import { API_SERVICE } from "../services/api";
+import { API_SERVICE, API, callApi } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
 import "../styles/Dashboard.css";
 import "../styles/StudentDashboard.css";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const MedEvents = () => {
   const [events, setEvents] = useState([]);
@@ -90,8 +92,10 @@ const MedEvents = () => {
   const fetchStudents = async () => {
     try {
       console.log("Fetching students...");
-      const response = await API_SERVICE.studentAPI.getAll({
-        keyword: ""
+      const response = await callApi(`${API_BASE_URL}/student/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword: "" })
       });
       console.log("Students API response:", response);
       if (Array.isArray(response)) {
@@ -120,8 +124,10 @@ const MedEvents = () => {
   const fetchNurses = async () => {
     try {
       console.log("Fetching nurses...");
-      const response = await API_SERVICE.nurseAPI.getAll({
-        keyword: ""
+      const response = await callApi(`${API_BASE_URL}/nurse/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyword: "" })
       });
       console.log("Nurses API response:", response);
       if (Array.isArray(response)) {
@@ -151,13 +157,17 @@ const MedEvents = () => {
     setLoading(true);
     try {
       console.log("Fetching medical events with keyword:", keyword);
-      const response = await API_SERVICE.medicalEventAPI.getAll({
-        keyword: keyword,
-        pageNumber: 1,
-        pageSize: 100,
-        includeDetails: true,
-        includeStudent: true,
-        includeNurse: true
+      const response = await callApi(`${API_BASE_URL}/medicalEvent/search`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          keyword: keyword,
+          pageNumber: 1,
+          pageSize: 100,
+          includeDetails: true,
+          includeStudent: true,
+          includeNurse: true
+        })
       });
       console.log("Medical events API response:", response);
       
