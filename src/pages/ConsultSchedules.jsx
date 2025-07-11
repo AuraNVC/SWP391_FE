@@ -549,21 +549,27 @@ const ConsultSchedules = () => {
           };
           
           // Gọi API để gửi thông báo
-          await API_SERVICE.notificationAPI.create(notificationData);
-          console.log("Notification sent to parent");
-        } catch (notifError) {
-          console.error("Error sending notification:", notifError);
-        }
-      }
-      
-      const successMessage = formData.showFormSection 
-        ? "Thêm lịch tư vấn và form tư vấn thành công" 
-        : "Thêm lịch tư vấn thành công";
-      
+          const notifResult = await API_SERVICE.notificationAPI.create(notificationData);
+          console.log("Notification result:", notifResult);
+          
+          // Thông báo cho người dùng biết rằng tính năng gửi thông báo đang được bảo trì
       setNotif({
-        message: successMessage,
+            message: "Thêm lịch tư vấn và form tư vấn thành công (Tính năng thông báo đang được bảo trì)",
         type: "success"
       });
+        } catch (notifError) {
+          console.error("Error sending notification:", notifError);
+          setNotif({
+            message: "Thêm lịch tư vấn và form tư vấn thành công",
+            type: "success"
+          });
+        }
+      } else {
+        setNotif({
+          message: "Thêm lịch tư vấn và form tư vấn thành công",
+          type: "success"
+        });
+      }
       
       setShowAddModal(false);
       setFormData({
@@ -717,30 +723,46 @@ const ConsultSchedules = () => {
       
       // Gửi thông báo nếu được chọn và có phụ huynh
       if (formData.sendNotification && parentId) {
-        console.log("Notification would be sent to parent ID:", parentId);
-        console.log("Notification data would be:", {
-          recipientId: parentId,
-          title: formData.formTitle 
+        try {
+          // Chuẩn bị dữ liệu thông báo
+          const notificationTitle = formData.formTitle 
             ? `Cập nhật lịch tư vấn: ${formData.formTitle}`
-            : "Cập nhật lịch tư vấn",
-          content: `Lịch tư vấn đã được cập nhật vào ngày ${new Date(consultDateTime).toLocaleDateString('vi-VN')} lúc ${new Date(consultDateTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} tại ${formData.location}.`,
-          type: "ConsultationSchedule",
-          referenceId: scheduleIdNum
-        });
-        
-        // Thông báo cho người dùng biết rằng tính năng gửi thông báo đang được bảo trì
-        setNotif({
-          message: "Đã cập nhật lịch tư vấn thành công. Tính năng gửi thông báo đang được bảo trì.",
-          type: "success"
-        });
-        
-        // Bỏ qua việc gửi thông báo thực tế để tránh lỗi 404
-        // TODO: Kích hoạt lại khi API notification/create đã được triển khai
-      } else {
+            : "Cập nhật lịch tư vấn";
+          
+          // Tạo nội dung thông báo
+          const notificationContent = `Lịch tư vấn đã được cập nhật vào ngày ${new Date(consultDateTime).toLocaleDateString('vi-VN')} lúc ${new Date(consultDateTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} tại ${formData.location}.`;
+          
+          const notificationData = {
+            recipientId: parentId,
+            title: notificationTitle,
+            content: notificationContent,
+            type: "ConsultationSchedule",
+            referenceId: scheduleIdNum
+          };
+          
+          console.log("Sending notification:", notificationData);
+          
+          // Gọi API để gửi thông báo
+          const notifResult = await API_SERVICE.notificationAPI.create(notificationData);
+          console.log("Notification result:", notifResult);
+          
+          // Thông báo cho người dùng biết rằng tính năng gửi thông báo đang được bảo trì
+          setNotif({
+            message: "Đã cập nhật lịch tư vấn thành công. Tính năng gửi thông báo đang được bảo trì.",
+            type: "success"
+          });
+        } catch (notifError) {
+          console.error("Error sending notification:", notifError);
       setNotif({
         message: "Cập nhật lịch tư vấn thành công",
         type: "success"
       });
+        }
+      } else {
+        setNotif({
+          message: "Cập nhật lịch tư vấn thành công",
+          type: "success"
+        });
       }
       
       setShowEditModal(false);
@@ -879,124 +901,92 @@ const ConsultSchedules = () => {
             console.log("Error getting forms by parent:", parentError);
           }
         }
-        
-        // Cách 4: Nếu có studentId nhưng không có parentId, thử lấy parentId từ student
-        if (!matchingForm && schedule && schedule.studentId && !schedule.parentId) {
-          try {
-            console.log(`Trying to find parent ID from student ID: ${schedule.studentId}`);
-            const student = await API_SERVICE.studentAPI.getById(schedule.studentId);
-            console.log("Student info:", student);
-            
-            if (student && student.parentId) {
-              console.log(`Found parent ID ${student.parentId} from student`);
-              
-              // Thử lấy form theo parentId
-              try {
-                const parentForms = await API_SERVICE.consultationFormAPI.getByParent(student.parentId);
-                console.log("Forms by parent (from student):", parentForms);
-                
-                if (Array.isArray(parentForms) && parentForms.length > 0) {
-                  // Tìm form có consultationScheduleId khớp với scheduleId
-                  matchingForm = parentForms.find(form => {
-                    const formSchedule = form.consultationSchedule;
-                    return formSchedule && formSchedule.consultationScheduleId === scheduleId;
-                  });
-                  
-                  // Nếu không tìm thấy theo consultationSchedule, thử tìm theo consultationScheduleId
-                  if (!matchingForm) {
-                    matchingForm = parentForms.find(form => form.consultationScheduleId === scheduleId);
-                  }
-                }
-              } catch (parentError) {
-                console.log("Error getting forms by parent (from student):", parentError);
-              }
-            }
-          } catch (studentError) {
-            console.log("Error getting student info:", studentError);
-          }
-        }
       } catch (error) {
         console.log("All attempts to get consultation form failed:", error);
       }
       
+      // Khai báo các biến để lưu thông tin
+      let studentName = "";
+      let studentId = null;
+      let nurseName = "";
+      let nurseId = null;
+      let parentName = "";
+      let parentId = null;
+      
       if (matchingForm) {
         console.log("Found matching consultation form:", matchingForm);
         
-        // Tìm thông tin y tá phụ trách từ danh sách lịch tư vấn
-        let nurseName = "";
-        if (matchingForm.nurseId) {
+        // Lưu ID của các đối tượng liên quan
+        studentId = matchingForm.studentId || (schedule ? schedule.studentId : null);
+        nurseId = matchingForm.nurseId || (schedule ? schedule.nurseId : null);
+        parentId = matchingForm.parentId || (schedule && schedule.parentId ? schedule.parentId : null);
+        
+        // Tìm thông tin học sinh
+        if (studentId) {
           try {
-            const nurseId = parseInt(matchingForm.nurseId);
-            if (isNaN(nurseId)) {
-              throw new Error("Invalid nurse ID");
+            const studentIdInt = parseInt(studentId);
+            if (!isNaN(studentIdInt)) {
+              console.log(`Fetching student with ID ${studentIdInt}`);
+              const studentResponse = await API_SERVICE.studentAPI.getById(studentIdInt);
+              console.log(`Student response:`, studentResponse);
+              
+              if (studentResponse) {
+                studentName = studentResponse.fullName || `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim();
+              }
             }
-            
-            console.log(`Fetching nurse with ID ${nurseId}`);
-            const nurseResponse = await API_SERVICE.nurseAPI.getById(nurseId);
-            console.log(`Nurse response:`, nurseResponse);
-            
+          } catch (studentError) {
+            console.error("Error fetching student info:", studentError);
+            studentName = `ID: ${studentId}`;
+          }
+        }
+        
+        // Tìm thông tin y tá phụ trách
+        if (nurseId) {
+          try {
+            const nurseIdInt = parseInt(nurseId);
+            if (!isNaN(nurseIdInt)) {
+              console.log(`Fetching nurse with ID ${nurseIdInt}`);
+              const nurseResponse = await API_SERVICE.nurseAPI.getById(nurseIdInt);
+              console.log(`Nurse response:`, nurseResponse);
+              
                 if (nurseResponse) {
                   nurseName = nurseResponse.fullName || `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim();
+              }
                 }
               } catch (nurseError) {
             console.error("Error fetching nurse info:", nurseError);
-            // Sử dụng ID làm tên nếu không lấy được thông tin
-            if (matchingForm.nurseId) {
-              nurseName = `ID: ${matchingForm.nurseId}`;
-            }
-          }
-        } else if (schedule && schedule.nurseId) {
-          try {
-            const nurseId = parseInt(schedule.nurseId);
-            if (isNaN(nurseId)) {
-              throw new Error("Invalid nurse ID from schedule");
-            }
-            
-            console.log(`Fetching nurse with ID ${nurseId} from schedule`);
-            const nurseResponse = await API_SERVICE.nurseAPI.getById(nurseId);
-            console.log(`Nurse response from schedule:`, nurseResponse);
-            
-            if (nurseResponse) {
-              nurseName = nurseResponse.fullName || `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim();
-            }
-          } catch (nurseError) {
-            console.error("Error fetching nurse info from schedule:", nurseError);
-            if (schedule.nurseId) {
-              nurseName = `ID: ${schedule.nurseId}`;
-            }
+            nurseName = `ID: ${nurseId}`;
           }
         }
         
         // Tìm thông tin phụ huynh từ parentId
-        let parentName = "";
-        try {
-          if (matchingForm.parentId) {
-            const parentId = parseInt(matchingForm.parentId);
-            if (isNaN(parentId)) {
-              throw new Error("Invalid parent ID");
-            }
-            
-            console.log(`Fetching parent with ID ${parentId}`);
-            const parentResponse = await API_SERVICE.parentAPI.getById(parentId);
-            console.log(`Parent response:`, parentResponse);
-            
+        if (parentId) {
+          try {
+            const parentIdInt = parseInt(parentId);
+            if (!isNaN(parentIdInt)) {
+              console.log(`Fetching parent with ID ${parentIdInt}`);
+              const parentResponse = await API_SERVICE.parentAPI.getById(parentIdInt);
+              console.log(`Parent response:`, parentResponse);
+              
             if (parentResponse) {
               parentName = parentResponse.fullName || `${parentResponse.firstName || ''} ${parentResponse.lastName || ''}`.trim();
             }
           }
         } catch (parentError) {
           console.error("Error fetching parent info:", parentError);
-          // Sử dụng ID làm tên nếu không lấy được thông tin
-          if (matchingForm.parentId) {
-            parentName = `ID: ${matchingForm.parentId}`;
+            parentName = `ID: ${parentId}`;
           }
         }
         
-        // Cập nhật state với dữ liệu từ API và thông tin phụ huynh/y tá
+        // Cập nhật state với dữ liệu từ API và thông tin phụ huynh/y tá/học sinh
         const formData = {
           ...matchingForm,
-          parentName: parentName || (matchingForm.parentId ? `ID: ${matchingForm.parentId}` : "Không có"),
-          nurseName: nurseName || "Y tá phụ trách",
+          studentId: studentId,
+          nurseId: nurseId,
+          parentId: parentId,
+          studentName: studentName || (studentId ? `ID: ${studentId}` : "Không có"),
+          parentName: parentName || (parentId ? `ID: ${parentId}` : "Không có"),
+          nurseName: nurseName || (nurseId ? `ID: ${nurseId}` : "Không có"),
           // Đảm bảo các trường dữ liệu quan trọng
           consultationScheduleId: scheduleId
         };
@@ -1005,7 +995,15 @@ const ConsultSchedules = () => {
         console.debug("Form data debug info:", {
           matchMethod: "found",
           originalForm: { ...matchingForm },
-          schedule: schedule ? { ...schedule } : null
+          schedule: schedule ? { ...schedule } : null,
+          enhancedData: {
+            studentName,
+            studentId,
+            nurseName,
+            nurseId,
+            parentName,
+            parentId
+          }
         });
         
         setConsultationForm(formData);
@@ -1013,15 +1011,17 @@ const ConsultSchedules = () => {
         console.log("No matching consultation form found, creating a placeholder");
         
         // Nếu không tìm thấy form, tạo một form tạm thời với thông tin từ lịch tư vấn
-        let studentName = "";
-        let parentId = null;
-        let parentName = "";
-        let nurseName = "";
+        studentName = "";
+        studentId = schedule ? schedule.studentId : null;
+        parentName = "";
+        parentId = null;
+        nurseName = "";
+        nurseId = schedule ? schedule.nurseId : null;
         
         // Lấy thông tin học sinh
-        if (schedule && schedule.studentId) {
+        if (studentId) {
           try {
-            const student = await API_SERVICE.studentAPI.getById(schedule.studentId);
+            const student = await API_SERVICE.studentAPI.getById(studentId);
             if (student) {
               studentName = student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim();
               
@@ -1041,137 +1041,49 @@ const ConsultSchedules = () => {
             }
           } catch (studentError) {
             console.error("Error fetching student info:", studentError);
-            studentName = `ID: ${schedule.studentId}`;
+            studentName = `ID: ${studentId}`;
           }
         }
         
-          // Tìm thông tin y tá
-        if (schedule && schedule.nurseId) {
+        // Tìm thông tin y tá
+        if (nurseId) {
           try {
-            const nurse = await API_SERVICE.nurseAPI.getById(schedule.nurseId);
+            const nurse = await API_SERVICE.nurseAPI.getById(nurseId);
             if (nurse) {
               nurseName = nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim();
             }
           } catch (nurseError) {
             console.error("Error fetching nurse info:", nurseError);
-            nurseName = `ID: ${schedule.nurseId}`;
+            nurseName = `ID: ${nurseId}`;
           }
         }
         
         // Tạo form tạm thời
-        matchingForm = {
-          consultationFormId: null,
-          consultationScheduleId: scheduleId,
-          studentId: schedule ? schedule.studentId : null,
-          studentName: studentName,
+        const placeholderForm = {
+            consultationFormId: null,
+            consultationScheduleId: scheduleId,
+          title: schedule ? `Tư vấn ngày ${new Date(schedule.consultDate).toLocaleDateString('vi-VN')}` : "Form tư vấn mới",
+          content: "",
+          status: 0,
+          studentId: studentId,
+          studentName: studentName || (studentId ? `ID: ${studentId}` : "Không có"),
+          nurseId: nurseId,
+          nurseName: nurseName || (nurseId ? `ID: ${nurseId}` : "Không có"),
           parentId: parentId,
-          parentName: parentName,
-          nurseId: schedule ? schedule.nurseId : null,
-          nurseName: nurseName,
-          title: "Chưa có form tư vấn",
-          content: "Chưa có nội dung form tư vấn. Bạn có thể tạo form mới bằng cách chỉnh sửa lịch tư vấn.",
-          status: "Pending"
+          parentName: parentName || (parentId ? `ID: ${parentId}` : "Không có"),
+          createdDate: new Date().toISOString()
         };
+        
+        console.debug("Placeholder form data:", placeholderForm);
+        
+        setConsultationForm(placeholderForm);
       }
-      
-      // Tìm thông tin phụ huynh từ parentId
-      let parentName = "";
-      try {
-        if (matchingForm.parentId) {
-          const parentId = parseInt(matchingForm.parentId);
-          if (isNaN(parentId)) {
-            throw new Error("Invalid parent ID");
-          }
-          
-          console.log(`Fetching parent with ID ${parentId}`);
-          const parentResponse = await API_SERVICE.parentAPI.getById(parentId);
-          console.log(`Parent response:`, parentResponse);
-          
-          if (parentResponse) {
-            parentName = parentResponse.fullName || `${parentResponse.firstName || ''} ${parentResponse.lastName || ''}`.trim();
-          }
-        }
-      } catch (parentError) {
-        console.error("Error fetching parent info:", parentError);
-        // Sử dụng ID làm tên nếu không lấy được thông tin
-        if (matchingForm.parentId) {
-          parentName = `ID: ${matchingForm.parentId}`;
-        }
-      }
-      
-      // Tìm thông tin y tá
-      let nurseName = "";
-      if (matchingForm.nurseId) {
-        try {
-          const nurseId = parseInt(matchingForm.nurseId);
-          if (isNaN(nurseId)) {
-            throw new Error("Invalid nurse ID");
-          }
-          
-          console.log(`Fetching nurse with ID ${nurseId}`);
-          const nurseResponse = await API_SERVICE.nurseAPI.getById(nurseId);
-          console.log(`Nurse response:`, nurseResponse);
-          
-          if (nurseResponse) {
-            nurseName = nurseResponse.fullName || `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim();
-          }
-        } catch (nurseError) {
-          console.error("Error fetching nurse info:", nurseError);
-          // Sử dụng ID làm tên nếu không lấy được thông tin
-          if (matchingForm.nurseId) {
-            nurseName = `ID: ${matchingForm.nurseId}`;
-          }
-        }
-      } else if (schedule && schedule.nurseId) {
-        try {
-          const nurseId = parseInt(schedule.nurseId);
-          if (isNaN(nurseId)) {
-            throw new Error("Invalid nurse ID from schedule");
-          }
-          
-          console.log(`Fetching nurse with ID ${nurseId} from schedule`);
-          const nurseResponse = await API_SERVICE.nurseAPI.getById(nurseId);
-          console.log(`Nurse response from schedule:`, nurseResponse);
-          
-          if (nurseResponse) {
-            nurseName = nurseResponse.fullName || `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim();
-          }
-        } catch (nurseError) {
-          console.error("Error fetching nurse info from schedule:", nurseError);
-          if (schedule.nurseId) {
-            nurseName = `ID: ${schedule.nurseId}`;
-          }
-        }
-      }
-      
-      // Cập nhật state với dữ liệu từ API và thông tin phụ huynh/y tá
-          const formData = {
-        ...matchingForm,
-        parentName: parentName || (matchingForm.parentId ? `ID: ${matchingForm.parentId}` : "Không có"),
-            nurseName: nurseName || "Y tá phụ trách",
-        // Đảm bảo các trường dữ liệu quan trọng
-        consultationScheduleId: scheduleId
-          };
-          
-          // Lưu thông tin debug vào console nhưng không hiển thị trên UI
-          console.debug("Form data debug info:", {
-        matchMethod: "found",
-        originalForm: { ...matchingForm },
-        schedule: schedule ? { ...schedule } : null
-          });
-          
-          setConsultationForm(formData);
     } catch (error) {
-      console.error("Error in fetchConsultationForm:", error);
-      
-      // Thông báo lỗi cho người dùng
+      console.error("Error fetching consultation form:", error);
       setNotif({
-        message: "Không thể lấy dữ liệu form tư vấn: " + (error.message || "Lỗi không xác định"),
+        message: "Không thể tải thông tin form tư vấn: " + (error.message || "Lỗi không xác định"),
         type: "error"
       });
-      
-      // Đóng modal nếu không có dữ liệu
-      setShowFormModal(false);
     } finally {
       setLoading(false);
     }
@@ -1402,23 +1314,33 @@ const ConsultSchedules = () => {
       
       // Gửi thông báo nếu được chọn và có phụ huynh
       if (editFormData.sendNotification && editFormData.parentId) {
-        console.log("Notification would be sent to parent ID:", editFormData.parentId);
-        console.log("Notification data would be:", {
-          recipientId: parseInt(editFormData.parentId),
-          title: `Cập nhật form tư vấn: ${editFormData.title}`,
-          content: `Form tư vấn "${editFormData.title}" đã được cập nhật bởi y tá.`,
-          type: "ConsultationForm",
-          referenceId: formId
-        });
-        
-        // Thông báo cho người dùng biết rằng tính năng gửi thông báo đang được bảo trì
-        setNotif({
-          message: "Đã cập nhật form tư vấn thành công. Tính năng gửi thông báo đang được bảo trì.",
-          type: "success"
-        });
-        
-        // Bỏ qua việc gửi thông báo thực tế để tránh lỗi 404
-        // TODO: Kích hoạt lại khi API notification/create đã được triển khai
+        try {
+          console.log("Sending notification to parent ID:", editFormData.parentId);
+          
+          const notificationData = {
+            recipientId: parseInt(editFormData.parentId),
+            title: `Cập nhật form tư vấn: ${editFormData.title}`,
+            content: `Form tư vấn "${editFormData.title}" đã được cập nhật bởi y tá.`,
+            type: "ConsultationForm",
+            referenceId: formId
+          };
+          
+          // Gọi API để gửi thông báo
+          const notifResult = await API_SERVICE.notificationAPI.create(notificationData);
+          console.log("Notification result:", notifResult);
+          
+          // Thông báo cho người dùng biết rằng tính năng gửi thông báo đang được bảo trì
+          setNotif({
+            message: "Đã cập nhật form tư vấn thành công. Tính năng gửi thông báo đang được bảo trì.",
+            type: "success"
+          });
+        } catch (notifError) {
+          console.error("Error sending notification:", notifError);
+          setNotif({
+            message: "Cập nhật form tư vấn thành công",
+            type: "success"
+          });
+        }
       } else {
         setNotif({
           message: "Cập nhật form tư vấn thành công",
@@ -1792,7 +1714,7 @@ const ConsultSchedules = () => {
                 <div className="info-item">
                     <label>Phụ huynh:</label>
                     <span>{selectedSchedule.parentName || "Không có thông tin"} 
-                    {selectedSchedule.parentId && <span style={{ fontSize: "0.9em", color: "#666", marginLeft: "5px" }}>(ID: {selectedSchedule.parentId})</span>}</span>
+                    <span style={{ fontSize: "0.9em", color: "#666", marginLeft: "5px" }}>(ID: {selectedSchedule.parentId || "N/A"})</span></span>
                 </div>
                 <div className="info-item">
                     <label>Ngày tư vấn:</label>
