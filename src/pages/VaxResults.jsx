@@ -882,13 +882,13 @@ const VaxResults = () => {
       console.log("API response after adding vaccination result:", response);
       
       if (response) {
-        setNotif({
-          message: "Thêm kết quả tiêm chủng thành công",
-          type: "success"
-        });
+      setNotif({
+        message: "Thêm kết quả tiêm chủng thành công",
+        type: "success"
+      });
         
         // Đóng modal và reset form
-        setShowAddModal(false);
+      setShowAddModal(false);
         resetForm();
         
         // Làm mới dữ liệu bảng
@@ -925,8 +925,8 @@ const VaxResults = () => {
     
     // Đợi 1.5 giây để người dùng đọc thông báo
     setTimeout(() => {
-      if (!validateForm()) return;
-      
+    if (!validateForm()) return;
+    
       // Show confirmation dialog instead of immediately submitting
       setShowConfirmUpdate(true);
     }, 1500);
@@ -969,12 +969,12 @@ const VaxResults = () => {
         };
         setSelectedResult(updatedResult);
         
-        setNotif({
+      setNotif({
           message: "Cập nhật kết quả tiêm chủng thành công (chỉ y tá phụ trách, mũi số, ghi chú được cập nhật)",
-          type: "success"
-        });
+        type: "success"
+      });
         
-        setShowEditModal(false);
+      setShowEditModal(false);
         
         // Làm mới dữ liệu bảng
         await fetchVaccinationResults("");
@@ -1076,8 +1076,8 @@ const VaxResults = () => {
         console.error("Error fetching detailed result for view:", error);
         
         // Nếu có lỗi, vẫn hiển thị với dữ liệu ban đầu
-        setSelectedResult(result);
-        setShowViewModal(true);
+    setSelectedResult(result);
+    setShowViewModal(true);
       });
   };
 
@@ -1143,9 +1143,9 @@ const VaxResults = () => {
           studentName: result.studentName || "",
           nurseId: result.nurseId?.toString() || "",
           nurseName: result.nurseName || "",
-          doseNumber: result.doseNumber?.toString() || "1",
-          reactionAfterInjection: result.reactionAfterInjection || "",
-          status: result.status?.toString() || "1",
+      doseNumber: result.doseNumber?.toString() || "1",
+      reactionAfterInjection: result.reactionAfterInjection || "",
+      status: result.status?.toString() || "1",
           note: result.note || "",
           vaccineName: result.vaccineName || "",
           injectionDate: result.injectionDate || "",
@@ -1157,7 +1157,7 @@ const VaxResults = () => {
         
         console.log("Setting fallback form data for edit:", initialFormData);
         setFormData(initialFormData);
-        setShowEditModal(true);
+    setShowEditModal(true);
       });
   };
 
@@ -1250,7 +1250,7 @@ const VaxResults = () => {
           ...prev,
           vaccinationScheduleId: scheduleId.toString()
         }));
-      }
+    }
     }
   };
 
@@ -1340,24 +1340,24 @@ const VaxResults = () => {
     <div className="admin-main">
       <div className="vax-results-container">
         <div className="vax-results-header">
-          <h2>Quản lý kết quả tiêm chủng</h2>
+        <h2>Quản lý kết quả tiêm chủng</h2>
           <div className="vax-results-actions">
             <div className="vax-results-search">
-              <input
-                type="text"
-                placeholder="Tìm kiếm kết quả tiêm..."
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-              />
-              <button 
+            <input
+              type="text"
+              placeholder="Tìm kiếm kết quả tiêm..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+            />
+            <button 
                 className="vax-results-btn search-btn" 
-                onClick={handleSearch}
-                disabled={searchLoading}
-              >
-                {searchLoading ? "Đang tìm..." : <FaSearch />}
-              </button>
-            </div>
+              onClick={handleSearch}
+              disabled={searchLoading}
+            >
+              {searchLoading ? "Đang tìm..." : <FaSearch />}
+            </button>
+          </div>
           </div>
         </div>
         
@@ -1383,8 +1383,8 @@ const VaxResults = () => {
           <div className="vax-results-stat-card cancelled">
             <h4>Đã hủy</h4>
             <p>{statusCounts.cancelled}</p>
-          </div>
         </div>
+      </div>
 
         <div className="vax-results-table-container">
         {loading ? (
@@ -1422,7 +1422,7 @@ const VaxResults = () => {
                     onClick={() => handleDelete(row)}
                   >
                     <FaTrash style={iconStyle.delete} size={18} />
-                  </button>
+                </button>
               </div>
             )}
           />
@@ -1444,20 +1444,20 @@ const VaxResults = () => {
                   <h4 className="section-title">Thông tin cơ bản</h4>
                   <div className="vax-results-form-group">
                     <label>Lịch tiêm chủng <span className="required">*</span></label>
-                    <select
-                      name="vaccinationScheduleId"
+                <select
+                  name="vaccinationScheduleId"
                       value={formData.vaccinationScheduleId || ""}
                       onChange={handleInputChange}
-                      required
-                    >
+                  required
+                >
                       <option value="">-- Chọn lịch tiêm chủng --</option>
-                      {schedules.map((schedule) => (
-                        <option key={schedule.vaccinationScheduleId} value={schedule.vaccinationScheduleId}>
+                  {schedules.map((schedule) => (
+                    <option key={schedule.vaccinationScheduleId} value={schedule.vaccinationScheduleId}>
                           {schedule.vaccineName || schedule.name || `Lịch #${schedule.vaccinationScheduleId}`}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    </option>
+                  ))}
+                </select>
+              </div>
                   
                   <div className="vax-results-form-group">
                     <label>Học sinh <span className="required">*</span></label>
@@ -1500,17 +1500,17 @@ const VaxResults = () => {
                 <div className="info-section">
                   <h4 className="section-title">Kết quả tiêm</h4>
                   <div className="vax-results-form-group">
-                    <label>Mũi số <span className="required">*</span></label>
-                    <input
-                      type="number"
-                      name="doseNumber"
-                      value={formData.doseNumber}
-                      onChange={handleInputChange}
-                      required
-                      min="1"
-                      placeholder="Nhập số mũi tiêm"
-                    />
-                  </div>
+                <label>Mũi số <span className="required">*</span></label>
+                <input
+                  type="number"
+                  name="doseNumber"
+                  value={formData.doseNumber}
+                  onChange={handleInputChange}
+                  required
+                  min="1"
+                  placeholder="Nhập số mũi tiêm"
+                />
+              </div>
                   <div className="vax-results-form-row">
                     <div className="vax-results-form-group">
                       <label>Ngày tiêm</label>
@@ -1532,37 +1532,37 @@ const VaxResults = () => {
                     </div>
                   </div>
                   <div className="vax-results-form-group">
-                    <label>Phản ứng sau tiêm</label>
-                    <textarea
-                      name="reactionAfterInjection"
-                      value={formData.reactionAfterInjection}
-                      onChange={handleInputChange}
-                      placeholder="Nhập phản ứng sau tiêm (nếu có)"
-                      rows="3"
-                    ></textarea>
-                  </div>
+                <label>Phản ứng sau tiêm</label>
+                <textarea
+                  name="reactionAfterInjection"
+                  value={formData.reactionAfterInjection}
+                  onChange={handleInputChange}
+                  placeholder="Nhập phản ứng sau tiêm (nếu có)"
+                  rows="3"
+                ></textarea>
+              </div>
                   <div className="vax-results-form-group">
-                    <label>Trạng thái</label>
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleInputChange}
-                    >
-                      <option value="0">Chưa hoàn thành</option>
-                      <option value="1">Đã hoàn thành</option>
-                      <option value="2">Đã hủy</option>
-                    </select>
-                  </div>
+                <label>Trạng thái</label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                >
+                  <option value="0">Chưa hoàn thành</option>
+                  <option value="1">Đã hoàn thành</option>
+                  <option value="2">Đã hủy</option>
+                </select>
+              </div>
                   <div className="vax-results-form-group">
-                    <label>Ghi chú</label>
-                    <textarea
-                      name="note"
-                      value={formData.note}
-                      onChange={handleInputChange}
-                      placeholder="Nhập ghi chú"
-                      rows="3"
-                    ></textarea>
-                  </div>
+                <label>Ghi chú</label>
+                <textarea
+                  name="note"
+                  value={formData.note}
+                  onChange={handleInputChange}
+                  placeholder="Nhập ghi chú"
+                  rows="3"
+                ></textarea>
+              </div>
                 </div>
                 <div className="vax-results-form-actions">
                   <button type="submit" className="vax-results-btn" disabled={loading}>
@@ -1672,28 +1672,28 @@ const VaxResults = () => {
                 <strong>Lưu ý:</strong> Hiện tại, hệ thống chỉ hỗ trợ cập nhật các trường: Y tá phụ trách, Mũi số và Ghi chú. Các trường khác sẽ không được lưu.
               </div>
               
-              <form onSubmit={handleUpdateResult}>
+            <form onSubmit={handleUpdateResult}>
                 <div className="info-section">
                   <h4 className="section-title">Thông tin cơ bản</h4>
                   <div className="vax-results-form-group">
                     <label>Lịch tiêm chủng <span className="required">*</span></label>
-                    <select
-                      name="vaccinationScheduleId"
+                <select
+                  name="vaccinationScheduleId"
                       value={formData.vaccinationScheduleId || ""}
                       onChange={handleInputChange}
-                      required
+                  required
                       disabled={true} // Disable vì không thể cập nhật
                       style={{ backgroundColor: '#f0f0f0' }} // Thêm style để chỉ ra trường bị disable
-                    >
+                >
                       <option value="">-- Chọn lịch tiêm chủng --</option>
-                      {schedules.map((schedule) => (
-                        <option key={schedule.vaccinationScheduleId} value={schedule.vaccinationScheduleId}>
+                  {schedules.map((schedule) => (
+                    <option key={schedule.vaccinationScheduleId} value={schedule.vaccinationScheduleId}>
                           {schedule.vaccineName || schedule.name || `Lịch #${schedule.vaccinationScheduleId}`}
-                        </option>
-                      ))}
-                    </select>
+                    </option>
+                  ))}
+                </select>
                     <small style={{ color: '#856404' }}>Không thể thay đổi lịch tiêm chủng</small>
-                  </div>
+              </div>
 
                   <div className="vax-results-form-group">
                     <label>Học sinh <span className="required">*</span></label>
@@ -1741,19 +1741,19 @@ const VaxResults = () => {
                 <div className="info-section">
                   <h4 className="section-title">Kết quả tiêm</h4>
                   <div className="vax-results-form-group">
-                    <label>Mũi số <span className="required">*</span></label>
-                    <input
-                      type="number"
-                      name="doseNumber"
-                      value={formData.doseNumber}
-                      onChange={handleInputChange}
-                      required
-                      min="1"
-                      placeholder="Nhập số mũi tiêm"
+                <label>Mũi số <span className="required">*</span></label>
+                <input
+                  type="number"
+                  name="doseNumber"
+                  value={formData.doseNumber}
+                  onChange={handleInputChange}
+                  required
+                  min="1"
+                  placeholder="Nhập số mũi tiêm"
                       style={{ backgroundColor: '#ffffff', borderColor: '#28a745' }} // Highlight trường có thể cập nhật
-                    />
+                />
                     <small style={{ color: '#28a745' }}>Trường này có thể được cập nhật</small>
-                  </div>
+              </div>
                   <div className="vax-results-form-row">
                     <div className="vax-results-form-group">
                       <label>Ngày tiêm</label>
@@ -1781,45 +1781,45 @@ const VaxResults = () => {
                     </div>
                   </div>
                   <div className="vax-results-form-group">
-                    <label>Phản ứng sau tiêm</label>
-                    <textarea
-                      name="reactionAfterInjection"
-                      value={formData.reactionAfterInjection}
-                      onChange={handleInputChange}
-                      placeholder="Nhập phản ứng sau tiêm (nếu có)"
-                      rows="3"
+                <label>Phản ứng sau tiêm</label>
+                <textarea
+                  name="reactionAfterInjection"
+                  value={formData.reactionAfterInjection}
+                  onChange={handleInputChange}
+                  placeholder="Nhập phản ứng sau tiêm (nếu có)"
+                  rows="3"
                       disabled={true} // Disable vì không thể cập nhật
                       style={{ backgroundColor: '#f0f0f0' }} // Style cho trường bị disable
-                    ></textarea>
+                ></textarea>
                     <small style={{ color: '#856404' }}>Không thể thay đổi phản ứng sau tiêm</small>
-                  </div>
+              </div>
                   <div className="vax-results-form-group">
-                    <label>Trạng thái</label>
-                    <select
-                      name="status"
-                      value={formData.status}
-                      onChange={handleInputChange}
+                <label>Trạng thái</label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
                       disabled={true} // Disable vì không thể cập nhật
                       style={{ backgroundColor: '#f0f0f0' }} // Style cho trường bị disable
-                    >
-                      <option value="0">Chưa hoàn thành</option>
-                      <option value="1">Đã hoàn thành</option>
-                      <option value="2">Đã hủy</option>
-                    </select>
+                >
+                  <option value="0">Chưa hoàn thành</option>
+                  <option value="1">Đã hoàn thành</option>
+                  <option value="2">Đã hủy</option>
+                </select>
                     <small style={{ color: '#856404' }}>Không thể thay đổi trạng thái</small>
-                  </div>
+              </div>
                   <div className="vax-results-form-group">
-                    <label>Ghi chú</label>
-                    <textarea
-                      name="note"
-                      value={formData.note}
-                      onChange={handleInputChange}
-                      placeholder="Nhập ghi chú"
-                      rows="3"
+                <label>Ghi chú</label>
+                <textarea
+                  name="note"
+                  value={formData.note}
+                  onChange={handleInputChange}
+                  placeholder="Nhập ghi chú"
+                  rows="3"
                       style={{ backgroundColor: '#ffffff', borderColor: '#28a745' }} // Highlight trường có thể cập nhật
-                    ></textarea>
+                ></textarea>
                     <small style={{ color: '#28a745' }}>Trường này có thể được cập nhật</small>
-                  </div>
+              </div>
                 </div>
                 <div className="vax-results-form-actions">
                   <button type="submit" className="vax-results-btn" disabled={loading}>

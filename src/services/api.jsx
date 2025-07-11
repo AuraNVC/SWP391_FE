@@ -25,10 +25,12 @@ const API = {
     PARENT_CREATE: `${API_BASE_URL}/parent/add`,
     PARENT_UPDATE: (id) => `${API_BASE_URL}/parent/${id}`,
     PARENT_DELETE: (id) => `${API_BASE_URL}/parent/${id}`,
+    PARENT_GET_BY_ID: (id) => `${API_BASE_URL}/parent/${id}`,
     NURSE_LIST: `${API_BASE_URL}/nurse/search`,
     NURSE_CREATE: `${API_BASE_URL}/nurse/add`,
     NURSE_UPDATE: (id) => `${API_BASE_URL}/nurse/${id}`,
     NURSE_DELETE: (id) => `${API_BASE_URL}/nurse/${id}`,
+    NURSE_GET: (id) => `${API_BASE_URL}/nurse/${id}`,
     FORM_LIST: `${API_BASE_URL}/form/search`,
     FORM_CREATE: `${API_BASE_URL}/form/add`,
     FORM_DELETE: (id) => `${API_BASE_URL}/form/${id}`,
@@ -45,7 +47,7 @@ const API = {
     MEDICATION_BY_PRESCRIPTION: (prescriptionId) => `${API_BASE_URL}/medication/getMedicalByPrescription?prescriptionId=${prescriptionId}`,
     PRESCRIPTION_BY_PRESCRIPTION: (prescriptionId) => `${API_BASE_URL}/prescription/getMedicalByPrescription?prescriptionId=${prescriptionId}`,
     PRESCRIPTION_BY_PARENT: (parentId) => `${API_BASE_URL}/prescription/getPrescriptionByParent?parentId=${parentId}`,
-    PARENT_GET: (parentId) => `${API_BASE_URL}/student/getParent${parentId}`,
+    PARENT_GET: (parentId) => `${API_BASE_URL}/parent/${parentId}`,
     HEALTH_PROFILE: (studentId) => `${API_BASE_URL}/healthProfile/${studentId}`,
     HEALTH_PROFILE_LIST: `${API_BASE_URL}/healthProfile/search`,
     HEALTH_PROFILE_UPDATE: `${API_BASE_URL}/healthProfile/update`,
@@ -73,7 +75,14 @@ const API = {
     CONSULTATION_FORM_BY_STUDENT: (studentId) => `${API_BASE_URL}/consultationForm/getByStudent?studentId=${studentId}`,
     CONSULTATION_FORM_DETAIL: (endpoint, id) => `${API_BASE_URL}/consultationForm/${endpoint}/${id}`,
     CONSULTATION_FORM_BY_PARENT: (parentId) => `${API_BASE_URL}/consultationForm/getByParent?parentId=${parentId}`,
+    CONSULTATION_FORM_ADD: `${API_BASE_URL}/consultationForm/add`,
+    CONSULTATION_FORM_UPDATE: `${API_BASE_URL}/consultationForm/update`,
+    CONSULTATION_FORM_GET: (id) => `${API_BASE_URL}/consultationForm/${id}`,
     CONSULTATION_SCHEDULE: (id) => `${API_BASE_URL}/consultationSchedule/${id}`,
+    CONSULTATION_SCHEDULE_SEARCH: `${API_BASE_URL}/consultationSchedule/search`,
+    CONSULTATION_SCHEDULE_CREATE: `${API_BASE_URL}/consultationSchedule/create`,
+    CONSULTATION_SCHEDULE_UPDATE: `${API_BASE_URL}/consultationSchedule/update`,
+    CONSULTATION_SCHEDULE_DELETE: (id) => `${API_BASE_URL}/consultationSchedule/${id}`,
     HEALTH_CHECK_SCHEDULE_BY_FORM: (formId) => `${API_BASE_URL}/healthCheckSchedule/getByForm${formId}`,
     VACCINATION_SCHEDULE_LIST: `${API_BASE_URL}/vaccinationschedule/search`,
     VACCINATION_SCHEDULE_CREATE: `${API_BASE_URL}/vaccinationschedule/create`,
@@ -244,6 +253,10 @@ export const API_SERVICE = {
             body: JSON.stringify(data)
         }),
         getParent: (parentId) => callApi(API.PARENT_GET(parentId)),
+        getById: (id) => callApi(API.PARENT_GET_BY_ID(id), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
         // Thêm các hàm khác nếu cần
     },
     nurseAPI: {
@@ -265,6 +278,10 @@ export const API_SERVICE = {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
+        }),
+        getById: (id) => callApi(API.NURSE_GET(id), {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
         }),
         // Thêm các hàm khác nếu cần
     },
@@ -476,33 +493,37 @@ export const API_SERVICE = {
         getByParent: (parentId) => callApi(API.CONSULTATION_FORM_BY_PARENT(parentId)),
         accept: (id) => callApi(API.CONSULTATION_FORM_ACCEPT(id), { method: 'POST' }),
         reject: (id) => callApi(API.CONSULTATION_FORM_REJECT(id), { method: 'POST' }),
-        create: (data) => callApi(`${API_BASE_URL}/consultationForm/add`, {
+        create: (data) => callApi(API.CONSULTATION_FORM_ADD, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        getBySchedule: (scheduleId) => callApi(`${API_BASE_URL}/consultationForm/getBySchedule?scheduleId=${scheduleId}`),
-        getById: (id) => callApi(`${API_BASE_URL}/consultationForm/${id}`),
+        update: (id, data) => callApi(API.CONSULTATION_FORM_UPDATE, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...data, consultationFormId: id })
+        }),
+        getById: (id) => callApi(API.CONSULTATION_FORM_GET(id)),
     },
     consultationScheduleAPI: {
         get: (id) => callApi(API.CONSULTATION_SCHEDULE(id)),
-        getAll: (data) => callApi(`${API_BASE_URL}/consultationSchedule/search`, {
+        getAll: (data) => callApi(API.CONSULTATION_SCHEDULE_SEARCH, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
         getByStudent: (studentId) => callApi(`${API_BASE_URL}/consultationSchedule/getByStudent?studentId=${studentId}`),
-        create: (data) => callApi(`${API_BASE_URL}/consultationSchedule/create`, {
+        create: (data) => callApi(API.CONSULTATION_SCHEDULE_CREATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        update: (id, data) => callApi(`${API_BASE_URL}/consultationSchedule/update`, {
+        update: (id, data) => callApi(API.CONSULTATION_SCHEDULE_UPDATE, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ...data, consultationScheduleId: id })
         }),
-        delete: (id) => callApi(`${API_BASE_URL}/consultationSchedule/${id}`, {
+        delete: (id) => callApi(API.CONSULTATION_SCHEDULE_DELETE(id), {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         })
@@ -511,6 +532,29 @@ export const API_SERVICE = {
         getPrescriptionByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_BY_PARENT(parentId)),
         getByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_GET_BY_PARENT(parentId)),
         // ... các hàm khác nếu cần
+    },
+    notificationAPI: {
+        create: (data) => {
+            console.log("Attempting to create notification:", data);
+            try {
+                return callApi(`${API_BASE_URL}/notification/create`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data)
+                });
+            } catch (error) {
+                console.error("Error creating notification:", error);
+                // Return a resolved promise with null to prevent crashes
+                return Promise.resolve(null);
+            }
+        },
+        getByUser: (userId) => callApi(`${API_BASE_URL}/notification/getByUser?userId=${userId}`),
+        markAsRead: (notificationId) => callApi(`${API_BASE_URL}/notification/markAsRead/${notificationId}`, {
+            method: "PUT"
+        }),
+        delete: (notificationId) => callApi(`${API_BASE_URL}/notification/delete/${notificationId}`, {
+            method: "DELETE"
+        })
     },
     // Thêm các nhóm API khác nếu cần
 };
