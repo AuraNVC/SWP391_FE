@@ -2,13 +2,33 @@ import React, { useState, useEffect } from "react";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
-import { FaEye, FaEdit, FaTrash, FaPlus, FaSearch, FaSync } from "react-icons/fa";
+import { FaEye, FaEdit, FaTrash, FaPlus, FaSearch, FaSync, FaCalendarAlt } from "react-icons/fa";
 import "../styles/Dashboard.css";
+import "../styles/VaxResults.css";
 
 const ConsultSchedules = () => {
+  // Lấy vai trò người dùng từ localStorage
+  const userRole = localStorage.getItem("userRole") || "";
+  const isNurse = userRole === "nurse";
+  const [showCreateFormModal, setShowCreateFormModal] = useState(false);
   const [schedules, setSchedules] = useState([]);
   const [students, setStudents] = useState([]);
   const [nurses, setNurses] = useState([]);
+  const [parents, setParents] = useState([]);
+  const [deleteId, setDeleteId] = useState(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  
+  // State cho form yêu cầu tư vấn của phụ huynh
+  const [showParentRequestModal, setShowParentRequestModal] = useState(false);
+  const [parentRequestData, setParentRequestData] = useState({
+    parentId: "",
+    studentId: "",
+    preferredDate: new Date().toISOString().split('T')[0],
+    preferredTime: "08:00",
+    reason: "",
+    note: ""
+  });
+  const [showConfirmRequest, setShowConfirmRequest] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -66,6 +86,7 @@ const ConsultSchedules = () => {
     fetchConsultationSchedules();
     fetchStudents();
     fetchNurses();
+    fetchParents();
   }, []);
 
   const fetchConsultationSchedules = async (keyword = "") => {
@@ -372,27 +393,35 @@ const ConsultSchedules = () => {
   };
 
   const handleDeleteSchedule = async (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa lịch tư vấn này không?")) {
-      setLoading(true);
-      try {
-        console.log("Deleting schedule with ID:", id);
-        await API_SERVICE.consultationScheduleAPI.delete(id);
-        
-        setNotif({
-          message: "Xóa lịch tư vấn thành công",
-          type: "success"
-        });
-        
-        fetchConsultationSchedules(searchKeyword);
-      } catch (error) {
-        console.error("Error deleting consultation schedule:", error);
-        setNotif({
-          message: "Không thể xóa lịch tư vấn: " + (error.message || "Lỗi không xác định"),
-          type: "error"
-        });
-      } finally {
-        setLoading(false);
-      }
+    setDeleteId(id);
+    setShowConfirmDelete(true);
+  };
+
+  const confirmDeleteSchedule = async () => {
+    setLoading(true);
+    try {
+      console.log(`Deleting consultation schedule with ID: ${deleteId}`);
+      
+      // Gọi API để xóa lịch tư vấn
+      await API_SERVICE.consultationScheduleAPI.delete(deleteId);
+      
+      // Hiển thị thông báo thành công
+      setNotif({
+        message: "Xóa lịch tư vấn thành công",
+        type: "success"
+      });
+      
+      // Đóng modal và cập nhật danh sách
+      setShowConfirmDelete(false);
+      fetchConsultationSchedules(searchKeyword);
+    } catch (error) {
+      console.error("Error deleting consultation schedule:", error);
+      setNotif({
+        message: "Không thể xóa lịch tư vấn: " + (error.message || "Lỗi không xác định"),
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -400,6 +429,33 @@ const ConsultSchedules = () => {
     console.log("Viewing schedule:", schedule);
     setSelectedSchedule(schedule);
     setShowViewModal(true);
+  };
+  
+  // Hàm lấy danh sách phụ huynh
+  const fetchParents = async () => {
+    try {
+      console.log("Fetching parents...");
+      const response = await API_SERVICE.parentAPI.getAll({ keyword: "" });
+      
+      let parentsData = [];
+      if (Array.isArray(response)) {
+        parentsData = response;
+      } else if (response && Array.isArray(response.data)) {
+        parentsData = response.data;
+      } else {
+        console.warn("Parent API did not return an array:", response);
+      }
+      
+      console.log("Parents data:", parentsData);
+      setParents(parentsData);
+    } catch (error) {
+      console.error("Error fetching parents:", error);
+      setNotif({
+        message: "Không thể tải danh sách phụ huynh: " + (error.message || "Lỗi không xác định"),
+        type: "error"
+      });
+      setParents([]);
+    }
   };
   
   const fetchConsultationForm = async (scheduleId) => {
@@ -631,43 +687,182 @@ const ConsultSchedules = () => {
     return `ID: ${nurseId}`;
   };
 
+  // Hàm xử lý khi thay đổi input trong form yêu cầu tư vấn
+  const handleParentRequestInputChange = (e) => {
+    const { name, value } = e.target;
+    setParentRequestData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  // Hàm validate form yêu cầu tư vấn
+  const validateParentRequestForm = () => {
+    if (!parentRequestData.parentId) {
+      setNotif({
+        message: "Vui lòng chọn phụ huynh",
+        type: "error"
+      });
+      return false;
+    }
+    
+    if (!parentRequestData.studentId) {
+      setNotif({
+        message: "Vui lòng chọn học sinh",
+        type: "error"
+      });
+      return false;
+    }
+    
+    if (!parentRequestData.preferredDate) {
+      setNotif({
+        message: "Vui lòng chọn ngày tư vấn",
+        type: "error"
+      });
+      return false;
+    }
+    
+    if (!parentRequestData.reason) {
+      setNotif({
+        message: "Vui lòng nhập lý do tư vấn",
+        type: "error"
+      });
+      return false;
+    }
+    
+    return true;
+  };
+  
+  // Hàm xử lý khi submit form yêu cầu tư vấn
+  const handleParentRequest = async (e) => {
+    e.preventDefault();
+    if (validateParentRequestForm()) {
+      setShowConfirmRequest(true);
+    }
+  };
+  
+  // Hàm xác nhận gửi yêu cầu tư vấn
+  const confirmParentRequest = async () => {
+    setShowConfirmRequest(false);
+    setLoading(true);
+    try {
+      // Kết hợp ngày và giờ thành một đối tượng Date
+      const preferredDate = new Date(`${parentRequestData.preferredDate}T${parentRequestData.preferredTime}`);
+      
+      // Chuẩn bị dữ liệu để gửi đi
+      const dataToSubmit = {
+        parentId: parseInt(parentRequestData.parentId),
+        studentId: parseInt(parentRequestData.studentId),
+        preferredDate: preferredDate.toISOString(),
+        reason: parentRequestData.reason,
+        note: parentRequestData.note || ""
+      };
+      
+      console.log("Submitting parent request:", dataToSubmit);
+      
+      // Gọi API để tạo yêu cầu tư vấn
+      const response = await API_SERVICE.consultationFormAPI.create(dataToSubmit);
+      
+      console.log("API response:", response);
+      
+      // Hiển thị thông báo thành công
+      setNotif({
+        message: "Gửi yêu cầu tư vấn thành công",
+        type: "success"
+      });
+      
+      // Đóng modal và cập nhật danh sách
+      setShowParentRequestModal(false);
+      
+      // Reset form data
+      setParentRequestData({
+        parentId: "",
+        studentId: "",
+        preferredDate: new Date().toISOString().split('T')[0],
+        preferredTime: "08:00",
+        reason: "",
+        note: ""
+      });
+    } catch (error) {
+      console.error("Error submitting parent request:", error);
+      setNotif({
+        message: "Không thể gửi yêu cầu tư vấn: " + (error.message || "Lỗi không xác định"),
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  // Hàm xử lý khi chọn phụ huynh
+  const handleParentChange = async (e) => {
+    const parentId = e.target.value;
+    setParentRequestData(prev => ({
+      ...prev,
+      parentId,
+      studentId: ""
+    }));
+    
+    if (parentId) {
+      try {
+        const parentStudents = await API_SERVICE.studentAPI.getByParent(parentId);
+        // Cập nhật danh sách học sinh của phụ huynh
+        if (parentStudents && Array.isArray(parentStudents)) {
+          setStudents(prevStudents => {
+            // Lọc ra các học sinh không thuộc phụ huynh này
+            const otherStudents = prevStudents.filter(s => !parentStudents.some(ps => ps.studentId === s.studentId));
+            // Kết hợp với học sinh của phụ huynh này
+            return [...parentStudents, ...otherStudents];
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching students by parent:", error);
+      }
+    }
+  };
+
   return (
     <div className="admin-main">
-      <div className="admin-header">
-        <h2>Quản lý lịch tư vấn</h2>
-        <div className="admin-header-actions">
-          <div className="search-container">
-            <input
-              type="text"
-              placeholder="Tìm kiếm lịch tư vấn..."
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              className="admin-search"
-            />
-            <button 
-              className="admin-btn search-btn" 
-              onClick={handleSearch}
-              disabled={searchLoading}
-            >
-              {searchLoading ? "Đang tìm..." : <FaSearch />}
+      <div className="vax-results-container">
+        <div className="vax-results-header">
+          <h2 className="dashboard-title">Quản lý lịch tư vấn</h2>
+          <div className="vax-results-actions">
+            <div className="vax-results-search">
+              <input
+                type="text"
+                placeholder="Tìm kiếm lịch tư vấn..."
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+              />
+              <button 
+                className="vax-results-btn search-btn" 
+                onClick={handleSearch}
+                disabled={searchLoading}
+              >
+                {searchLoading ? "Đang tìm..." : <FaSearch />}
+              </button>
+              <button
+                className="vax-results-btn refresh-btn"
+                onClick={handleRefresh}
+                disabled={loading}
+                title="Làm mới dữ liệu"
+              >
+                <FaSync />
+              </button>
+            </div>
+            <button className="vax-results-btn" onClick={() => setShowAddModal(true)}>
+              <FaPlus /> Thêm lịch tư vấn
             </button>
-            <button
-              className="admin-btn refresh-btn"
-              onClick={handleRefresh}
-              disabled={loading}
-              title="Làm mới dữ liệu"
-            >
-              <FaSync />
-            </button>
+            {isNurse && (
+              <button className="vax-results-btn" onClick={() => setShowParentRequestModal(true)}>
+                <FaCalendarAlt /> Yêu cầu tư vấn
+              </button>
+            )}
           </div>
-          <button className="admin-btn" onClick={() => setShowAddModal(true)}>
-            <FaPlus /> Thêm lịch tư vấn
-          </button>
         </div>
-      </div>
 
-      <div className="admin-table-container">
+      <div className="vax-results-table-container">
         {loading ? (
           <div className="loading-spinner">Đang tải...</div>
         ) : (
@@ -706,6 +901,7 @@ const ConsultSchedules = () => {
             )}
           />
         )}
+      </div>
       </div>
 
       {/* Modal thêm lịch tư vấn */}
@@ -1035,6 +1231,165 @@ const ConsultSchedules = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal xác nhận xóa lịch tư vấn */}
+      {showConfirmDelete && deleteId && (
+        <div className="modal-overlay">
+          <div className="modal-container" style={{ maxWidth: "400px" }}>
+            <div className="modal-header">
+              <h3>Xác nhận xóa lịch tư vấn</h3>
+              <button className="close-btn" onClick={() => setShowConfirmDelete(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>Bạn có chắc chắn muốn xóa lịch tư vấn này không?</p>
+            </div>
+            <div className="modal-footer">
+              <button className="admin-btn" onClick={confirmDeleteSchedule} disabled={loading}>
+                {loading ? "Đang xóa..." : "Xóa"}
+              </button>
+              <button className="admin-btn cancel-btn" onClick={() => setShowConfirmDelete(false)} disabled={loading}>
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal form yêu cầu tư vấn của phụ huynh */}
+      {showParentRequestModal && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <div className="modal-header">
+              <h3>Gửi yêu cầu tư vấn</h3>
+              <button className="close-btn" onClick={() => setShowParentRequestModal(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <form onSubmit={handleParentRequest}>
+                <div className="form-group">
+                  <label>Phụ huynh <span className="required">*</span></label>
+                  <select
+                    name="parentId"
+                    value={parentRequestData.parentId}
+                    onChange={handleParentChange}
+                    required
+                    className="form-control"
+                  >
+                    <option value="">-- Chọn phụ huynh --</option>
+                    {parents.map((parent) => (
+                      <option key={parent.parentId} value={parent.parentId}>
+                        {parent.fullName || `${parent.firstName || ''} ${parent.lastName || ''}`.trim() || "Không có tên"} (ID: {parent.parentId})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Học sinh <span className="required">*</span></label>
+                  <select
+                    name="studentId"
+                    value={parentRequestData.studentId}
+                    onChange={handleParentRequestInputChange}
+                    required
+                    className="form-control"
+                    disabled={!parentRequestData.parentId}
+                  >
+                    <option value="">-- Chọn học sinh --</option>
+                    {students.filter(s => !parentRequestData.parentId || s.parentId === parseInt(parentRequestData.parentId)).map((student) => (
+                      <option key={student.studentId} value={student.studentId}>
+                        {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || "Không có tên"} (ID: {student.studentId})
+                      </option>
+                    ))}
+                  </select>
+                  {!parentRequestData.parentId && (
+                    <div className="form-field-hint">Vui lòng chọn phụ huynh trước</div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>Ngày mong muốn <span className="required">*</span></label>
+                  <input
+                    type="date"
+                    name="preferredDate"
+                    value={parentRequestData.preferredDate}
+                    onChange={handleParentRequestInputChange}
+                    required
+                    className="form-control"
+                    min={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Giờ mong muốn <span className="required">*</span></label>
+                  <input
+                    type="time"
+                    name="preferredTime"
+                    value={parentRequestData.preferredTime}
+                    onChange={handleParentRequestInputChange}
+                    required
+                    className="form-control"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Lý do tư vấn <span className="required">*</span></label>
+                  <textarea
+                    name="reason"
+                    value={parentRequestData.reason}
+                    onChange={handleParentRequestInputChange}
+                    required
+                    className="form-control"
+                    rows={3}
+                    placeholder="Nhập lý do cần tư vấn"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Ghi chú</label>
+                  <textarea
+                    name="note"
+                    value={parentRequestData.note}
+                    onChange={handleParentRequestInputChange}
+                    className="form-control"
+                    rows={2}
+                    placeholder="Nhập ghi chú nếu có"
+                  />
+                </div>
+                <div className="form-actions">
+                  <button type="submit" className="admin-btn confirm-btn" disabled={loading}>
+                    {loading ? "Đang gửi..." : "Gửi yêu cầu"}
+                  </button>
+                  <button
+                    type="button"
+                    className="admin-btn cancel-btn"
+                    onClick={() => setShowParentRequestModal(false)}
+                    disabled={loading}
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Modal xác nhận gửi yêu cầu tư vấn */}
+      {showConfirmRequest && (
+        <div className="modal-overlay">
+          <div className="modal-container" style={{ maxWidth: "400px" }}>
+            <div className="modal-header">
+              <h3>Xác nhận gửi yêu cầu</h3>
+              <button className="close-btn" onClick={() => setShowConfirmRequest(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              <p>Bạn có chắc chắn muốn gửi yêu cầu tư vấn này không?</p>
+            </div>
+            <div className="modal-footer">
+              <button className="admin-btn confirm-btn" onClick={confirmParentRequest} disabled={loading}>
+                {loading ? "Đang gửi..." : "Gửi"}
+              </button>
+              <button className="admin-btn cancel-btn" onClick={() => setShowConfirmRequest(false)} disabled={loading}>
+                Hủy
+              </button>
+            </div>
           </div>
         </div>
       )}

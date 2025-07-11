@@ -1,5 +1,5 @@
 // eslint-disable-next-line no-undef
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5273/api";
 
 // Định nghĩa endpoint
 const API = {
@@ -476,9 +476,36 @@ export const API_SERVICE = {
         getByParent: (parentId) => callApi(API.CONSULTATION_FORM_BY_PARENT(parentId)),
         accept: (id) => callApi(API.CONSULTATION_FORM_ACCEPT(id), { method: 'POST' }),
         reject: (id) => callApi(API.CONSULTATION_FORM_REJECT(id), { method: 'POST' }),
+        create: (data) => callApi(`${API_BASE_URL}/consultationForm/add`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getBySchedule: (scheduleId) => callApi(`${API_BASE_URL}/consultationForm/getBySchedule?scheduleId=${scheduleId}`),
+        getById: (id) => callApi(`${API_BASE_URL}/consultationForm/${id}`),
     },
     consultationScheduleAPI: {
         get: (id) => callApi(API.CONSULTATION_SCHEDULE(id)),
+        getAll: (data) => callApi(`${API_BASE_URL}/consultationSchedule/search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        getByStudent: (studentId) => callApi(`${API_BASE_URL}/consultationSchedule/getByStudent?studentId=${studentId}`),
+        create: (data) => callApi(`${API_BASE_URL}/consultationSchedule/create`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (id, data) => callApi(`${API_BASE_URL}/consultationSchedule/update`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...data, consultationScheduleId: id })
+        }),
+        delete: (id) => callApi(`${API_BASE_URL}/consultationSchedule/${id}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        })
     },
     parentPrescriptionAPI: {
         getPrescriptionByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_BY_PARENT(parentId)),
