@@ -172,22 +172,34 @@ const ConsultSchedules = () => {
         // Lấy thông tin phụ huynh nếu có studentData và parentId
         let parentName = "";
         let parentId = null;
-        if (studentData && studentData.parentId) {
-          parentId = parseInt(studentData.parentId);
-          if (!isNaN(parentId)) {
-            // Tìm trong danh sách đã tải
-            const parentData = parents.find(p => p.parentId === parentId);
-            if (parentData) {
-              parentName = parentData.fullName || `${parentData.firstName || ''} ${parentData.lastName || ''}`.trim();
-            } else {
-              // Nếu không tìm thấy, thử tải thông tin phụ huynh từ API
-              try {
-                const parentResponse = await API_SERVICE.parentAPI.getById(parentId);
-                if (parentResponse) {
-                  parentName = parentResponse.fullName || `${parentResponse.firstName || ''} ${parentResponse.lastName || ''}`.trim();
+        if (studentData) {
+          // Kiểm tra nếu student có thuộc tính parent trực tiếp
+          if (studentData.parent && studentData.parent.parentId) {
+            parentId = parseInt(studentData.parent.parentId);
+            parentName = studentData.parent.fullName || `${studentData.parent.firstName || ''} ${studentData.parent.lastName || ''}`.trim();
+            console.log(`Found parent info directly from student object: ${parentName} (ID: ${parentId})`);
+          } 
+          // Nếu không có parent trực tiếp nhưng có parentId
+          else if (studentData.parentId) {
+            parentId = parseInt(studentData.parentId);
+            if (!isNaN(parentId)) {
+              // Tìm trong danh sách đã tải
+              const parentData = parents.find(p => p.parentId === parentId);
+              if (parentData) {
+                parentName = parentData.fullName || `${parentData.firstName || ''} ${parentData.lastName || ''}`.trim();
+                console.log(`Found parent in cached list: ${parentName} (ID: ${parentId})`);
+              } else {
+                // Nếu không tìm thấy, thử tải thông tin phụ huynh từ API
+                try {
+                  const parentResponse = await API_SERVICE.parentAPI.getById(parentId);
+                  console.log(`Parent API response for ID ${parentId}:`, parentResponse);
+                  if (parentResponse) {
+                    parentName = parentResponse.fullName || `${parentResponse.firstName || ''} ${parentResponse.lastName || ''}`.trim();
+                    console.log(`Found parent from API: ${parentName} (ID: ${parentId})`);
+                  }
+                } catch (parentError) {
+                  console.error(`Error fetching parent with ID ${parentId}:`, parentError);
                 }
-              } catch (parentError) {
-                console.error(`Error fetching parent with ID ${parentId}:`, parentError);
               }
             }
           }
@@ -949,11 +961,11 @@ const ConsultSchedules = () => {
               const nurseResponse = await API_SERVICE.nurseAPI.getById(nurseIdInt);
               console.log(`Nurse response:`, nurseResponse);
               
-                if (nurseResponse) {
-                  nurseName = nurseResponse.fullName || `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim();
+              if (nurseResponse) {
+                nurseName = nurseResponse.fullName || `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim();
               }
-                }
-              } catch (nurseError) {
+            }
+          } catch (nurseError) {
             console.error("Error fetching nurse info:", nurseError);
             nurseName = `ID: ${nurseId}`;
           }
@@ -968,12 +980,12 @@ const ConsultSchedules = () => {
               const parentResponse = await API_SERVICE.parentAPI.getById(parentIdInt);
               console.log(`Parent response:`, parentResponse);
               
-            if (parentResponse) {
-              parentName = parentResponse.fullName || `${parentResponse.firstName || ''} ${parentResponse.lastName || ''}`.trim();
+              if (parentResponse) {
+                parentName = parentResponse.fullName || `${parentResponse.firstName || ''} ${parentResponse.lastName || ''}`.trim();
+              }
             }
-          }
-        } catch (parentError) {
-          console.error("Error fetching parent info:", parentError);
+          } catch (parentError) {
+            console.error("Error fetching parent info:", parentError);
             parentName = `ID: ${parentId}`;
           }
         }
@@ -1026,16 +1038,28 @@ const ConsultSchedules = () => {
               studentName = student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim();
               
               // Lấy thông tin phụ huynh từ học sinh
-              if (student.parentId) {
-                parentId = student.parentId;
-                try {
-                  const parent = await API_SERVICE.parentAPI.getById(parentId);
-                  if (parent) {
-                    parentName = parent.fullName || `${parent.firstName || ''} ${parent.lastName || ''}`.trim();
+              // Kiểm tra nếu student có thuộc tính parent trực tiếp
+              if (student.parent && student.parent.parentId) {
+                parentId = parseInt(student.parent.parentId);
+                parentName = student.parent.fullName || `${student.parent.firstName || ''} ${student.parent.lastName || ''}`.trim();
+                console.log(`Found parent info directly from student object: ${parentName} (ID: ${parentId})`);
+              } 
+              // Nếu không có parent trực tiếp nhưng có parentId
+              else if (student.parentId) {
+                parentId = parseInt(student.parentId);
+                if (!isNaN(parentId)) {
+                  try {
+                    console.log(`Fetching parent info for ID ${parentId}`);
+                    const parent = await API_SERVICE.parentAPI.getById(parentId);
+                    console.log(`Parent API response:`, parent);
+                    if (parent) {
+                      parentName = parent.fullName || `${parent.firstName || ''} ${parent.lastName || ''}`.trim();
+                      console.log(`Found parent from API: ${parentName} (ID: ${parentId})`);
+                    }
+                  } catch (parentError) {
+                    console.error("Error fetching parent info:", parentError);
+                    parentName = `ID: ${parentId}`;
                   }
-                } catch (parentError) {
-                  console.error("Error fetching parent info:", parentError);
-                  parentName = `ID: ${parentId}`;
                 }
               }
             }
@@ -1060,8 +1084,8 @@ const ConsultSchedules = () => {
         
         // Tạo form tạm thời
         const placeholderForm = {
-            consultationFormId: null,
-            consultationScheduleId: scheduleId,
+          consultationFormId: null,
+          consultationScheduleId: scheduleId,
           title: schedule ? `Tư vấn ngày ${new Date(schedule.consultDate).toLocaleDateString('vi-VN')}` : "Form tư vấn mới",
           content: "",
           status: 0,

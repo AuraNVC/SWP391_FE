@@ -491,16 +491,6 @@ export const API_SERVICE = {
         getByStudent: (studentId) => callApi(API.CONSULTATION_FORM_BY_STUDENT(studentId)),
         getDetail: (endpoint, id) => callApi(API.CONSULTATION_FORM_DETAIL(endpoint, id)),
         getByParent: (parentId) => callApi(API.CONSULTATION_FORM_BY_PARENT(parentId)),
-        // 删除不存在的方法
-        // getBySchedule: (scheduleId) => {
-        //     console.log(`Attempting to get consultation form by schedule ID: ${scheduleId}`);
-        //     return callApi(API.CONSULTATION_FORM_BY_SCHEDULE(scheduleId))
-        //         .catch(error => {
-        //             console.error(`Error getting form by schedule ID ${scheduleId}:`, error);
-        //             // Return null instead of rejecting the promise
-        //             return null;
-        //         });
-        // },
         accept: (id) => callApi(API.CONSULTATION_FORM_ACCEPT(id), { method: 'POST' }),
         reject: (id) => callApi(API.CONSULTATION_FORM_REJECT(id), { method: 'POST' }),
         create: (data) => callApi(API.CONSULTATION_FORM_ADD, {
