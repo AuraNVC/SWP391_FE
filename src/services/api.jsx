@@ -44,7 +44,12 @@ const API = {
     PARENT_PRESCRIPTION_BY_STUDENT: (studentId) => `${API_BASE_URL}/parent-prescription/student/${studentId}`,
     PARENT_PRESCRIPTION_BY_PARENT: (parentId) => `${API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${parentId}`,
     PARENT_PRESCRIPTION_GET_BY_PARENT: (parentId) => `${API_BASE_URL}/parentPrescription/getByParent?parentId=${parentId}`,
+    PARENT_PRESCRIPTION_SEARCH: `${API_BASE_URL}/parentPrescription/search`,
     MEDICATION_BY_PRESCRIPTION: (prescriptionId) => `${API_BASE_URL}/medication/getMedicalByPrescription?prescriptionId=${prescriptionId}`,
+    MEDICATION_BY_STUDENT: (studentId) => `${API_BASE_URL}/medication/getMedicalByStudent?studentId=${studentId}`,
+    MEDICATION_GET_BY_ID: (id) => `${API_BASE_URL}/medication/${id}`,
+    MEDICATION_SEARCH: `${API_BASE_URL}/medication/search`,
+    MEDICATION_UPDATE: `${API_BASE_URL}/medication/update`,
     PRESCRIPTION_BY_PRESCRIPTION: (prescriptionId) => `${API_BASE_URL}/prescription/getMedicalByPrescription?prescriptionId=${prescriptionId}`,
     PRESCRIPTION_BY_PARENT: (parentId) => `${API_BASE_URL}/prescription/getPrescriptionByParent?parentId=${parentId}`,
     PARENT_GET: (parentId) => `${API_BASE_URL}/parent/${parentId}`,
@@ -350,8 +355,20 @@ export const API_SERVICE = {
     },
     medicationAPI: {
         getByPrescription: (prescriptionId) => callApi(API.MEDICATION_BY_PRESCRIPTION(prescriptionId)),
+        getByStudent: (studentId) => callApi(API.MEDICATION_BY_STUDENT(studentId)),
+        getById: (id) => callApi(API.MEDICATION_GET_BY_ID(id)),
+        search: (data) => callApi(API.MEDICATION_SEARCH, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
         add: (data) => callApi(API.MEDICATION_ADD, {
             method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (data) => callApi(API.MEDICATION_UPDATE, {
+            method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
@@ -531,6 +548,16 @@ export const API_SERVICE = {
     parentPrescriptionAPI: {
         getPrescriptionByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_BY_PARENT(parentId)),
         getByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_GET_BY_PARENT(parentId)),
+        getAll: (params) => callApi(API.PARENT_PRESCRIPTION_SEARCH, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(params)
+        }),
+        update: (id, data) => callApi(`${API_BASE_URL}/parentPrescription/update`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({...data, prescriptionId: id})
+        }),
         // ... các hàm khác nếu cần
     },
     notificationAPI: {

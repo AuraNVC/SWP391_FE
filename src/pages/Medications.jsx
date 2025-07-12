@@ -23,10 +23,10 @@ const Medications = () => {
   const { setNotif } = useNotification();
 
   const columns = [
-    { title: "ID", dataIndex: "parentPrescriptionId" },
+    { title: "ID", dataIndex: "prescriptionId" },
     { title: "Phụ huynh", dataIndex: "parentName" },
     { title: "Học sinh", dataIndex: "studentName" },
-    { title: "Tên thuốc", dataIndex: "medicineName" },
+    { title: "Tên thuốc", dataIndex: "medicationName" },
     { title: "Ngày gửi", dataIndex: "createdDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" },
     { title: "Trạng thái", dataIndex: "status", render: (status) => getStatusText(status) }
   ];
@@ -64,8 +64,65 @@ const Medications = () => {
         params.status = statusFilter;
       }
       
-      const response = await API_SERVICE.parentPrescriptionAPI.getAll(params);
-      setMedications(response);
+      const prescriptionsResponse = await API_SERVICE.parentPrescriptionAPI.getAll(params);
+      
+      // Xử lý dữ liệu để hiển thị
+      const processedMedications = await Promise.all(
+        prescriptionsResponse.map(async (prescription) => {
+          // Lấy thông tin thuốc từ đơn thuốc
+          let medicationName = prescription.parentNote || "Không có tên thuốc";
+          let studentName = "Không xác định";
+          
+          try {
+            // Lấy danh sách thuốc theo đơn thuốc
+            const medicationsResponse = await API_SERVICE.medicationAPI.getByPrescription(prescription.prescriptionId);
+            
+            // Nếu có thuốc, lấy tên thuốc đầu tiên
+            if (medicationsResponse && medicationsResponse.length > 0) {
+              medicationName = medicationsResponse[0].medicationName || prescription.parentNote || "Không có tên thuốc";
+              
+              // Lấy thông tin học sinh từ thuốc
+              if (medicationsResponse[0].studentId) {
+                try {
+                  const studentResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:5273/api"}/student/${medicationsResponse[0].studentId}`);
+                  if (studentResponse.ok) {
+                    const studentData = await studentResponse.json();
+                    studentName = studentData.fullName || "Không xác định";
+                  }
+                } catch (studentError) {
+                  console.error("Error fetching student:", studentError);
+                }
+              }
+            }
+          } catch (medError) {
+            console.error("Error fetching medications:", medError);
+          }
+          
+          // Lấy thông tin phụ huynh
+          let parentName = "Không xác định";
+          if (prescription.parentId) {
+            try {
+              const parentResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:5273/api"}/parent/${prescription.parentId}`);
+              if (parentResponse.ok) {
+                const parentData = await parentResponse.json();
+                parentName = parentData.fullName || "Không xác định";
+              }
+            } catch (parentError) {
+              console.error("Error fetching parent:", parentError);
+            }
+          }
+          
+          return {
+            ...prescription,
+            medicationName,
+            studentName,
+            parentName,
+            createdDate: prescription.submittedDate
+          };
+        })
+      );
+      
+      setMedications(processedMedications);
     } catch (error) {
       console.error("Error fetching medications:", error);
       setNotif({
@@ -104,7 +161,7 @@ const Medications = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await API_SERVICE.parentPrescriptionAPI.update(selectedMedication.parentPrescriptionId, {
+      await API_SERVICE.parentPrescriptionAPI.update(selectedMedication.prescriptionId, {
         ...selectedMedication,
         status: formData.status,
         nurseId: localStorage.getItem("userId") || "",
@@ -262,7 +319,7 @@ const Medications = () => {
             <div className="modal-body">
               <div className="info-grid">
                 <div className="info-item">
-                  <strong>ID:</strong> {selectedMedication.parentPrescriptionId}
+                  <strong>ID:</strong> {selectedMedication.prescriptionId}
                 </div>
                 <div className="info-item">
                   <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
@@ -271,7 +328,7 @@ const Medications = () => {
                   <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
                 </div>
                 <div className="info-item">
-                  <strong>Tên thuốc:</strong> {selectedMedication.medicineName || "Không có"}
+                  <strong>Tên thuốc:</strong> {selectedMedication.medicationName || "Không có"}
                 </div>
                 <div className="info-item">
                   <strong>Liều lượng:</strong> {selectedMedication.dosage || "Không có"}
@@ -331,7 +388,7 @@ const Medications = () => {
                   <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
                 </div>
                 <div className="info-item">
-                  <strong>Tên thuốc:</strong> {selectedMedication.medicineName || "Không có"}
+                  <strong>Tên thuốc:</strong> {selectedMedication.medicationName || "Không có"}
                 </div>
               </div>
               <div className="form-group">
