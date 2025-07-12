@@ -27,6 +27,8 @@ const Medications = () => {
     { title: "Phụ huynh", dataIndex: "parentName" },
     { title: "Học sinh", dataIndex: "studentName" },
     { title: "Tên thuốc", dataIndex: "medicationName" },
+    { title: "Liều lượng", dataIndex: "dosage" },
+    { title: "Lịch uống", dataIndex: "schedule" },
     { title: "Ngày gửi", dataIndex: "createdDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" },
     { title: "Trạng thái", dataIndex: "status", render: (status) => getStatusText(status) }
   ];
@@ -72,6 +74,10 @@ const Medications = () => {
           // Lấy thông tin thuốc từ đơn thuốc
           let medicationName = prescription.parentNote || "Không có tên thuốc";
           let studentName = "Không xác định";
+          let dosage = "Không có";
+          let quantity = null;
+          let remainingQuantity = null;
+          let medicationId = null;
           
           try {
             // Lấy danh sách thuốc theo đơn thuốc
@@ -79,12 +85,17 @@ const Medications = () => {
             
             // Nếu có thuốc, lấy tên thuốc đầu tiên
             if (medicationsResponse && medicationsResponse.length > 0) {
-              medicationName = medicationsResponse[0].medicationName || prescription.parentNote || "Không có tên thuốc";
+              const medication = medicationsResponse[0];
+              medicationName = medication.medicationName || prescription.parentNote || "Không có tên thuốc";
+              dosage = medication.dosage || "Không có";
+              quantity = medication.quantity;
+              remainingQuantity = medication.remainingQuantity;
+              medicationId = medication.medicationId;
               
               // Lấy thông tin học sinh từ thuốc
-              if (medicationsResponse[0].studentId) {
+              if (medication.studentId) {
                 try {
-                  const studentResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:5273/api"}/student/${medicationsResponse[0].studentId}`);
+                  const studentResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:5273/api"}/student/${medication.studentId}`);
                   if (studentResponse.ok) {
                     const studentData = await studentResponse.json();
                     studentName = studentData.fullName || "Không xác định";
@@ -117,7 +128,12 @@ const Medications = () => {
             medicationName,
             studentName,
             parentName,
-            createdDate: prescription.submittedDate
+            createdDate: prescription.submittedDate,
+            dosage,
+            quantity,
+            remainingQuantity,
+            medicationId,
+            schedule: prescription.schedule || "Không có"
           };
         })
       );
@@ -334,22 +350,35 @@ const Medications = () => {
                   <strong>Liều lượng:</strong> {selectedMedication.dosage || "Không có"}
                 </div>
                 <div className="info-item">
-                  <strong>Thời gian dùng:</strong> {selectedMedication.frequency || "Không có"}
+                  <strong>Lịch uống:</strong> {selectedMedication.schedule || "Không có"}
                 </div>
                 <div className="info-item">
-                  <strong>Ngày bắt đầu:</strong> {selectedMedication.startDate ? new Date(selectedMedication.startDate).toLocaleDateString('vi-VN') : "Không có"}
+                  <strong>Số lượng:</strong> {selectedMedication.quantity || "Không có"}
                 </div>
                 <div className="info-item">
-                  <strong>Ngày kết thúc:</strong> {selectedMedication.endDate ? new Date(selectedMedication.endDate).toLocaleDateString('vi-VN') : "Không có"}
+                  <strong>Số lượng còn lại:</strong> {selectedMedication.remainingQuantity || "Không có"}
+                </div>
+                <div className="info-item">
+                  <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}
                 </div>
                 <div className="info-item">
                   <strong>Trạng thái:</strong> {getStatusText(selectedMedication.status)}
                 </div>
                 <div className="info-item full-width">
-                  <strong>Hướng dẫn:</strong> {selectedMedication.instructions || "Không có"}
+                  <strong>Ghi chú phụ huynh:</strong> {selectedMedication.parentNote || "Không có"}
                 </div>
+                {selectedMedication.prescriptionFile && (
+                  <div className="info-item full-width">
+                    <strong>Tệp đơn thuốc:</strong>
+                    <div>
+                      <a href={selectedMedication.prescriptionFile} target="_blank" rel="noopener noreferrer">
+                        Xem đơn thuốc
+                      </a>
+                    </div>
+                  </div>
+                )}
                 <div className="info-item full-width">
-                  <strong>Ghi chú:</strong> {selectedMedication.note || "Không có"}
+                  <strong>Ghi chú y tá:</strong> {selectedMedication.note || "Không có"}
                 </div>
               </div>
             </div>
@@ -382,6 +411,9 @@ const Medications = () => {
             <form onSubmit={handleProcessMedication}>
               <div className="info-grid">
                 <div className="info-item">
+                  <strong>ID:</strong> {selectedMedication.prescriptionId}
+                </div>
+                <div className="info-item">
                   <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
                 </div>
                 <div className="info-item">
@@ -390,6 +422,34 @@ const Medications = () => {
                 <div className="info-item">
                   <strong>Tên thuốc:</strong> {selectedMedication.medicationName || "Không có"}
                 </div>
+                <div className="info-item">
+                  <strong>Liều lượng:</strong> {selectedMedication.dosage || "Không có"}
+                </div>
+                <div className="info-item">
+                  <strong>Lịch uống:</strong> {selectedMedication.schedule || "Không có"}
+                </div>
+                <div className="info-item">
+                  <strong>Số lượng:</strong> {selectedMedication.quantity || "Không có"}
+                </div>
+                <div className="info-item">
+                  <strong>Số lượng còn lại:</strong> {selectedMedication.remainingQuantity || "Không có"}
+                </div>
+                <div className="info-item">
+                  <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}
+                </div>
+                <div className="info-item full-width">
+                  <strong>Ghi chú phụ huynh:</strong> {selectedMedication.parentNote || "Không có"}
+                </div>
+                {selectedMedication.prescriptionFile && (
+                  <div className="info-item full-width">
+                    <strong>Tệp đơn thuốc:</strong>
+                    <div>
+                      <a href={selectedMedication.prescriptionFile} target="_blank" rel="noopener noreferrer">
+                        Xem đơn thuốc
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="form-group">
                 <label>Trạng thái <span className="required">*</span></label>
@@ -406,7 +466,7 @@ const Medications = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label>Ghi chú</label>
+                <label>Ghi chú y tá</label>
                 <textarea
                   name="note"
                   value={formData.note}
