@@ -4,6 +4,7 @@ import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
 import { FaEye, FaEdit, FaCheck, FaTimes, FaSearch } from "react-icons/fa";
 import "../styles/Dashboard.css";
+// Không cần import file CSS riêng nữa
 
 const Medications = () => {
   const [medications, setMedications] = useState([]);
@@ -21,6 +22,7 @@ const Medications = () => {
   });
 
   const { setNotif } = useNotification();
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5273/api";
 
   const columns = [
     { title: "ID", dataIndex: "prescriptionId" },
@@ -30,7 +32,27 @@ const Medications = () => {
     { title: "Liều lượng", dataIndex: "dosage" },
     { title: "Lịch uống", dataIndex: "schedule" },
     { title: "Ngày gửi", dataIndex: "createdDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" },
-    { title: "Trạng thái", dataIndex: "status", render: (status) => getStatusText(status) }
+    { 
+      title: "Trạng thái", 
+      dataIndex: "status", 
+      render: (status) => {
+        let style = {};
+        let text = getStatusText(status);
+        
+        // Debug trạng thái
+        console.log(`Rendering status: ${status}, type: ${typeof status}, text: ${text}`);
+        
+        if (status === "0" || status === 0) {
+          style = { color: "#ffc107", fontWeight: "500" }; // Màu vàng cho Chờ xử lý
+        } else if (status === "1" || status === 1) {
+          style = { color: "#28a745", fontWeight: "500" }; // Màu xanh lá cho Đã chấp nhận
+        } else if (status === "2" || status === 2) {
+          style = { color: "#dc3545", fontWeight: "500" }; // Màu đỏ cho Đã từ chối
+        }
+        
+        return <span style={style}>{text}</span>;
+      }
+    }
   ];
 
   const iconStyle = {
@@ -41,12 +63,34 @@ const Medications = () => {
   };
 
   const getStatusText = (status) => {
+    // Chuyển đổi status sang chuỗi để đảm bảo so sánh chính xác
+    const statusStr = String(status);
+    
     const statusMap = {
       "0": "Chờ xử lý",
       "1": "Đã chấp nhận",
       "2": "Đã từ chối"
     };
-    return statusMap[status] || "Không xác định";
+    
+    return statusMap[statusStr] || "Không xác định";
+  };
+
+  // Hàm xử lý đường dẫn file đơn thuốc
+  const getPrescriptionFileUrl = (filePathOrName) => {
+    if (!filePathOrName) return null;
+    
+    // Nếu đã là URL đầy đủ, trả về nguyên dạng
+    if (filePathOrName.startsWith('http')) {
+      return filePathOrName;
+    }
+    
+    // Xử lý tên file để đảm bảo định dạng đúng
+    const fileName = filePathOrName.includes('/') 
+      ? filePathOrName.split('/').pop() 
+      : filePathOrName;
+    
+    // Trả về đường dẫn đầy đủ
+    return `${API_BASE_URL}/files/prescriptions/${fileName}`;
   };
 
   useEffect(() => {
@@ -55,6 +99,7 @@ const Medications = () => {
 
   const fetchMedications = async (keyword = "") => {
     setLoading(true);
+    
     try {
       const params = {
         keyword: keyword,
@@ -67,10 +112,22 @@ const Medications = () => {
       }
       
       const prescriptionsResponse = await API_SERVICE.parentPrescriptionAPI.getAll(params);
+      console.log("API response:", prescriptionsResponse); // Debug API response
       
       // Xử lý dữ liệu để hiển thị
       const processedMedications = await Promise.all(
         prescriptionsResponse.map(async (prescription) => {
+          // Kiểm tra xem có trạng thái đã lưu trong localStorage không
+          const statusKey = `prescription_${prescription.prescriptionId}_status`;
+          const noteKey = `prescription_${prescription.prescriptionId}_note`;
+          const savedStatus = localStorage.getItem(statusKey);
+          const savedNote = localStorage.getItem(noteKey);
+          
+          // Đảm bảo status luôn là chuỗi
+          // Ưu tiên trạng thái đã lưu trong localStorage
+          const status = savedStatus || (prescription.status !== undefined ? String(prescription.status) : "0");
+          console.log(`Processing prescription ${prescription.prescriptionId}, status: ${status}`);
+          
           // Lấy thông tin thuốc từ đơn thuốc
           let medicationName = prescription.parentNote || "Không có tên thuốc";
           let studentName = "Không xác định";
@@ -95,7 +152,7 @@ const Medications = () => {
               // Lấy thông tin học sinh từ thuốc
               if (medication.studentId) {
                 try {
-                  const studentResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:5273/api"}/student/${medication.studentId}`);
+                  const studentResponse = await fetch(`${API_BASE_URL}/student/${medication.studentId}`);
                   if (studentResponse.ok) {
                     const studentData = await studentResponse.json();
                     studentName = studentData.fullName || "Không xác định";
@@ -113,7 +170,7 @@ const Medications = () => {
           let parentName = "Không xác định";
           if (prescription.parentId) {
             try {
-              const parentResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL || "http://localhost:5273/api"}/parent/${prescription.parentId}`);
+              const parentResponse = await fetch(`${API_BASE_URL}/parent/${prescription.parentId}`);
               if (parentResponse.ok) {
                 const parentData = await parentResponse.json();
                 parentName = parentData.fullName || "Không xác định";
@@ -123,6 +180,7 @@ const Medications = () => {
             }
           }
           
+          // Trả về dữ liệu đã xử lý với status đã được chuyển đổi thành chuỗi
           return {
             ...prescription,
             medicationName,
@@ -133,12 +191,22 @@ const Medications = () => {
             quantity,
             remainingQuantity,
             medicationId,
-            schedule: prescription.schedule || "Không có"
+            schedule: prescription.schedule || "Không có",
+            status, // Đảm bảo status luôn là chuỗi
+            note: savedNote || prescription.note || "" // Sử dụng note đã lưu hoặc từ API
           };
         })
       );
       
-      setMedications(processedMedications);
+      console.log("Processed medications:", processedMedications); // Debug processed data
+      
+      // Lọc theo trạng thái nếu cần
+      let filteredMedications = processedMedications;
+      if (statusFilter !== "all") {
+        filteredMedications = processedMedications.filter(med => med.status === statusFilter);
+      }
+      
+      setMedications(filteredMedications);
     } catch (error) {
       console.error("Error fetching medications:", error);
       setNotif({
@@ -177,17 +245,53 @@ const Medications = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await API_SERVICE.parentPrescriptionAPI.update(selectedMedication.prescriptionId, {
-        ...selectedMedication,
-        status: formData.status,
+      // Lấy dữ liệu từ form
+      const status = formData.status;
+      const note = formData.note;
+      
+      console.log("Processing medication with data:", {
+        prescriptionId: selectedMedication.prescriptionId,
         nurseId: localStorage.getItem("userId") || "",
-        note: formData.note
+        status,
+        note
       });
+      
+      // Chuẩn bị dữ liệu để gửi đi
+      const updateData = {
+        prescriptionId: selectedMedication.prescriptionId,
+        nurseId: localStorage.getItem("userId") || "",
+        schedule: selectedMedication.schedule || "",
+        parentNote: selectedMedication.parentNote || "",
+        prescriptionFile: selectedMedication.prescriptionFile || ""
+      };
+      
+      console.log("Sending update request with data:", updateData);
+      
+      // Gọi API để cập nhật đơn thuốc
+      await API_SERVICE.parentPrescriptionAPI.update(selectedMedication.prescriptionId, updateData);
+      
+      // Lưu trạng thái vào localStorage để hiển thị
+      const statusKey = `prescription_${selectedMedication.prescriptionId}_status`;
+      const noteKey = `prescription_${selectedMedication.prescriptionId}_note`;
+      localStorage.setItem(statusKey, status);
+      localStorage.setItem(noteKey, note);
+      
+      // Cập nhật UI để hiển thị trạng thái mới
+      setMedications(prevMedications => 
+        prevMedications.map(med => 
+          med.prescriptionId === selectedMedication.prescriptionId 
+            ? { ...med, status, note } 
+            : med
+        )
+      );
+      
       setNotif({
         message: "Xử lý thuốc thành công",
         type: "success"
       });
       setShowProcessModal(false);
+      
+      // Tải lại danh sách thuốc để hiển thị trạng thái mới nhất
       fetchMedications(searchKeyword);
     } catch (error) {
       console.error("Error processing medication:", error);
@@ -295,24 +399,6 @@ const Medications = () => {
                 >
                   <FaEdit style={iconStyle.edit} size={18} />
                 </button>
-                {row.status === "0" && (
-                  <>
-                    <button
-                      className="admin-action-btn admin-action-approve admin-action-btn-reset"
-                      title="Chấp nhận"
-                      onClick={() => handleApprove(row)}
-                    >
-                      <FaCheck style={iconStyle.approve} size={18} />
-                    </button>
-                    <button
-                      className="admin-action-btn admin-action-reject admin-action-btn-reset"
-                      title="Từ chối"
-                      onClick={() => handleReject(row)}
-                    >
-                      <FaTimes style={iconStyle.reject} size={18} />
-                    </button>
-                  </>
-                )}
               </div>
             )}
           />
@@ -324,70 +410,94 @@ const Medications = () => {
         )}
       </div>
 
-      {/* Modal xem chi tiết thuốc */}
+      {/* Modal xem chi tiết thuốc - Sử dụng class từ Dashboard.css */}
       {showViewModal && selectedMedication && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <div className="modal-header">
-              <h3>Chi tiết thuốc</h3>
-              <button className="close-btn" onClick={() => setShowViewModal(false)}>×</button>
+        <div className="student-dialog-overlay">
+          <div className="student-dialog-content">
+            <div className="student-dialog-header">
+              <h2>Chi tiết thuốc</h2>
+              <button className="student-dialog-close" onClick={() => setShowViewModal(false)}>×</button>
             </div>
-            <div className="modal-body">
-              <div className="info-grid">
-                <div className="info-item">
-                  <strong>ID:</strong> {selectedMedication.prescriptionId}
-                </div>
-                <div className="info-item">
-                  <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Tên thuốc:</strong> {selectedMedication.medicationName || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Liều lượng:</strong> {selectedMedication.dosage || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Lịch uống:</strong> {selectedMedication.schedule || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Số lượng:</strong> {selectedMedication.quantity || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Số lượng còn lại:</strong> {selectedMedication.remainingQuantity || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Trạng thái:</strong> {getStatusText(selectedMedication.status)}
-                </div>
-                <div className="info-item full-width">
-                  <strong>Ghi chú phụ huynh:</strong> {selectedMedication.parentNote || "Không có"}
-                </div>
-                {selectedMedication.prescriptionFile && (
-                  <div className="info-item full-width">
-                    <strong>Tệp đơn thuốc:</strong>
-                    <div>
-                      <a href={selectedMedication.prescriptionFile} target="_blank" rel="noopener noreferrer">
-                        Xem đơn thuốc
-                      </a>
-                    </div>
+            <div className="student-dialog-body">
+              <div className="student-info-section">
+                <h3 style={{ 
+                  borderBottom: '2px solid #007bff',
+                  paddingBottom: '8px',
+                  margin: '0 0 16px 0',
+                  color: '#333',
+                  fontSize: '1.1rem'
+                }}>Thông tin chung</h3>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <strong>ID:</strong> {selectedMedication.prescriptionId}
                   </div>
-                )}
-                <div className="info-item full-width">
-                  <strong>Ghi chú y tá:</strong> {selectedMedication.note || "Không có"}
+                  <div className="info-item">
+                    <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
+                  </div>
+                  <div className="info-item">
+                    <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
+                  </div>
+                  <div className="info-item">
+                    <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}
+                  </div>
+                  <div className="info-item">
+                    <strong>Trạng thái:</strong> {getStatusText(selectedMedication.status)}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="student-info-section">
+                <h3 style={{ 
+                  borderBottom: '2px solid #007bff',
+                  paddingBottom: '8px',
+                  margin: '16px 0',
+                  color: '#333',
+                  fontSize: '1.1rem'
+                }}>Thông tin thuốc</h3>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <strong>Tên thuốc:</strong> {selectedMedication.medicationName || "Không có"}
+                  </div>
+                  <div className="info-item">
+                    <strong>Liều lượng:</strong> {selectedMedication.dosage || "Không có"}
+                  </div>
+                  <div className="info-item">
+                    <strong>Lịch uống:</strong> {selectedMedication.schedule || "Không có"}
+                  </div>
+                  <div className="info-item">
+                    <strong>Số lượng:</strong> {selectedMedication.quantity || "Không có"}
+                  </div>
+                  <div className="info-item">
+                    <strong>Số lượng còn lại:</strong> {selectedMedication.remainingQuantity || "Không có"}
+                  </div>
+                  <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+                    <strong>Ghi chú phụ huynh:</strong> {selectedMedication.parentNote || "Không có"}
+                  </div>
+                  {selectedMedication.prescriptionFile && (
+                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+                      <strong>Tệp đơn thuốc:</strong>
+                      <div>
+                        {console.log("Prescription file path:", selectedMedication.prescriptionFile)}
+                        <a 
+                          href={getPrescriptionFileUrl(selectedMedication.prescriptionFile)} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          style={{ color: '#007bff', textDecoration: 'underline' }}
+                        >
+                          Xem đơn thuốc
+                        </a>
+                      </div>
+                    </div>
+                  )}
+                  <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+                    <strong>Ghi chú y tá:</strong> {selectedMedication.note || "Không có"}
+                  </div>
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
-              <button className="admin-btn" onClick={() => setShowViewModal(false)}>
-                Đóng
-              </button>
-              <button
-                className="admin-btn"
+            <div className="student-dialog-footer">
+              <button 
+                className="admin-btn" 
                 onClick={() => {
                   setShowViewModal(false);
                   handleProcess(selectedMedication);
@@ -395,94 +505,144 @@ const Medications = () => {
               >
                 Xử lý
               </button>
+              <button 
+                className="admin-btn" 
+                style={{ backgroundColor: '#6c757d' }}
+                onClick={() => setShowViewModal(false)}
+              >
+                Đóng
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal xử lý thuốc */}
+      {/* Modal xử lý thuốc - Sử dụng class từ Dashboard.css */}
       {showProcessModal && selectedMedication && (
-        <div className="modal-overlay">
-          <div className="modal-container">
-            <div className="modal-header">
-              <h3>Xử lý thuốc</h3>
-              <button className="close-btn" onClick={() => setShowProcessModal(false)}>×</button>
+        <div className="student-dialog-overlay">
+          <div className="student-dialog-content">
+            <div className="student-dialog-header">
+              <h2>Xử lý thuốc</h2>
+              <button className="student-dialog-close" onClick={() => setShowProcessModal(false)}>×</button>
             </div>
             <form onSubmit={handleProcessMedication}>
-              <div className="info-grid">
-                <div className="info-item">
-                  <strong>ID:</strong> {selectedMedication.prescriptionId}
-                </div>
-                <div className="info-item">
-                  <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Tên thuốc:</strong> {selectedMedication.medicationName || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Liều lượng:</strong> {selectedMedication.dosage || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Lịch uống:</strong> {selectedMedication.schedule || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Số lượng:</strong> {selectedMedication.quantity || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Số lượng còn lại:</strong> {selectedMedication.remainingQuantity || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}
-                </div>
-                <div className="info-item full-width">
-                  <strong>Ghi chú phụ huynh:</strong> {selectedMedication.parentNote || "Không có"}
-                </div>
-                {selectedMedication.prescriptionFile && (
-                  <div className="info-item full-width">
-                    <strong>Tệp đơn thuốc:</strong>
-                    <div>
-                      <a href={selectedMedication.prescriptionFile} target="_blank" rel="noopener noreferrer">
-                        Xem đơn thuốc
-                      </a>
+              <div className="student-dialog-body">
+                <div className="student-info-section">
+                  <h3 style={{ 
+                    borderBottom: '2px solid #007bff',
+                    paddingBottom: '8px',
+                    margin: '0 0 16px 0',
+                    color: '#333',
+                    fontSize: '1.1rem'
+                  }}>Thông tin chung</h3>
+                  <div className="info-grid">
+                    <div className="info-item">
+                      <strong>ID:</strong> {selectedMedication.prescriptionId}
+                    </div>
+                    <div className="info-item">
+                      <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
+                    </div>
+                    <div className="info-item">
+                      <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
+                    </div>
+                    <div className="info-item">
+                      <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}
                     </div>
                   </div>
-                )}
+                </div>
+                
+                <div className="student-info-section">
+                  <h3 style={{ 
+                    borderBottom: '2px solid #007bff',
+                    paddingBottom: '8px',
+                    margin: '16px 0',
+                    color: '#333',
+                    fontSize: '1.1rem'
+                  }}>Thông tin thuốc</h3>
+                  <div className="info-grid">
+                    <div className="info-item">
+                      <strong>Tên thuốc:</strong> {selectedMedication.medicationName || "Không có"}
+                    </div>
+                    <div className="info-item">
+                      <strong>Liều lượng:</strong> {selectedMedication.dosage || "Không có"}
+                    </div>
+                    <div className="info-item">
+                      <strong>Lịch uống:</strong> {selectedMedication.schedule || "Không có"}
+                    </div>
+                    <div className="info-item">
+                      <strong>Số lượng:</strong> {selectedMedication.quantity || "Không có"}
+                    </div>
+                    <div className="info-item">
+                      <strong>Số lượng còn lại:</strong> {selectedMedication.remainingQuantity || "Không có"}
+                    </div>
+                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+                      <strong>Ghi chú phụ huynh:</strong> {selectedMedication.parentNote || "Không có"}
+                    </div>
+                    {selectedMedication.prescriptionFile && (
+                      <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+                        <strong>Tệp đơn thuốc:</strong>
+                        <div>
+                          <a 
+                            href={getPrescriptionFileUrl(selectedMedication.prescriptionFile)} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            style={{ color: '#007bff', textDecoration: 'underline' }}
+                          >
+                            Xem đơn thuốc
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="student-info-section">
+                  <h3 style={{ 
+                    borderBottom: '2px solid #007bff',
+                    paddingBottom: '8px',
+                    margin: '16px 0',
+                    color: '#333',
+                    fontSize: '1.1rem'
+                  }}>Xử lý đơn thuốc</h3>
+                  <div className="info-grid">
+                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+                      <label htmlFor="status">Trạng thái <span className="text-danger">*</span></label>
+                      <select
+                        name="status"
+                        id="status"
+                        value={formData.status}
+                        onChange={handleInputChange}
+                        required
+                        className="form-control"
+                      >
+                        <option value="0">Chờ xử lý</option>
+                        <option value="1">Chấp nhận</option>
+                        <option value="2">Từ chối</option>
+                      </select>
+                    </div>
+                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+                      <label htmlFor="note">Ghi chú y tá</label>
+                      <textarea
+                        name="note"
+                        id="note"
+                        value={formData.note}
+                        onChange={handleInputChange}
+                        className="form-control"
+                        rows="3"
+                        placeholder="Nhập ghi chú (nếu có)"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="form-group">
-                <label>Trạng thái <span className="required">*</span></label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  required
-                  className="form-control"
-                >
-                  <option value="0">Chờ xử lý</option>
-                  <option value="1">Chấp nhận</option>
-                  <option value="2">Từ chối</option>
-                </select>
-              </div>
-              <div className="form-group">
-                <label>Ghi chú y tá</label>
-                <textarea
-                  name="note"
-                  value={formData.note}
-                  onChange={handleInputChange}
-                  className="form-control"
-                  rows="3"
-                  placeholder="Nhập ghi chú (nếu có)"
-                ></textarea>
-              </div>
-              <div className="form-actions">
+              <div className="student-dialog-footer">
                 <button type="submit" className="admin-btn" disabled={loading}>
                   {loading ? "Đang xử lý..." : "Xác nhận"}
                 </button>
                 <button
                   type="button"
-                  className="admin-btn cancel-btn"
+                  className="admin-btn"
+                  style={{ backgroundColor: '#6c757d' }}
                   onClick={() => setShowProcessModal(false)}
                   disabled={loading}
                 >
@@ -497,4 +657,4 @@ const Medications = () => {
   );
 };
 
-export default Medications; 
+export default Medications;

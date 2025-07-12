@@ -45,6 +45,7 @@ const API = {
     PARENT_PRESCRIPTION_BY_PARENT: (parentId) => `${API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${parentId}`,
     PARENT_PRESCRIPTION_GET_BY_PARENT: (parentId) => `${API_BASE_URL}/parentPrescription/getByParent?parentId=${parentId}`,
     PARENT_PRESCRIPTION_SEARCH: `${API_BASE_URL}/parentPrescription/search`,
+    PARENT_PRESCRIPTION_GET_BY_ID: (id) => `${API_BASE_URL}/parentPrescription/${id}`,
     MEDICATION_BY_PRESCRIPTION: (prescriptionId) => `${API_BASE_URL}/medication/getMedicalByPrescription?prescriptionId=${prescriptionId}`,
     MEDICATION_BY_STUDENT: (studentId) => `${API_BASE_URL}/medication/getMedicalByStudent?studentId=${studentId}`,
     MEDICATION_GET_BY_ID: (id) => `${API_BASE_URL}/medication/${id}`,
@@ -352,6 +353,7 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        getById: (id) => callApi(API.PARENT_PRESCRIPTION_GET_BY_ID(id)),
     },
     medicationAPI: {
         getByPrescription: (prescriptionId) => callApi(API.MEDICATION_BY_PRESCRIPTION(prescriptionId)),
@@ -553,6 +555,7 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(params)
         }),
+        getById: (id) => callApi(API.PARENT_PRESCRIPTION_GET_BY_ID(id)),
         update: (id, data) => callApi(`${API_BASE_URL}/parentPrescription/update`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
