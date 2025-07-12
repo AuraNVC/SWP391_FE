@@ -1,0 +1,401 @@
+.vax-results-container {
+  padding: 24px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(60,72,88,0.06);
+  margin-bottom: 24px;
+}
+
+.vax-results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.vax-results-header h2 {
+  margin: 0;
+  color: #1976d2;
+  font-size: 1.8rem;
+  font-weight: 600;
+}
+
+.vax-results-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.vax-results-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vax-results-search input {
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+  min-width: 250px;
+}
+
+.vax-results-btn {
+  background-color: #4fc3f7;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.vax-results-btn:hover {
+  background-color: #1976d2;
+}
+
+.vax-results-btn.refresh-btn {
+  background-color: #4caf50;
+  margin-left: 8px;
+}
+
+.vax-results-btn.refresh-btn:hover {
+  background-color: #388e3c;
+}
+
+.vax-results-btn.search-btn {
+  padding: 8px 12px;
+}
+
+.vax-results-btn.confirm-btn {
+  background-color: #4caf50;
+}
+
+.vax-results-btn.confirm-btn:hover {
+  background-color: #388e3c;
+}
+
+.vax-results-stats {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.vax-results-stat-card {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  flex: 1;
+  border-left: 4px solid #1976d2;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.vax-results-stat-card.completed {
+  border-left-color: #4caf50;
+}
+
+.vax-results-stat-card.pending {
+  border-left-color: #ff9800;
+}
+
+.vax-results-stat-card.cancelled {
+  border-left-color: #f44336;
+}
+
+.vax-results-stat-card h4 {
+  margin: 0 0 8px 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.vax-results-stat-card p {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.vax-results-table-container {
+  background-color: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.vax-results-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.vax-results-modal {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.vax-results-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.vax-results-modal-header h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #333;
+}
+
+.vax-results-modal-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+}
+
+.vax-results-modal-body {
+  padding: 24px;
+}
+
+.vax-results-modal-footer {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.info-section {
+  margin-bottom: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  padding: 15px;
+  background-color: #fff;
+}
+
+.section-title {
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 1.1rem;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+}
+
+.vax-results-form-group {
+  margin-bottom: 16px;
+}
+
+.vax-results-form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.vax-results-form-group input,
+.vax-results-form-group select,
+.vax-results-form-group textarea {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+}
+
+.vax-results-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.vax-results-btn.cancel-btn {
+  background-color: #6c757d;
+}
+
+.vax-results-btn.cancel-btn:hover {
+  background-color: #5a6268;
+}
+
+.vax-results-btn.delete-btn {
+  background-color: #dc3545;
+}
+
+.vax-results-btn.delete-btn:hover {
+  background-color: #c82333;
+}
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.info-item {
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #f9f9f9;
+}
+
+.info-item.full-width {
+  grid-column: span 2;
+}
+
+.info-item strong {
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.no-data-message {
+  text-align: center;
+  padding: 40px;
+  color: #666;
+  font-style: italic;
+}
+
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 40px;
+  font-weight: 500;
+  color: #666;
+}
+
+.required {
+  color: #dc3545;
+}
+
+.warning-text {
+  color: #dc3545;
+  font-weight: 500;
+  margin-top: 16px;
+  padding: 8px;
+  text-align: center;
+  background-color: rgba(220, 53, 69, 0.1);
+  border-radius: 4px;
+  border-left: 4px solid #dc3545;
+}
+
+.form-field-hint {
+  color: #666;
+  font-size: 0.85em;
+  margin-top: 4px;
+}
+
+.form-field-hint em {
+  font-style: italic;
+}
+
+/* Add these styles to match HealthResults */
+.student-delete-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.student-delete-modal-content {
+  background-color: white;
+  padding: 20px;
+  border-radius: 5px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.student-delete-modal-title {
+  margin-bottom: 15px;
+  font-size: 18px;
+  color: #333;
+}
+
+.student-delete-modal-body {
+  margin-bottom: 20px;
+}
+
+.student-delete-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.student-delete-modal-actions button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.student-delete-modal-actions .btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.student-delete-modal-actions .btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.student-delete-modal-actions .btn-danger {
+  background-color: #dc3545;
+  color: white;
+} 
+
+.vax-results-add-button {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 20px;
+}
+
+.vax-results-btn.add-btn {
+  background-color: #4fc3f7;
+  padding: 10px 20px;
+  font-size: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vax-results-btn.add-btn:hover {
+  background-color: #0288d1;
+} 
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .vax-results-form-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .info-item.full-width {
+    grid-column: span 1;
+  }
+} 

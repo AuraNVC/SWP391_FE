@@ -51,21 +51,33 @@ export default function TableWithPaging({
   renderActions,
   loading = false,
 }) {
-  const totalPages = Math.ceil(data.length / pageSize);
-  const currentPage = page;
+  // Calculate pagination values
+  const totalPages = Math.max(1, Math.ceil(data.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
   const startIdx = (currentPage - 1) * pageSize;
-  const endIdx = startIdx + pageSize;
+  const endIdx = Math.min(startIdx + pageSize, data.length);
+  
+  // Get data for current page
   const pageData = data.slice(startIdx, endIdx);
 
+  // Generate page numbers for pagination
   const pageNumbers = getPageNumbers(currentPage, totalPages);
 
   const handlePageChange = (newPage) => {
-    if (newPage < 1 || newPage > totalPages || newPage === page) return;
+    // Simple validation
+    if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
+    
+    // Log the page change
+    console.log("TableWithPaging: Changing page to", newPage);
+    
+    // Call the onPageChange callback
     onPageChange(newPage);
   };
 
+  // Ensure page is valid when data changes
   useEffect(() => {
-    if (page > totalPages) {
+    if (page > totalPages && totalPages > 0) {
+      console.log("TableWithPaging: Page", page, "exceeds total pages", totalPages, ", adjusting to", totalPages);
       onPageChange(totalPages);
     }
   }, [data, page, totalPages, onPageChange]);
@@ -75,31 +87,56 @@ export default function TableWithPaging({
       <table className="table table-striped">
         <thead>
           <tr>
-            {columns.map((col) => (
-              <th key={col.key || col.dataIndex}>{col.title}</th>
+            {columns.map((col, colIdx) => (
+              <th key={`header-${col.key || col.dataIndex || colIdx}-${colIdx}`}>{col.title}</th>
             ))}
-            {renderActions && <th>Hành động</th>}
+            {renderActions && <th key="header-actions-column">Hành động</th>}
           </tr>
         </thead>
         <tbody>
-          {pageData.map((row, idx) => (
-            <tr key={row.id || row.studentId || idx}>
-              {columns.map((col) => (
-                <td key={col.key || col.dataIndex}>
-                  {col.render
-                    ? col.render(row[col.dataIndex], row, idx)
-                    : row[col.dataIndex]}
+          {pageData.length === 0 ? (
+            <tr>
+              <td colSpan={columns.length + (renderActions ? 1 : 0)} className="text-center">
+                {loading ? "Đang tải dữ liệu..." : "Không có dữ liệu"}
                 </td>
-              ))}
-              {renderActions && <td>{renderActions(row, idx)}</td>}
             </tr>
-          ))}
+          ) : (
+            pageData.map((row, idx) => {
+              // Create a truly unique key for each row by combining the row ID with the index
+              const rowKey = `row-${row.id || row.healthCheckupRecordId || row.medicalEventId || row.studentId || row.vaccinationResultId || row.nurseId || row.parentId || row.healthProfileId || row.formId || ''}-${startIdx + idx}`;
+              
+              return (
+                <tr key={rowKey}>
+                  {columns.map((col, colIdx) => (
+                    <td key={`cell-${col.key || col.dataIndex || colIdx}-${rowKey}`}>
+                      {(() => {
+                        console.log(`Rendering cell for column ${col.dataIndex}:`, {
+                          value: row[col.dataIndex],
+                          row: row,
+                          hasRender: !!col.render
+                        });
+                        
+                        if (col.render) {
+                          return col.render(row[col.dataIndex], row, idx);
+                        } else {
+                          return row[col.dataIndex];
+                        }
+                      })()}
+                    </td>
+                  ))}
+                  {renderActions && <td key={`actions-${rowKey}`}>{renderActions(row, idx)}</td>}
+                </tr>
+              );
+            })
+          )}
         </tbody>
       </table>
+      
       {/* Bootstrap Pagination with ellipsis */}
+      {totalPages > 1 && (
       <nav>
         <ul className="pagination justify-content-center">
-          <li className={`page-item${currentPage === 1 ? " disabled" : ""}`}>
+            <li className={`page-item${currentPage === 1 ? " disabled" : ""}`} key="prev-button">
             <button
               className="page-link"
               onClick={() => handlePageChange(currentPage - 1)}
@@ -110,12 +147,12 @@ export default function TableWithPaging({
           </li>
           {pageNumbers.map((num, idx) =>
             num === "..." ? (
-              <li key={`ellipsis-${idx}`} className="page-item disabled">
+              <li key={`ellipsis-${idx}-pagination`} className="page-item disabled">
                 <span className="page-link">...</span>
               </li>
             ) : (
               <li
-                key={`page-${num}`}
+                  key={`page-${num}-${idx}-pagination`}
                 className={`page-item${
                   currentPage === num ? " active" : ""
                 }`}
@@ -123,14 +160,14 @@ export default function TableWithPaging({
                 <button
                   className="page-link"
                   onClick={() => handlePageChange(num)}
-                  disabled={loading || num === page}
+                    disabled={loading || currentPage === num}
                 >
                   {num}
                 </button>
               </li>
             )
           )}
-          <li className={`page-item${currentPage === totalPages ? " disabled" : ""}`}>
+            <li className={`page-item${currentPage === totalPages ? " disabled" : ""}`} key="next-button">
             <button
               className="page-link"
               onClick={() => handlePageChange(currentPage + 1)}
@@ -141,6 +178,7 @@ export default function TableWithPaging({
           </li>
         </ul>
       </nav>
+      )}
     </div>
   );
 }

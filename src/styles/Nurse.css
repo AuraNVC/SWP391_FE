@@ -1,0 +1,215 @@
+.nurse-main {
+  margin: 0 auto;
+  padding: 24px 32px;
+  max-width: 1200px;
+  background: #fff;
+  border-radius: 8px;
+  min-height: 90vh;
+  margin-left: 220px;
+}
+
+.nurse-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.nurse-btn {
+  background: #4fc3f7;
+  color: #fff;
+  border: none;
+  width: 30vh;
+  padding: 8px 18px;
+  border-radius: 4px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.nurse-btn:hover {
+  background: #1976d2;
+}
+
+.nurse-search {
+  padding: 7px 14px;
+  border: 1px solid #cfd8dc;
+  border-radius: 4px;
+  outline: none;
+  width: 180px;
+}
+
+.nurse-table-container {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(60,72,88,0.06);
+  overflow-x: auto;
+}
+
+.nurse-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.nurse-table th, .nurse-table td {
+  padding: 12px 10px;
+  text-align: left;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.nurse-table th {
+  background: #f6f8fa;
+  font-weight: 600;
+}
+
+.nurse-action-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  margin-right: 8px;
+  padding: 5px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.nurse-action-accept {
+  color: #fff;
+  background: #4caf50;
+}
+
+.nurse-action-reject {
+  color: #fff;
+  background: #f44336;
+}
+
+.nurse-action-btn:hover {
+  opacity: 0.85;
+}
+
+/* Additional styles to match admin pages */
+.nurse-action-group {
+  display: flex;
+  align-items: center;
+}
+
+.nurse-action-view {
+  color: #007bff;
+}
+
+.nurse-action-edit {
+  color: #28a745;
+}
+
+.nurse-action-delete {
+  color: #dc3545;
+}
+
+.nurse-action-btn-reset {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0 5px;
+  cursor: pointer;
+}
+
+.nurse-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.search-container {
+  display: flex;
+  align-items: center;
+}
+
+.search-btn {
+  padding: 7px 14px;
+  margin-left: 5px;
+  width: auto;
+}
+
+.status-filter {
+  padding: 7px 14px;
+  border: 1px solid #cfd8dc;
+  border-radius: 4px;
+  outline: none;
+}
+
+.btn-danger {
+  background: #f44336;
+}
+
+.btn-secondary {
+  background: #6c757d;
+}
+
+/* Modal styles */
+.nurse-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.nurse-modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.nurse-modal-title {
+  margin-bottom: 15px;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.nurse-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.nurse-delete-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.nurse-delete-modal-content {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 400px;
+  max-width: 90%;
+}
+
+.nurse-delete-modal-title {
+  margin-bottom: 20px;
+}
+
+.nurse-delete-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+} 
