@@ -66,6 +66,8 @@ const API = {
     MEDICAL_EVENT_BY_STUDENT: (studentId) => `${API_BASE_URL}/medicalEvent/getMedicalByStudent?studentId=${studentId}`,
     MEDICAL_EVENT_DETAIL: (id) => `${API_BASE_URL}/medicalEvent/${id}`,
     PARENT_PRESCRIPTION_ADD: `${API_BASE_URL}/parentPrescription/add`,
+    PARENT_PRESCRIPTION_SEARCH: `${API_BASE_URL}/parentPrescription/search`,
+    PARENT_PRESCRIPTION_UPDATE: (id) => `${API_BASE_URL}/parentPrescription/${id}`,
     MEDICATION_ADD: `${API_BASE_URL}/medication/add`,
     BLOG_UPLOAD_IMAGE: `${API_BASE_URL}/blog/uploadImage`,
     CONSENT_FORM_BY_PARENT: (parentId) => `${API_BASE_URL}/consentForm/getConsentFormByParent?parentId=${parentId}`,
@@ -333,6 +335,11 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        update: (id, data) => callApi(API.PARENT_PRESCRIPTION_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
     },
     medicationAPI: {
         getByPrescription: (prescriptionId) => callApi(API.MEDICATION_BY_PRESCRIPTION(prescriptionId)),
@@ -481,20 +488,20 @@ export const API_SERVICE = {
         reject: (id) => callApi(API.CONSULTATION_FORM_REJECT(id), { method: 'POST' }),
     },
     consultationScheduleAPI: {
-        get: (id) => callApi(`${API_BASE_URL}${API_ENDPOINTS.CONSULTATION_SCHEDULE_GET_BY_ID}/${id}`, {
+        get: (id) => callApi(API.CONSULTATION_SCHEDULE_GET_BY_ID(id), {
             method: "GET",
             headers: { "Content-Type": "application/json" }
         }),
-        getAll: (data) => callApi(`${API_BASE_URL}${API_ENDPOINTS.CONSULTATION_SCHEDULE_GET_ALL}`, {
+        getAll: (data) => callApi(API.CONSULTATION_SCHEDULE_GET_ALL, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        getByStudent: (studentId) => callApi(`${API_BASE_URL}${API_ENDPOINTS.CONSULTATION_SCHEDULE_GET_BY_STUDENT}?studentId=${studentId}`, {
+        getByStudent: (studentId) => callApi(API.CONSULTATION_SCHEDULE_GET_BY_STUDENT(studentId), {
             method: "GET",
             headers: { "Content-Type": "application/json" }
         }),
-        create: (data) => callApi(`${API_BASE_URL}${API_ENDPOINTS.CONSULTATION_SCHEDULE_CREATE}`, {
+        create: (data) => callApi(API.CONSULTATION_SCHEDULE_CREATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
@@ -506,21 +513,35 @@ export const API_SERVICE = {
                 consultationScheduleId: parseInt(id)
             };
             
-            return callApi(`${API_BASE_URL}${API_ENDPOINTS.CONSULTATION_SCHEDULE_UPDATE}`, {
+            return callApi(API.CONSULTATION_SCHEDULE_UPDATE, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
             });
         },
-        delete: (id) => callApi(`${API_BASE_URL}${API_ENDPOINTS.CONSULTATION_SCHEDULE_DELETE}/${id}`, {
+        delete: (id) => callApi(API.CONSULTATION_SCHEDULE_DELETE(id), {
             method: "DELETE",
             headers: { "Content-Type": "application/json" }
         })
     },
     parentPrescriptionAPI: {
+        getAll: (data) => callApi(API.PARENT_PRESCRIPTION_SEARCH, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
         getPrescriptionByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_BY_PARENT(parentId)),
         getByParent: (parentId) => callApi(API.PARENT_PRESCRIPTION_GET_BY_PARENT(parentId)),
-        // ... các hàm khác nếu cần
+        add: (data) => callApi(API.PARENT_PRESCRIPTION_ADD, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (id, data) => callApi(API.PARENT_PRESCRIPTION_UPDATE(id), {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
     },
     // Thêm các nhóm API khác nếu cần
 };

@@ -23,12 +23,13 @@ const Medications = () => {
   const { setNotif } = useNotification();
 
   const columns = [
-    { title: "ID", dataIndex: "parentPrescriptionId" },
-    { title: "Phụ huynh", dataIndex: "parentName" },
-    { title: "Học sinh", dataIndex: "studentName" },
-    { title: "Tên thuốc", dataIndex: "medicineName" },
-    { title: "Ngày gửi", dataIndex: "createdDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" },
-    { title: "Trạng thái", dataIndex: "status", render: (status) => getStatusText(status) }
+    { title: "ID", dataIndex: "prescriptionId" },
+    { title: "Nurse ID", dataIndex: "nurseId" },
+    { title: "Parent ID", dataIndex: "parentId" },
+    { title: "Ghi chú phụ huynh", dataIndex: "parentNote" },
+    { title: "File đơn thuốc", dataIndex: "prescriptionFile", render: (file) => file ? (<a href={file} target="_blank" rel="noopener noreferrer">Xem file</a>) : "Không có" },
+    { title: "Lịch uống", dataIndex: "schedule" },
+    { title: "Ngày gửi", dataIndex: "submittedDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" }
   ];
 
   const iconStyle = {
@@ -36,15 +37,6 @@ const Medications = () => {
     edit: { color: "#28a745" },
     approve: { color: "#28a745" },
     reject: { color: "#dc3545" }
-  };
-
-  const getStatusText = (status) => {
-    const statusMap = {
-      "0": "Chờ xử lý",
-      "1": "Đã chấp nhận",
-      "2": "Đã từ chối"
-    };
-    return statusMap[status] || "Không xác định";
   };
 
   useEffect(() => {
@@ -63,7 +55,7 @@ const Medications = () => {
       if (statusFilter !== "all") {
         params.status = statusFilter;
       }
-      
+      console.log(API_SERVICE.parentPrescriptionAPI.getAll(params))
       const response = await API_SERVICE.parentPrescriptionAPI.getAll(params);
       setMedications(response);
     } catch (error) {
@@ -256,43 +248,33 @@ const Medications = () => {
         <div className="modal-overlay">
           <div className="modal-container">
             <div className="modal-header">
-              <h3>Chi tiết thuốc</h3>
+              <h3>Chi tiết đơn thuốc</h3>
               <button className="close-btn" onClick={() => setShowViewModal(false)}>×</button>
             </div>
             <div className="modal-body">
               <div className="info-grid">
                 <div className="info-item">
-                  <strong>ID:</strong> {selectedMedication.parentPrescriptionId}
+                  <strong>ID:</strong> {selectedMedication.prescriptionId}
                 </div>
                 <div className="info-item">
-                  <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
+                  <strong>Nurse ID:</strong> {selectedMedication.nurseId}
                 </div>
                 <div className="info-item">
-                  <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Tên thuốc:</strong> {selectedMedication.medicineName || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Liều lượng:</strong> {selectedMedication.dosage || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Thời gian dùng:</strong> {selectedMedication.frequency || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Ngày bắt đầu:</strong> {selectedMedication.startDate ? new Date(selectedMedication.startDate).toLocaleDateString('vi-VN') : "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Ngày kết thúc:</strong> {selectedMedication.endDate ? new Date(selectedMedication.endDate).toLocaleDateString('vi-VN') : "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Trạng thái:</strong> {getStatusText(selectedMedication.status)}
+                  <strong>Parent ID:</strong> {selectedMedication.parentId}
                 </div>
                 <div className="info-item full-width">
-                  <strong>Hướng dẫn:</strong> {selectedMedication.instructions || "Không có"}
+                  <strong>Ghi chú phụ huynh:</strong> {selectedMedication.parentNote || "Không có"}
                 </div>
                 <div className="info-item full-width">
-                  <strong>Ghi chú:</strong> {selectedMedication.note || "Không có"}
+                  <strong>File đơn thuốc:</strong> {selectedMedication.prescriptionFile ? (
+                    <a href={selectedMedication.prescriptionFile} target="_blank" rel="noopener noreferrer">Xem file</a>
+                  ) : "Không có"}
+                </div>
+                <div className="info-item">
+                  <strong>Lịch uống:</strong> {selectedMedication.schedule || "Không có"}
+                </div>
+                <div className="info-item">
+                  <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}
                 </div>
               </div>
             </div>
@@ -319,19 +301,30 @@ const Medications = () => {
         <div className="modal-overlay">
           <div className="modal-container">
             <div className="modal-header">
-              <h3>Xử lý thuốc</h3>
+              <h3>Xử lý đơn thuốc</h3>
               <button className="close-btn" onClick={() => setShowProcessModal(false)}>×</button>
             </div>
             <form onSubmit={handleProcessMedication}>
               <div className="info-grid">
                 <div className="info-item">
-                  <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
+                  <strong>Nurse ID:</strong> {selectedMedication.nurseId}
                 </div>
                 <div className="info-item">
-                  <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
+                  <strong>Parent ID:</strong> {selectedMedication.parentId}
+                </div>
+                <div className="info-item full-width">
+                  <strong>Ghi chú phụ huynh:</strong> {selectedMedication.parentNote || "Không có"}
+                </div>
+                <div className="info-item full-width">
+                  <strong>File đơn thuốc:</strong> {selectedMedication.prescriptionFile ? (
+                    <a href={selectedMedication.prescriptionFile} target="_blank" rel="noopener noreferrer">Xem file</a>
+                  ) : "Không có"}
                 </div>
                 <div className="info-item">
-                  <strong>Tên thuốc:</strong> {selectedMedication.medicineName || "Không có"}
+                  <strong>Lịch uống:</strong> {selectedMedication.schedule || "Không có"}
+                </div>
+                <div className="info-item">
+                  <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}
                 </div>
               </div>
               <div className="form-group">
@@ -349,7 +342,7 @@ const Medications = () => {
                 </select>
               </div>
               <div className="form-group">
-                <label>Ghi chú</label>
+                <label>Ghi chú xử lý</label>
                 <textarea
                   name="note"
                   value={formData.note}
