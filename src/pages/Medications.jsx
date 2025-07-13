@@ -2,11 +2,12 @@ import React, { useState, useEffect } from "react";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
-import { FaEye, FaSearch, FaEdit } from "react-icons/fa";
+import { FaEye, FaSearch, FaEdit, FaFilter, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
 import "../styles/Dashboard.css";
 
 const Medications = () => {
   const [medications, setMedications] = useState([]);
+  const [filteredMedications, setFilteredMedications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -16,18 +17,97 @@ const Medications = () => {
   const [showUpdateQuantityModal, setShowUpdateQuantityModal] = useState(false);
   const [updatedQuantity, setUpdatedQuantity] = useState("");
   const [updatingQuantity, setUpdatingQuantity] = useState(false);
+  // Thêm các state cho tính năng tìm kiếm nâng cao
+  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [filters, setFilters] = useState({
+    studentName: "",
+    parentName: "",
+    medicationName: "",
+    dateFrom: "",
+    dateTo: "",
+    remainingQuantity: "all" // all, low, medium, high
+  });
+  const [sortConfig, setSortConfig] = useState({
+    key: "createdDate",
+    direction: "desc"
+  });
 
   const { setNotif } = useNotification();
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5273/api";
 
   const columns = [
-    { title: "ID", dataIndex: "prescriptionId" },
-    { title: "Phụ huynh", dataIndex: "parentName" },
-    { title: "Học sinh", dataIndex: "studentName" },
-    { title: "Tên thuốc", dataIndex: "medicationName" },
+    { 
+      title: "ID", 
+      dataIndex: "prescriptionId",
+      render: (id) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("prescriptionId")}>
+          {id}
+          {sortConfig.key === "prescriptionId" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
+    { 
+      title: "Phụ huynh", 
+      dataIndex: "parentName",
+      render: (name) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("parentName")}>
+          {name}
+          {sortConfig.key === "parentName" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
+    { 
+      title: "Học sinh", 
+      dataIndex: "studentName",
+      render: (name) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
+          {name}
+          {sortConfig.key === "studentName" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
+    { 
+      title: "Tên thuốc", 
+      dataIndex: "medicationName",
+      render: (name) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("medicationName")}>
+          {name}
+          {sortConfig.key === "medicationName" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
     { title: "Liều lượng", dataIndex: "dosage" },
     { title: "Lịch uống", dataIndex: "schedule" },
-    { title: "Ngày gửi", dataIndex: "createdDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" },
+    { 
+      title: "Ngày gửi", 
+      dataIndex: "createdDate", 
+      render: (date) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("createdDate")}>
+          {date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}
+          {sortConfig.key === "createdDate" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
     { 
       title: "Số lượng còn lại", 
       dataIndex: "remainingQuantity", 
@@ -50,8 +130,15 @@ const Medications = () => {
         }
         
         return (
-          <div>
-            <div>{remainingQty}/{total}</div>
+          <div onClick={() => handleSort("remainingQuantity")} style={{ cursor: 'pointer' }}>
+            <div>
+              {remainingQty}/{total}
+              {sortConfig.key === "remainingQuantity" && (
+                <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+                  {sortConfig.direction === 'asc' ? '▲' : '▼'}
+                </span>
+              )}
+            </div>
             <div style={{ 
               width: '100%', 
               backgroundColor: '#e9ecef', 
@@ -98,6 +185,137 @@ const Medications = () => {
   useEffect(() => {
     fetchMedications();
   }, []);
+
+  // Thêm useEffect để lọc dữ liệu khi medications hoặc filters thay đổi
+  useEffect(() => {
+    applyFiltersAndSort();
+  }, [medications, filters, sortConfig]);
+
+  // Hàm áp dụng bộ lọc và sắp xếp
+  const applyFiltersAndSort = () => {
+    let result = [...medications];
+    
+    // Áp dụng các bộ lọc
+    if (filters.studentName) {
+      result = result.filter(med => 
+        med.studentName?.toLowerCase().includes(filters.studentName.toLowerCase())
+      );
+    }
+    
+    if (filters.parentName) {
+      result = result.filter(med => 
+        med.parentName?.toLowerCase().includes(filters.parentName.toLowerCase())
+      );
+    }
+    
+    if (filters.medicationName) {
+      result = result.filter(med => 
+        med.medicationName?.toLowerCase().includes(filters.medicationName.toLowerCase())
+      );
+    }
+    
+    if (filters.dateFrom) {
+      const fromDate = new Date(filters.dateFrom);
+      result = result.filter(med => {
+        const createdDate = new Date(med.createdDate);
+        return createdDate >= fromDate;
+      });
+    }
+    
+    if (filters.dateTo) {
+      const toDate = new Date(filters.dateTo);
+      toDate.setHours(23, 59, 59, 999); // Đặt thời gian là cuối ngày
+      result = result.filter(med => {
+        const createdDate = new Date(med.createdDate);
+        return createdDate <= toDate;
+      });
+    }
+    
+    if (filters.remainingQuantity !== "all") {
+      result = result.filter(med => {
+        if (!med.quantity) return false;
+        const percentage = Math.round((med.remainingQuantity / med.quantity) * 100);
+        
+        switch (filters.remainingQuantity) {
+          case "low": // Dưới 20%
+            return percentage < 20;
+          case "medium": // 20% đến 50%
+            return percentage >= 20 && percentage <= 50;
+          case "high": // Trên 50%
+            return percentage > 50;
+          default:
+            return true;
+        }
+      });
+    }
+    
+    // Áp dụng sắp xếp
+    if (sortConfig.key) {
+      result.sort((a, b) => {
+        // Xử lý giá trị null hoặc undefined
+        if (a[sortConfig.key] === null || a[sortConfig.key] === undefined) return 1;
+        if (b[sortConfig.key] === null || b[sortConfig.key] === undefined) return -1;
+        
+        // Xử lý các trường đặc biệt
+        if (sortConfig.key === "createdDate") {
+          return sortConfig.direction === "asc" 
+            ? new Date(a.createdDate) - new Date(b.createdDate)
+            : new Date(b.createdDate) - new Date(a.createdDate);
+        }
+        
+        // Xử lý trường số lượng còn lại theo tỷ lệ phần trăm
+        if (sortConfig.key === "remainingQuantity") {
+          const percentA = a.quantity ? (a.remainingQuantity / a.quantity) * 100 : 0;
+          const percentB = b.quantity ? (b.remainingQuantity / b.quantity) * 100 : 0;
+          return sortConfig.direction === "asc" ? percentA - percentB : percentB - percentA;
+        }
+        
+        // Sắp xếp chuỗi thông thường
+        if (typeof a[sortConfig.key] === "string") {
+          return sortConfig.direction === "asc"
+            ? a[sortConfig.key].localeCompare(b[sortConfig.key])
+            : b[sortConfig.key].localeCompare(a[sortConfig.key]);
+        }
+        
+        // Sắp xếp số thông thường
+        return sortConfig.direction === "asc"
+          ? a[sortConfig.key] - b[sortConfig.key]
+          : b[sortConfig.key] - a[sortConfig.key];
+      });
+    }
+    
+    setFilteredMedications(result);
+  };
+  
+  // Hàm xử lý thay đổi bộ lọc
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  // Hàm xử lý sắp xếp khi click vào tiêu đề cột
+  const handleSort = (key) => {
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+  
+  // Hàm reset bộ lọc
+  const resetFilters = () => {
+    setFilters({
+      studentName: "",
+      parentName: "",
+      medicationName: "",
+      dateFrom: "",
+      dateTo: "",
+      remainingQuantity: "all"
+    });
+  };
 
   const fetchMedications = async (keyword = "") => {
     setLoading(true);
@@ -187,12 +405,15 @@ const Medications = () => {
       
       console.log("Processed medications:", processedMedications);
       setMedications(processedMedications);
+      // Không cần gọi setFilteredMedications ở đây vì useEffect sẽ tự động gọi applyFiltersAndSort
     } catch (error) {
       console.error("Error fetching medications:", error);
       setNotif({
         message: "Không thể tải danh sách thuốc từ phụ huynh",
         type: "error"
       });
+      setMedications([]);
+      setFilteredMedications([]);
     } finally {
       setLoading(false);
     }
@@ -323,9 +544,164 @@ const Medications = () => {
             >
               {searchLoading ? "Đang tìm..." : <FaSearch />}
             </button>
+            <button
+              className="admin-btn"
+              style={{ marginLeft: '8px', backgroundColor: showAdvancedSearch ? '#6c757d' : '#007bff' }}
+              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
+              title={showAdvancedSearch ? "Ẩn tìm kiếm nâng cao" : "Hiện tìm kiếm nâng cao"}
+            >
+              <FaFilter />
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Phần tìm kiếm nâng cao */}
+      {showAdvancedSearch && (
+        <div className="admin-advanced-search" style={{ 
+          backgroundColor: '#f8f9fa', 
+          padding: '15px', 
+          borderRadius: '5px', 
+          marginBottom: '20px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <h3 style={{ margin: '0', fontSize: '1.1rem', color: '#333' }}>Tìm kiếm nâng cao</h3>
+            <button
+              className="admin-btn"
+              style={{ backgroundColor: '#6c757d', padding: '4px 8px', fontSize: '0.8rem' }}
+              onClick={resetFilters}
+            >
+              Đặt lại bộ lọc
+            </button>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            <div>
+              <label htmlFor="medicationName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Tên thuốc</label>
+              <input
+                type="text"
+                id="medicationName"
+                name="medicationName"
+                value={filters.medicationName}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên thuốc..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="studentName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Học sinh</label>
+              <input
+                type="text"
+                id="studentName"
+                name="studentName"
+                value={filters.studentName}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên học sinh..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="parentName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Phụ huynh</label>
+              <input
+                type="text"
+                id="parentName"
+                name="parentName"
+                value={filters.parentName}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên phụ huynh..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="dateFrom" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Từ ngày</label>
+              <input
+                type="date"
+                id="dateFrom"
+                name="dateFrom"
+                value={filters.dateFrom}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="dateTo" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Đến ngày</label>
+              <input
+                type="date"
+                id="dateTo"
+                name="dateTo"
+                value={filters.dateTo}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            <div>
+              <label htmlFor="remainingQuantity" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Số lượng còn lại</label>
+              <select
+                id="remainingQuantity"
+                name="remainingQuantity"
+                value={filters.remainingQuantity}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              >
+                <option value="all">Tất cả</option>
+                <option value="low">Thấp (dưới 20%)</option>
+                <option value="medium">Trung bình (20% - 50%)</option>
+                <option value="high">Cao (trên 50%)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center' }}>
+            <div style={{ marginRight: '15px' }}>
+              <span style={{ fontSize: '0.9rem', marginRight: '8px' }}>Sắp xếp theo:</span>
+              <select
+                value={sortConfig.key}
+                onChange={(e) => setSortConfig({...sortConfig, key: e.target.value})}
+                className="form-control"
+                style={{ display: 'inline-block', width: 'auto', padding: '6px' }}
+              >
+                <option value="createdDate">Ngày gửi</option>
+                <option value="medicationName">Tên thuốc</option>
+                <option value="studentName">Tên học sinh</option>
+                <option value="parentName">Tên phụ huynh</option>
+                <option value="remainingQuantity">Số lượng còn lại</option>
+              </select>
+            </div>
+            
+            <div>
+              <button
+                className="admin-btn"
+                style={{ 
+                  backgroundColor: sortConfig.direction === 'asc' ? '#28a745' : '#007bff',
+                  padding: '6px 10px'
+                }}
+                onClick={() => setSortConfig({...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'})}
+              >
+                {sortConfig.direction === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
+                <span style={{ marginLeft: '5px' }}>
+                  {sortConfig.direction === 'asc' ? 'Tăng dần' : 'Giảm dần'}
+                </span>
+              </button>
+            </div>
+          </div>
+          
+          <div style={{ marginTop: '10px', fontSize: '0.9rem', color: '#6c757d' }}>
+            <span>Đang hiển thị: <strong>{filteredMedications.length}</strong> / {medications.length} kết quả</span>
+          </div>
+        </div>
+      )}
 
       <div className="admin-table-container">
         {loading ? (
@@ -333,7 +709,7 @@ const Medications = () => {
         ) : (
           <TableWithPaging
             columns={columns}
-            data={medications}
+            data={filteredMedications} // Sử dụng filteredMedications để hiển thị dữ liệu đã lọc và sắp xếp
             page={page}
             pageSize={10}
             onPageChange={setPage}
@@ -363,7 +739,7 @@ const Medications = () => {
             )}
           />
         )}
-        {!loading && medications.length === 0 && (
+        {!loading && filteredMedications.length === 0 && ( // Sử dụng filteredMedications
           <div className="no-data-message">
             Không có yêu cầu thuốc nào
           </div>

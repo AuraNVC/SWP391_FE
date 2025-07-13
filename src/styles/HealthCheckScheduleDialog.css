@@ -1,1 +1,135 @@
- 
+/* Styles for HealthCheckScheduleDialog and related components */
+.health-check-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.health-check-dialog-content {
+  background-color: white;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 800px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.health-check-dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.health-check-dialog-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #333;
+}
+
+.health-check-dialog-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #666;
+}
+
+.health-check-dialog-body {
+  padding: 24px;
+}
+
+.health-check-dialog-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.health-check-info-section {
+  margin-bottom: 24px;
+}
+
+.health-check-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.health-check-info-item {
+  margin-bottom: 8px;
+}
+
+.health-check-info-item strong {
+  margin-right: 8px;
+  color: #555;
+}
+
+/* Form styles */
+.health-check-form-group {
+  margin-bottom: 16px;
+}
+
+.health-check-form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 500;
+  color: #333;
+}
+
+.health-check-form-control {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+}
+
+.health-check-form-control:focus {
+  border-color: #007bff;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.health-check-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.health-check-btn-primary {
+  background-color: #007bff;
+  color: white;
+}
+
+.health-check-btn-secondary {
+  background-color: #6c757d;
+  color: white;
+}
+
+.health-check-btn-danger {
+  background-color: #dc3545;
+  color: white;
+}
+
+.health-check-btn:hover {
+  opacity: 0.9;
+}
+
+.health-check-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+} 
