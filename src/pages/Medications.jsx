@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
-import { FaEye, FaSearch } from "react-icons/fa";
+import { FaEye, FaSearch, FaEdit } from "react-icons/fa";
 import "../styles/Dashboard.css";
 
 const Medications = () => {
@@ -13,6 +13,9 @@ const Medications = () => {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedMedication, setSelectedMedication] = useState(null);
+  const [showUpdateQuantityModal, setShowUpdateQuantityModal] = useState(false);
+  const [updatedQuantity, setUpdatedQuantity] = useState("");
+  const [updatingQuantity, setUpdatingQuantity] = useState(false);
 
   const { setNotif } = useNotification();
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5273/api";
@@ -24,11 +27,54 @@ const Medications = () => {
     { title: "Tên thuốc", dataIndex: "medicationName" },
     { title: "Liều lượng", dataIndex: "dosage" },
     { title: "Lịch uống", dataIndex: "schedule" },
-    { title: "Ngày gửi", dataIndex: "createdDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" }
+    { title: "Ngày gửi", dataIndex: "createdDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" },
+    { 
+      title: "Số lượng còn lại", 
+      dataIndex: "remainingQuantity", 
+      render: (remaining, record) => {
+        const total = record.quantity || 0;
+        const remainingQty = remaining || 0;
+        
+        // Nếu không có thông tin số lượng
+        if (!total) return "Không có thông tin";
+        
+        // Tính phần trăm còn lại
+        const percentage = Math.round((remainingQty / total) * 100);
+        
+        // Xác định màu sắc dựa trên phần trăm còn lại
+        let color = "#28a745"; // Xanh lá - trên 50%
+        if (percentage <= 20) {
+          color = "#dc3545"; // Đỏ - dưới 20%
+        } else if (percentage <= 50) {
+          color = "#ffc107"; // Vàng - dưới 50%
+        }
+        
+        return (
+          <div>
+            <div>{remainingQty}/{total}</div>
+            <div style={{ 
+              width: '100%', 
+              backgroundColor: '#e9ecef', 
+              borderRadius: '4px',
+              height: '6px',
+              marginTop: '4px'
+            }}>
+              <div style={{ 
+                width: `${percentage}%`, 
+                backgroundColor: color, 
+                height: '6px',
+                borderRadius: '4px'
+              }}></div>
+            </div>
+          </div>
+        );
+      }
+    }
   ];
 
   const iconStyle = {
-    view: { color: "#007bff" }
+    view: { color: "#007bff" },
+    edit: { color: "#28a745" }
   };
 
   // Hàm xử lý đường dẫn file đơn thuốc
@@ -75,6 +121,7 @@ const Medications = () => {
           let quantity = null;
           let remainingQuantity = null;
           let medicationId = null;
+          let studentId = null;
           
           try {
             // Lấy danh sách thuốc theo đơn thuốc
@@ -88,6 +135,7 @@ const Medications = () => {
               quantity = medication.quantity;
               remainingQuantity = medication.remainingQuantity;
               medicationId = medication.medicationId;
+              studentId = medication.studentId;
               
               // Lấy thông tin học sinh từ thuốc
               if (medication.studentId) {
@@ -131,6 +179,7 @@ const Medications = () => {
             quantity,
             remainingQuantity,
             medicationId,
+            studentId,
             schedule: prescription.schedule || "Không có"
           };
         })
@@ -169,10 +218,94 @@ const Medications = () => {
     setShowViewModal(true);
   };
 
+  const handleUpdateQuantity = () => {
+    if (selectedMedication) {
+      setUpdatedQuantity(selectedMedication.remainingQuantity || "");
+      setShowUpdateQuantityModal(true);
+    }
+  };
+
+  const handleQuantityChange = (e) => {
+    const value = e.target.value;
+    // Chỉ cho phép nhập số
+    if (/^\d*$/.test(value)) {
+      setUpdatedQuantity(value);
+    }
+  };
+
+  const handleSubmitQuantityUpdate = async (e) => {
+    e.preventDefault();
+    setUpdatingQuantity(true);
+
+    try {
+      // Kiểm tra giá trị nhập vào
+      const newQuantity = parseInt(updatedQuantity, 10);
+      if (isNaN(newQuantity) || newQuantity < 0) {
+        throw new Error("Vui lòng nhập số lượng hợp lệ");
+      }
+
+      if (newQuantity > selectedMedication.quantity) {
+        throw new Error("Số lượng còn lại không thể lớn hơn tổng số lượng thuốc");
+      }
+
+      // Chuẩn bị dữ liệu để cập nhật
+      const updateData = {
+        medicationId: selectedMedication.medicationId,
+        medicationName: selectedMedication.medicationName,
+        dosage: selectedMedication.dosage,
+        quantity: selectedMedication.quantity,
+        remainingQuantity: newQuantity
+      };
+
+      // Gọi API cập nhật
+      await API_SERVICE.medicationAPI.update(updateData);
+
+      // Cập nhật dữ liệu trong state
+      setMedications(prevMedications => 
+        prevMedications.map(med => 
+          med.medicationId === selectedMedication.medicationId 
+            ? { ...med, remainingQuantity: newQuantity } 
+            : med
+        )
+      );
+
+      // Cập nhật thông tin thuốc đang được xem
+      setSelectedMedication(prev => ({ ...prev, remainingQuantity: newQuantity }));
+
+      setNotif({
+        message: "Cập nhật số lượng thuốc thành công",
+        type: "success"
+      });
+
+      // Đóng modal cập nhật
+      setShowUpdateQuantityModal(false);
+    } catch (error) {
+      console.error("Error updating medication quantity:", error);
+      setNotif({
+        message: error.message || "Không thể cập nhật số lượng thuốc",
+        type: "error"
+      });
+    } finally {
+      setUpdatingQuantity(false);
+    }
+  };
+
+  // Tính toán tỷ lệ sử dụng thuốc
+  const calculateUsageStats = (medication) => {
+    if (!medication || !medication.quantity) return { used: 0, remaining: 0, percentage: 0 };
+    
+    const total = medication.quantity || 0;
+    const remaining = medication.remainingQuantity || 0;
+    const used = total - remaining;
+    const percentage = Math.round((used / total) * 100);
+    
+    return { used, remaining, percentage };
+  };
+
   return (
     <div className="admin-main">
       <div className="admin-header">
-        <h2>Xem đơn thuốc từ phụ huynh</h2>
+        <h2>Quản lý thuốc từ phụ huynh</h2>
         <div className="admin-header-actions">
           <div className="search-container">
             <input
@@ -213,6 +346,19 @@ const Medications = () => {
                 >
                   <FaEye style={iconStyle.view} size={18} />
                 </button>
+                {row.medicationId && (
+                  <button
+                    className="admin-action-btn admin-action-edit admin-action-btn-reset"
+                    title="Cập nhật số lượng"
+                    onClick={() => {
+                      setSelectedMedication(row);
+                      setUpdatedQuantity(row.remainingQuantity || "");
+                      setShowUpdateQuantityModal(true);
+                    }}
+                  >
+                    <FaEdit style={iconStyle.edit} size={18} />
+                  </button>
+                )}
               </div>
             )}
           />
@@ -302,8 +448,69 @@ const Medications = () => {
                   )}
                 </div>
               </div>
+
+              {selectedMedication.medicationId && selectedMedication.quantity > 0 && (
+                <div className="student-info-section">
+                  <h3 style={{ 
+                    borderBottom: '2px solid #007bff',
+                    paddingBottom: '8px',
+                    margin: '16px 0',
+                    color: '#333',
+                    fontSize: '1.1rem'
+                  }}>Tình trạng sử dụng thuốc</h3>
+                  
+                  {(() => {
+                    const { used, remaining, percentage } = calculateUsageStats(selectedMedication);
+                    
+                    // Xác định màu sắc dựa trên phần trăm đã sử dụng
+                    let color = "#28a745"; // Xanh lá - dưới 50% đã dùng
+                    if (percentage >= 80) {
+                      color = "#dc3545"; // Đỏ - trên 80% đã dùng
+                    } else if (percentage >= 50) {
+                      color = "#ffc107"; // Vàng - trên 50% đã dùng
+                    }
+                    
+                    return (
+                      <div style={{ padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '8px' }}>
+                        <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between' }}>
+                          <span>Đã sử dụng: <strong>{used}</strong> / {selectedMedication.quantity}</span>
+                          <span>Còn lại: <strong>{remaining}</strong> ({100 - percentage}%)</span>
+                        </div>
+                        
+                        <div style={{ 
+                          width: '100%', 
+                          backgroundColor: '#e9ecef', 
+                          borderRadius: '4px',
+                          height: '10px'
+                        }}>
+                          <div style={{ 
+                            width: `${percentage}%`, 
+                            backgroundColor: color, 
+                            height: '10px',
+                            borderRadius: '4px',
+                            transition: 'width 0.3s ease'
+                          }}></div>
+                        </div>
+                        
+                        <div style={{ textAlign: 'center', marginTop: '8px', fontSize: '0.9rem', color: '#6c757d' }}>
+                          {percentage}% đã sử dụng
+                        </div>
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
             <div className="student-dialog-footer">
+              {selectedMedication.medicationId && (
+                <button 
+                  className="admin-btn" 
+                  style={{ backgroundColor: '#28a745' }}
+                  onClick={handleUpdateQuantity}
+                >
+                  Cập nhật số lượng
+                </button>
+              )}
               <button 
                 className="admin-btn" 
                 style={{ backgroundColor: '#6c757d' }}
@@ -312,6 +519,67 @@ const Medications = () => {
                 Đóng
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal cập nhật số lượng thuốc còn lại */}
+      {showUpdateQuantityModal && selectedMedication && (
+        <div className="student-dialog-overlay">
+          <div className="student-dialog-content" style={{ maxWidth: '450px' }}>
+            <div className="student-dialog-header">
+              <h2>Cập nhật số lượng thuốc</h2>
+              <button 
+                className="student-dialog-close" 
+                onClick={() => setShowUpdateQuantityModal(false)}
+                disabled={updatingQuantity}
+              >×</button>
+            </div>
+            <form onSubmit={handleSubmitQuantityUpdate}>
+              <div className="student-dialog-body">
+                <div className="student-info-section">
+                  <p><strong>Thuốc:</strong> {selectedMedication.medicationName}</p>
+                  <p><strong>Học sinh:</strong> {selectedMedication.studentName}</p>
+                  <p><strong>Tổng số lượng:</strong> {selectedMedication.quantity}</p>
+                  
+                  <div className="info-item" style={{ marginTop: '16px' }}>
+                    <label htmlFor="remainingQuantity">Số lượng còn lại <span className="text-danger">*</span></label>
+                    <input
+                      type="number"
+                      id="remainingQuantity"
+                      name="remainingQuantity"
+                      className="form-control"
+                      value={updatedQuantity}
+                      onChange={handleQuantityChange}
+                      min="0"
+                      max={selectedMedication.quantity}
+                      required
+                      disabled={updatingQuantity}
+                    />
+                    <small className="text-muted">Nhập số lượng thuốc còn lại sau khi sử dụng</small>
+                  </div>
+                </div>
+              </div>
+              <div className="student-dialog-footer">
+                <button 
+                  type="submit" 
+                  className="admin-btn" 
+                  style={{ backgroundColor: '#28a745' }}
+                  disabled={updatingQuantity}
+                >
+                  {updatingQuantity ? "Đang cập nhật..." : "Xác nhận"}
+                </button>
+                <button 
+                  type="button"
+                  className="admin-btn" 
+                  style={{ backgroundColor: '#6c757d' }}
+                  onClick={() => setShowUpdateQuantityModal(false)}
+                  disabled={updatingQuantity}
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
