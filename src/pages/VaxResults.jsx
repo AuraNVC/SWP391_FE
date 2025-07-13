@@ -3,6 +3,7 @@ import { FaPlus, FaSearch, FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { API_SERVICE } from "../services/api";
 import TableWithPaging from "../components/TableWithPaging";
 import { useNotification } from "../contexts/NotificationContext";
+import "../styles/Dashboard.css";
 import "../styles/VaxResults.css";
 
 // Component riêng để hiển thị tên học sinh

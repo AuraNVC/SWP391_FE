@@ -723,17 +723,17 @@ const Medications = () => {
                   <FaEye style={iconStyle.view} size={18} />
                 </button>
                 {row.medicationId && (
-                  <button
-                    className="admin-action-btn admin-action-edit admin-action-btn-reset"
+                <button
+                  className="admin-action-btn admin-action-edit admin-action-btn-reset"
                     title="Cập nhật số lượng"
                     onClick={() => {
                       setSelectedMedication(row);
                       setUpdatedQuantity(row.remainingQuantity || "");
                       setShowUpdateQuantityModal(true);
                     }}
-                  >
-                    <FaEdit style={iconStyle.edit} size={18} />
-                  </button>
+                >
+                  <FaEdit style={iconStyle.edit} size={18} />
+                </button>
                 )}
               </div>
             )}
@@ -763,17 +763,17 @@ const Medications = () => {
                   color: '#333',
                   fontSize: '1.1rem'
                 }}>Thông tin chung</h3>
-                <div className="info-grid">
-                  <div className="info-item">
+              <div className="info-grid">
+                <div className="info-item">
                     <strong>ID:</strong> {selectedMedication.prescriptionId}
-                  </div>
-                  <div className="info-item">
-                    <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
-                  </div>
-                  <div className="info-item">
-                    <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
-                  </div>
-                  <div className="info-item">
+                </div>
+                <div className="info-item">
+                  <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
+                </div>
+                <div className="info-item">
+                  <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
+                </div>
+                <div className="info-item">
                     <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}
                   </div>
                 </div>
@@ -790,22 +790,22 @@ const Medications = () => {
                 <div className="info-grid">
                   <div className="info-item">
                     <strong>Tên thuốc:</strong> {selectedMedication.medicationName || "Không có"}
-                  </div>
-                  <div className="info-item">
-                    <strong>Liều lượng:</strong> {selectedMedication.dosage || "Không có"}
-                  </div>
-                  <div className="info-item">
+                </div>
+                <div className="info-item">
+                  <strong>Liều lượng:</strong> {selectedMedication.dosage || "Không có"}
+                </div>
+                <div className="info-item">
                     <strong>Lịch uống:</strong> {selectedMedication.schedule || "Không có"}
-                  </div>
-                  <div className="info-item">
+                </div>
+                <div className="info-item">
                     <strong>Số lượng:</strong> {selectedMedication.quantity || "Không có"}
-                  </div>
-                  <div className="info-item">
+                </div>
+                <div className="info-item">
                     <strong>Số lượng còn lại:</strong> {selectedMedication.remainingQuantity || "Không có"}
                   </div>
                   <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
                     <strong>Ghi chú phụ huynh:</strong> {selectedMedication.parentNote || "Không có"}
-                  </div>
+                </div>
                   {selectedMedication.prescriptionFile && (
                     <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
                       <strong>Tệp đơn thuốc:</strong>
@@ -819,8 +819,8 @@ const Medications = () => {
                         >
                           Xem đơn thuốc
                         </a>
-                      </div>
-                    </div>
+                </div>
+                </div>
                   )}
                 </div>
               </div>
@@ -885,10 +885,10 @@ const Medications = () => {
                   onClick={handleUpdateQuantity}
                 >
                   Cập nhật số lượng
-                </button>
+              </button>
               )}
-              <button 
-                className="admin-btn" 
+              <button
+                className="admin-btn"
                 style={{ backgroundColor: '#6c757d' }}
                 onClick={() => setShowViewModal(false)}
               >
@@ -933,7 +933,7 @@ const Medications = () => {
                       disabled={updatingQuantity}
                     />
                     <small className="text-muted">Nhập số lượng thuốc còn lại sau khi sử dụng</small>
-                  </div>
+                </div>
                 </div>
               </div>
               <div className="student-dialog-footer">
@@ -945,7 +945,7 @@ const Medications = () => {
                 >
                   {updatingQuantity ? "Đang cập nhật..." : "Xác nhận"}
                 </button>
-                <button 
+                <button
                   type="button"
                   className="admin-btn" 
                   style={{ backgroundColor: '#6c757d' }}
@@ -963,4 +963,4 @@ const Medications = () => {
   );
 };
 
-export default Medications;
+export default Medications; 

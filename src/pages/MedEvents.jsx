@@ -4,7 +4,6 @@ import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
 import "../styles/Dashboard.css";
-import "../styles/StudentDashboard.css";
 
 const MedEvents = () => {
   const [events, setEvents] = useState([]);

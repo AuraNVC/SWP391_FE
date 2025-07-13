@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from '../contexts/NotificationContext';
-import '../styles/StudentDashboard.css';
 import '../styles/TableWithPaging.css';
 import TableWithPaging from "../components/TableWithPaging";
 import { FaEye, FaEdit, FaTrash, FaPlus, FaSearch, FaSync, FaCalendarAlt } from "react-icons/fa";
 import "../styles/Dashboard.css";
-import "../styles/VaxResults.css";
+
 
 const ConsultSchedules = () => {
   // Lấy vai trò người dùng từ localStorage
