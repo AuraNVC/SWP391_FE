@@ -100,7 +100,7 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Ảnh thumbnail mới (không bắt buộc)</label>
+            <label>Ảnh mới (không bắt buộc)</label>
             <input
               type="file"
               accept="image/*"
@@ -119,7 +119,7 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
             )}
             {blog.thumbnail && !selectedFile && (
               <div className="current-thumbnail">
-                <p>Ảnh thumbnail hiện tại:</p>
+                <p>Ảnh hiện tại:</p>
                 <img
                   src={`https://localhost:7024/files/blogs//${blog.thumbnail}`}
                   alt="Current thumbnail"

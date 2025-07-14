@@ -14,12 +14,6 @@ const columns = [
   { title: "Giới tính", dataIndex: "gender" },
   { title: "Lớp", dataIndex: "className" },
   { title: "Mã số học sinh", dataIndex: "studentNumber" },
-  {
-    title: "Phụ huynh",
-    dataIndex: "parent",
-    render: (parent) => parent?.fullName || "",
-  },
-  { title: "Ngày sinh", dataIndex: "dateOfBirth" },
 ];
 
 const iconStyle = {

@@ -8,7 +8,7 @@ const ParentViewDialog = ({ parent, onClose }) => {
     <div className="parent-dialog-overlay" onClick={onClose}>
       <div className="parent-dialog-content" onClick={(e) => e.stopPropagation()}>
         <div className="parent-dialog-header">
-          <h2>Parent Details</h2>
+          <h2>Chi tiết phụ huynh</h2>
           <button className="parent-dialog-close" onClick={onClose}>
             ×
           </button>
@@ -16,14 +16,14 @@ const ParentViewDialog = ({ parent, onClose }) => {
         
         <div className="parent-dialog-body">
           <div className="parent-info-section">
-            <h3>Parent Information</h3>
+            <h3>Thông tin phụ huynh</h3>
             <div className="info-grid">
               <div className="info-item">
-                <label>Parent ID:</label>
+                <label>Mã phụ huynh:</label>
                 <span>{parent.parentId}</span>
               </div>
               <div className="info-item">
-                <label>Full Name:</label>
+                <label>Họ và tên:</label>
                 <span>{parent.fullName}</span>
               </div>
               <div className="info-item">
@@ -31,11 +31,11 @@ const ParentViewDialog = ({ parent, onClose }) => {
                 <span>{parent.email}</span>
               </div>
               <div className="info-item">
-                <label>Phone Number:</label>
+                <label>Số điện thoại:</label>
                 <span>{parent.phoneNumber}</span>
               </div>
               <div className="info-item">
-                <label>Address:</label>
+                <label>Địa chỉ:</label>
                 <span>{parent.address || "N/A"}</span>
               </div>
             </div>
@@ -43,14 +43,14 @@ const ParentViewDialog = ({ parent, onClose }) => {
           
           {parent.students && parent.students.length > 0 && (
             <div className="parent-info-section">
-              <h3>Children</h3>
+              <h3>Học sinh</h3>
               <div className="students-list">
                 {parent.students.map((student, index) => (
                   <div key={student.studentId || index} className="student-item">
                     <div className="student-info">
                       <strong>{student.fullName}</strong>
-                      <span>Class: {student.className}</span>
-                      <span>Student ID: {student.studentNumber}</span>
+                      <span>Lớp: {student.className}</span>
+                      <span>Mã số học sinh: {student.studentNumber}</span>
                     </div>
                   </div>
                 ))}
@@ -61,7 +61,7 @@ const ParentViewDialog = ({ parent, onClose }) => {
         
         <div className="parent-dialog-footer">
           <button className="admin-btn" onClick={onClose}>
-            Close
+            Đóng
           </button>
         </div>
       </div>

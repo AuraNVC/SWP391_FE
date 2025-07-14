@@ -10,7 +10,6 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useNotification } from "../contexts/NotificationContext";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { validateForm } from "../utils/validation";
-import FormField from "./FormField";
 import ConfirmationDialog from "./ConfirmationDialog";
 
 const StudentEditDialog = ({ student, onClose, onSuccess }) => {
@@ -115,34 +114,32 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
   };
 
   if (!student) return null;
-  
-  const genderOptions = [
-    { value: "Nam", label: "Nam" },
-    { value: "Nữ", label: "Nữ" }
-  ];
 
   return (
     <div className="student-dialog-overlay" onClick={onClose}>
       <div className="student-dialog-content student-edit-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="student-dialog-header">
-          <h2>Chỉnh sửa học sinh</h2>
+          <h2>Sửa thông tin học sinh</h2>
           <button className="student-dialog-close" onClick={onClose}>
             ×
           </button>
         </div>
         
         <form className="student-create-form" onSubmit={handleSubmit}>
-          <FormField
-            label="Họ tên"
-            name="fullName"
-            value={form.fullName}
-            onChange={handleChange}
-            required
-            error={errors.fullName}
-          />
-          
           <div className="form-group">
-            <label htmlFor="dateOfBirth">Ngày sinh<span className="required">*</span></label>
+            <label>Họ và tên<span className="required">*</span></label>
+            <input
+              type="text"
+              name="fullName"
+              value={form.fullName}
+              onChange={handleChange}
+              required
+              className="form-control"
+            />
+            {errors.fullName && <div className="invalid-feedback">{errors.fullName}</div>}
+          </div>
+          <div className="form-group">
+            <label htmlFor="dateOfBirth">Ngày tháng năm sinh<span className="required">*</span></label>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Ngày sinh"
@@ -163,42 +160,51 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
             </LocalizationProvider>
             {errors.dateOfBirth && <div className="invalid-feedback">{errors.dateOfBirth}</div>}
           </div>
-          
-          <FormField
-            label="Lớp"
-            name="className"
-            value={form.className}
-            onChange={handleChange}
-            required
-            error={errors.className}
-            placeholder="VD: 1A"
-          />
-          
-          <FormField
-            label="Giới tính"
-            name="gender"
-            type="select"
-            value={form.gender}
-            onChange={handleChange}
-            required
-            error={errors.gender}
-            options={genderOptions}
-            placeholder="Chọn giới tính"
-          />
-          
-          <FormField
-            label="Mã học sinh"
-            name="studentNumber"
-            value={form.studentNumber}
-            onChange={handleChange}
-            required
-            error={errors.studentNumber}
-            placeholder="VD: binhan1"
-          />
+          <div className="form-group">
+            <label>Lớp<span className="required">*</span></label>
+            <input
+              type="text"
+              name="className"
+              value={form.className}
+              onChange={handleChange}
+              required
+              className="form-control"
+              placeholder="e.g. 1A"
+            />
+            {errors.className && <div className="invalid-feedback">{errors.className}</div>}
+          </div>
+          <div className="form-group">
+            <label>Giới tính<span className="required">*</span></label>
+            <select
+              name="gender"
+              value={form.gender}
+              onChange={handleChange}
+              required
+              className="form-control"
+            >
+              <option value="">Chọn giới tính</option>
+              <option value="Nam">Nam</option>
+              <option value="Nữ">Nữ</option>
+            </select>
+            {errors.gender && <div className="invalid-feedback">{errors.gender}</div>}
+          </div>
+          <div className="form-group">
+            <label>Tên đăng nhập<span className="required">*</span></label>
+            <input
+              type="text"
+              name="studentNumber"
+              value={form.studentNumber}
+              onChange={handleChange}
+              required
+              className="form-control"
+              placeholder="e.g. binhan1"
+            />
+            {errors.studentNumber && <div className="invalid-feedback">{errors.studentNumber}</div>}
+          </div>
           
           <div className="student-dialog-footer">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Đang cập nhật..." : "Cập nhật học sinh"}
+              {loading ? "Đang lưu..." : "Lưu"}
             </button>
             <button
               type="button"

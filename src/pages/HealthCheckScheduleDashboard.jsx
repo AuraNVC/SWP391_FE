@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import TableWithPaging from "../components/TableWithPaging";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import "../styles/TableWithPaging.css";
+import { formatDate } from "../services/utils";
 
 const HealthCheckScheduleDashboard = () => {
   const [schedules, setSchedules] = useState([]);
@@ -32,7 +33,11 @@ const HealthCheckScheduleDashboard = () => {
     setLoading(true);
     try {
       const res = await API_SERVICE.healthCheckScheduleAPI.getAll({ keyword: "" });
-      setSchedules(res);
+      const formatted = res.map((schedule) => ({
+                            ...schedule,
+                            checkDate: formatDate(schedule.checkDate),
+                        }));
+      setSchedules(formatted);
       setPage(1);
     } catch (e) {
       setSchedules([]);

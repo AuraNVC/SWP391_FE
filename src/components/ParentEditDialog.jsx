@@ -43,14 +43,14 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
       };
       await API_SERVICE.parentAPI.update(parent.parentId, payload);
       setNotif({
-        message: "Parent updated successfully!",
+        message: "Thay đổi thông tin thành công!",
         type: "success",
       });
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
       setNotif({
-        message: `Failed to update parent. ${error?.response?.data?.message || error.message}`,
+        message: `Lỗi không thể thay đổi. ${error?.response?.data?.message || error.message}`,
         type: "error",
       });
     }
@@ -63,7 +63,7 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
     <div className="parent-dialog-overlay" onClick={onClose}>
       <div className="parent-dialog-content parent-edit-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="parent-dialog-header">
-          <h2>Edit Parent</h2>
+          <h2>Sửa thông tin phụ huynh</h2>
           <button className="parent-dialog-close" onClick={onClose}>
             ×
           </button>
@@ -71,7 +71,7 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
         
         <form className="parent-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Full Name<span className="required">*</span></label>
+            <label>Họ và tên<span className="required">*</span></label>
             <input
               type="text"
               name="fullName"
@@ -93,7 +93,7 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Phone Number<span className="required">*</span></label>
+            <label>Số điện thoại<span className="required">*</span></label>
             <input
               type="text"
               name="phoneNumber"
@@ -104,7 +104,7 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Address</label>
+            <label>Địa chỉ</label>
             <textarea
               name="address"
               value={form.address}
@@ -116,7 +116,7 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
           
           <div className="parent-dialog-footer">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Updating..." : "Update Parent"}
+              {loading ? "Đang lưu..." : "Lưu"}
             </button>
             <button
               type="button"
@@ -124,7 +124,7 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </form>

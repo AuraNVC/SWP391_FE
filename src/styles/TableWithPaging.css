@@ -15,10 +15,10 @@
 }
 
 .table th {
-  background: linear-gradient(90deg, #1976d2 0%, #42a5f5 100%);
+  background: linear-gradient(90deg, #19d27c 0%, #42f5a7 100%);
   color: #fff;
   font-weight: 600;
-  border-bottom: 2px solid #1976d2;
+  border-bottom: 2px solid #19d272;
   padding: 14px 10px;
 }
 
@@ -30,11 +30,11 @@
 }
 
 .table-striped tbody tr:nth-of-type(odd) td {
-  background: #e3f2fd;
+  background: #e3fdee;
 }
 
 .table tbody tr:hover td {
-  background: #bbdefb;
+  background: #bbfbd5;
   transition: background 0.2s;
 }
 

@@ -4,9 +4,8 @@ import "../styles/FormCreateForm.css";
 import "../styles/FormValidation.css";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
-import FormField from "./FormField";
-import { validateForm } from "../utils/validation";
 import ConfirmationDialog from "./ConfirmationDialog";
+import { validateForm } from "../utils/validation";
 
 const FormEditDialog = ({ form, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -100,71 +99,76 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
 
   if (!form) return null;
 
-  const typeOptions = [
-    { value: "Health", label: "Sức khỏe" },
-    { value: "Permission", label: "Xin phép" },
-    { value: "Information", label: "Thông tin" },
-    { value: "Other", label: "Khác" }
-  ];
-
   return (
     <div className="form-dialog-overlay" onClick={onClose}>
       <div className="form-dialog-content form-edit-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="form-dialog-header">
-          <h2>Chỉnh sửa biểu mẫu</h2>
+          <h2>Sửa thông báo</h2>
           <button className="form-dialog-close" onClick={onClose}>
             ×
           </button>
         </div>
         
         <form className="form-create-form" onSubmit={handleSubmit}>
-          <FormField
-            label="Tiêu đề"
-            name="title"
-            value={formData.title}
-            onChange={handleChange}
-            required
-            error={errors.title}
-            placeholder="Nhập tiêu đề biểu mẫu"
-          />
-          
-          <FormField
-            label="Lớp"
-            name="className"
-            value={formData.className}
-            onChange={handleChange}
-            required
-            error={errors.className}
-            placeholder="VD: 1A, 2B"
-          />
-          
-          <FormField
-            label="Loại biểu mẫu"
-            name="type"
-            type="select"
-            value={formData.type}
-            onChange={handleChange}
-            required
-            error={errors.type}
-            options={typeOptions}
-            placeholder="Chọn loại biểu mẫu"
-          />
-          
-          <FormField
-            label="Nội dung"
-            name="content"
-            type="textarea"
-            value={formData.content}
-            onChange={handleChange}
-            required
-            error={errors.content}
-            placeholder="Nhập nội dung biểu mẫu"
-            rows={8}
-          />
+          <div className="form-group">
+            <label>Tiêu đề<span className="required">*</span></label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleChange}
+              required
+              className="form-control"
+              placeholder="Enter form title"
+            />
+            {errors.title && <div className="invalid-feedback">{errors.title}</div>}
+          </div>
+          <div className="form-group">
+            <label>Lớp<span className="required">*</span></label>
+            <input
+              type="text"
+              name="className"
+              value={formData.className}
+              onChange={handleChange}
+              required
+              className="form-control"
+              placeholder="e.g. 1A, 2B"
+            />
+            {errors.className && <div className="invalid-feedback">{errors.className}</div>}
+          </div>
+          <div className="form-group">
+            <label>Thể loại<span className="required">*</span></label>
+            <select
+              name="type"
+              value={formData.type}
+              onChange={handleChange}
+              required
+              className="form-control"
+            >
+              <option value="">Chọn loại thông báo</option>
+              <option value="0">Sức khỏe</option>
+              <option value="1">Tiêm chủng</option>
+              <option value="Other">Other</option>
+            </select>
+            {errors.type && <div className="invalid-feedback">{errors.type}</div>}
+          </div>
+          <div className="form-group">
+            <label>Nội dung<span className="required">*</span></label>
+            <textarea
+              name="content"
+              value={formData.content}
+              onChange={handleChange}
+              required
+              className="form-control"
+              rows="8"
+              placeholder="Enter form content"
+            />
+            {errors.content && <div className="invalid-feedback">{errors.content}</div>}
+          </div>
           
           <div className="form-dialog-footer">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Đang cập nhật..." : "Cập nhật biểu mẫu"}
+              {loading ? "Đang lưu..." : "Lưu"}
             </button>
             <button
               type="button"

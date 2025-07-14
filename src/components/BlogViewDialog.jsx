@@ -16,25 +16,25 @@ const BlogViewDialog = ({ blog, onClose }) => {
         
         <div className="blog-dialog-body">
           <div className="blog-info-section">
-            <h3>Blog Information</h3>
+            <h3>Thông tin bài đăng</h3>
             <div className="info-grid">
               <div className="info-item">
-                <label>Blog ID:</label>
+                <label>Mã bài:</label>
                 <span>{blog.blogId}</span>
               </div>
               <div className="info-item">
-                <label>Title:</label>
+                <label>Tiêu đề:</label>
                 <span>{blog.title}</span>
               </div>
               <div className="info-item">
-                <label>Date Posted:</label>
+                <label>Ngày đăng:</label>
                 <span>{blog.datePosted}</span>
               </div>
             </div>
           </div>
           
           <div className="blog-info-section">
-            <h3>Content</h3>
+            <h3>Nội dung</h3>
             <div className="blog-content">
               <p>{blog.content}</p>
             </div>
@@ -42,7 +42,7 @@ const BlogViewDialog = ({ blog, onClose }) => {
           
           {blog.thumbnail && (
             <div className="blog-info-section">
-              <h3>Thumbnail</h3>
+              <h3>Ảnh</h3>
               <div className="blog-thumbnail">
                 <img
                   src={`https://localhost:7024/files/blogs//${blog.thumbnail}`}
@@ -56,7 +56,7 @@ const BlogViewDialog = ({ blog, onClose }) => {
         
         <div className="blog-dialog-footer">
           <button className="admin-btn" onClick={onClose}>
-            Close
+            Đóng
           </button>
         </div>
       </div>

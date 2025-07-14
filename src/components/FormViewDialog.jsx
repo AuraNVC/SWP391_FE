@@ -13,7 +13,7 @@ const FormViewDialog = ({ form, onClose }) => {
     <div className="form-dialog-overlay" onClick={onClose}>
       <div className="form-dialog-content" onClick={(e) => e.stopPropagation()}>
         <div className="form-dialog-header">
-          <h2>Form Details</h2>
+          <h2>Chi tiết thông báo</h2>
           <button className="form-dialog-close" onClick={onClose}>
             ×
           </button>
@@ -21,37 +21,37 @@ const FormViewDialog = ({ form, onClose }) => {
         
         <div className="form-dialog-body">
           <div className="form-info-section">
-            <h3>Form Information</h3>
+            <h3>Thông tin thông báo</h3>
             <div className="info-grid">
               <div className="info-item">
-                <label>Form ID:</label>
+                <label>Mã thông báo:</label>
                 <span>{form.formId}</span>
               </div>
               <div className="info-item">
-                <label>Title:</label>
+                <label>Tiêu đề:</label>
                 <span>{form.title}</span>
               </div>
               <div className="info-item">
-                <label>Class:</label>
+                <label>Lớp:</label>
                 <span>{form.className}</span>
               </div>
               <div className="info-item">
-                <label>Type:</label>
+                <label>Thê loại:</label>
                 <span>{form.type}</span>
               </div>
               <div className="info-item">
-                <label>Sent Date:</label>
+                <label>Ngày gửi:</label>
                 <span>{form.sentDate}</span>
               </div>
               <div className="info-item">
-                <label>Created At:</label>
+                <label>Ngày đăng:</label>
                 <span>{form.createdAt}</span>
               </div>
             </div>
           </div>
           
           <div className="form-info-section">
-            <h3>Content</h3>
+            <h3>Nội dung</h3>
             <div className="form-content">
               <p>{form.content}</p>
             </div>
@@ -60,7 +60,7 @@ const FormViewDialog = ({ form, onClose }) => {
         
         <div className="form-dialog-footer">
           <button className="admin-btn" onClick={onClose}>
-            Close
+            Đóng
           </button>
         </div>
       </div>
