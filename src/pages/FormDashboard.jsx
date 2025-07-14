@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
 import "../styles/Manager.css";
-import "../styles/FormValidation.css";
-import "../styles/ConfirmationDialog.css";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import TableWithPaging from "../components/TableWithPaging";
 import { API_SERVICE } from "../services/api";
@@ -9,7 +7,6 @@ import { useNotification } from "../contexts/NotificationContext";
 import { useNavigate } from "react-router-dom";
 import FormViewDialog from "../components/FormViewDialog";
 import FormEditDialog from "../components/FormEditDialog";
-import ConfirmationDialog from "../components/ConfirmationDialog";
 import { formatDate, formatFormType } from "../services/utils";
 
 const columns = [
@@ -29,7 +26,6 @@ const FormDashboard = () => {
     const [formList, setFormList] = useState([]);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
-    const [deleteTarget, setDeleteTarget] = useState(null);
     const [viewForm, setViewForm] = useState(null);
     const [editForm, setEditForm] = useState(null);
     const { setNotif } = useNotification();
@@ -44,16 +40,11 @@ const FormDashboard = () => {
         setEditForm(row);
     };
 
-    const handleDelete = (row) => {
-        setDeleteTarget(row);
-    };
-
-    const confirmDelete = async () => {
-        if (deleteTarget) {
+    const handleDelete = async (row) => {
+        if (window.confirm(`Bạn có chắc chắn muốn xóa biểu mẫu "${row.title}"?`)) {
             try {
-                await API_SERVICE.formAPI.delete(deleteTarget.formId);
-                setFormList((prev) => prev.filter(f => f.formId !== deleteTarget.formId));
-                setDeleteTarget(null);
+                await API_SERVICE.formAPI.delete(row.formId);
+                setFormList((prev) => prev.filter(f => f.formId !== row.formId));
                 setNotif({
                     message: "Xóa biểu mẫu thành công!",
                     type: "success",
@@ -63,13 +54,8 @@ const FormDashboard = () => {
                     message: `Xóa biểu mẫu thất bại! ${error?.response?.data?.message || error.message}`,
                     type: "error",
                 });
-                setDeleteTarget(null);
             }
         }
-    };
-
-    const cancelDelete = () => {
-        setDeleteTarget(null);
     };
 
     const handleCreateNew = () => {
@@ -168,18 +154,6 @@ const FormDashboard = () => {
                     onSuccess={refreshFormList}
                 />
             )}
-
-            {/* Delete Confirmation Dialog */}
-            <ConfirmationDialog
-                isOpen={deleteTarget !== null}
-                onClose={cancelDelete}
-                onConfirm={confirmDelete}
-                title="Xác nhận xóa"
-                message={`Bạn có chắc chắn muốn xóa biểu mẫu "${deleteTarget?.title}"?`}
-                confirmText="Xóa"
-                cancelText="Hủy"
-                type="danger"
-            />
         </div>
     );
 };

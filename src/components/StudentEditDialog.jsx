@@ -1,16 +1,12 @@
 import React, { useState, useEffect } from "react";
 import "../styles/StudentDialog.css";
 import "../styles/StudentCreateForm.css";
-import "../styles/FormValidation.css";
-import "../styles/ConfirmationDialog.css";
 import { API_SERVICE } from "../services/api";
 import TextField from '@mui/material/TextField';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useNotification } from "../contexts/NotificationContext";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { validateForm } from "../utils/validation";
-import ConfirmationDialog from "./ConfirmationDialog";
 
 const StudentEditDialog = ({ student, onClose, onSuccess }) => {
   const [form, setForm] = useState({
@@ -22,8 +18,6 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
   });
   const [loading, setLoading] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState(null);
-  const [errors, setErrors] = useState({});
-  const [showConfirmation, setShowConfirmation] = useState(false);
   
   const { setNotif } = useNotification();
 
@@ -45,48 +39,10 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
-    
-    // Clear error when field is edited
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
-    }
-  };
-  
-  const validationRules = {
-    fullName: [
-      { type: 'required', message: 'Họ tên là bắt buộc' },
-      { type: 'maxLength', value: 100, message: 'Họ tên không được vượt quá 100 ký tự' }
-    ],
-    dateOfBirth: [
-      { type: 'required', message: 'Ngày sinh là bắt buộc' },
-      { type: 'date', message: 'Ngày sinh không hợp lệ' }
-    ],
-    className: [
-      { type: 'required', message: 'Lớp là bắt buộc' }
-    ],
-    gender: [
-      { type: 'required', message: 'Giới tính là bắt buộc' }
-    ],
-    studentNumber: [
-      { type: 'required', message: 'Mã học sinh là bắt buộc' }
-    ]
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate form
-    const validation = validateForm(form, validationRules);
-    if (!validation.isValid) {
-      setErrors(validation.errors);
-      return;
-    }
-    
-    // Show confirmation dialog
-    setShowConfirmation(true);
-  };
-  
-  const confirmUpdate = async () => {
     setLoading(true);
     try {
       const payload = {
@@ -110,7 +66,6 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
       });
     }
     setLoading(false);
-    setShowConfirmation(false);
   };
 
   if (!student) return null;
@@ -136,7 +91,6 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
               required
               className="form-control"
             />
-            {errors.fullName && <div className="invalid-feedback">{errors.fullName}</div>}
           </div>
           <div className="form-group">
             <label htmlFor="dateOfBirth">Ngày tháng năm sinh<span className="required">*</span></label>
@@ -150,15 +104,10 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
                     ...prev,
                     dateOfBirth: newValue ? newValue.toISOString().split('T')[0] : ""
                   }));
-                  // Clear error when field is edited
-                  if (errors.dateOfBirth) {
-                    setErrors((prev) => ({ ...prev, dateOfBirth: null }));
-                  }
                 }}
-                renderInput={(params) => <TextField {...params} required fullWidth error={!!errors.dateOfBirth} />}
+                renderInput={(params) => <TextField {...params} required fullWidth />}
               />
             </LocalizationProvider>
-            {errors.dateOfBirth && <div className="invalid-feedback">{errors.dateOfBirth}</div>}
           </div>
           <div className="form-group">
             <label>Lớp<span className="required">*</span></label>
@@ -171,7 +120,6 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
               className="form-control"
               placeholder="e.g. 1A"
             />
-            {errors.className && <div className="invalid-feedback">{errors.className}</div>}
           </div>
           <div className="form-group">
             <label>Giới tính<span className="required">*</span></label>
@@ -186,7 +134,6 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
               <option value="Nam">Nam</option>
               <option value="Nữ">Nữ</option>
             </select>
-            {errors.gender && <div className="invalid-feedback">{errors.gender}</div>}
           </div>
           <div className="form-group">
             <label>Tên đăng nhập<span className="required">*</span></label>
@@ -199,7 +146,6 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
               className="form-control"
               placeholder="e.g. binhan1"
             />
-            {errors.studentNumber && <div className="invalid-feedback">{errors.studentNumber}</div>}
           </div>
           
           <div className="student-dialog-footer">
@@ -217,17 +163,6 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
           </div>
         </form>
       </div>
-      
-      {/* Confirmation Dialog */}
-      <ConfirmationDialog
-        isOpen={showConfirmation}
-        onClose={() => setShowConfirmation(false)}
-        onConfirm={confirmUpdate}
-        title="Xác nhận cập nhật"
-        message="Bạn có chắc chắn muốn cập nhật thông tin học sinh này không?"
-        confirmText="Cập nhật"
-        cancelText="Hủy"
-      />
     </div>
   );
 };

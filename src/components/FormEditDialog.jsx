@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "../styles/FormDialog.css";
 import "../styles/FormCreateForm.css";
-import "../styles/FormValidation.css";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
-import ConfirmationDialog from "./ConfirmationDialog";
-import { validateForm } from "../utils/validation";
 
 const FormEditDialog = ({ form, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -15,8 +12,6 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
     content: "",
   });
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState({});
-  const [showConfirmation, setShowConfirmation] = useState(false);
   
   const { setNotif } = useNotification();
 
@@ -34,44 +29,10 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    
-    // Clear error when field is edited
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: null }));
-    }
-  };
-
-  const validationRules = {
-    title: [
-      { type: 'required', message: 'Tiêu đề là bắt buộc' },
-      { type: 'maxLength', value: 100, message: 'Tiêu đề không được vượt quá 100 ký tự' }
-    ],
-    className: [
-      { type: 'required', message: 'Lớp là bắt buộc' }
-    ],
-    type: [
-      { type: 'required', message: 'Loại biểu mẫu là bắt buộc' }
-    ],
-    content: [
-      { type: 'required', message: 'Nội dung là bắt buộc' }
-    ]
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validate form
-    const validation = validateForm(formData, validationRules);
-    if (!validation.isValid) {
-      setErrors(validation.errors);
-      return;
-    }
-    
-    // Show confirmation dialog
-    setShowConfirmation(true);
-  };
-  
-  const confirmUpdate = async () => {
     setLoading(true);
     try {
       const payload = {
@@ -94,7 +55,6 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
       });
     }
     setLoading(false);
-    setShowConfirmation(false);
   };
 
   if (!form) return null;
@@ -121,7 +81,6 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
               className="form-control"
               placeholder="Enter form title"
             />
-            {errors.title && <div className="invalid-feedback">{errors.title}</div>}
           </div>
           <div className="form-group">
             <label>Lớp<span className="required">*</span></label>
@@ -134,7 +93,6 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
               className="form-control"
               placeholder="e.g. 1A, 2B"
             />
-            {errors.className && <div className="invalid-feedback">{errors.className}</div>}
           </div>
           <div className="form-group">
             <label>Thể loại<span className="required">*</span></label>
@@ -150,7 +108,6 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
               <option value="1">Tiêm chủng</option>
               <option value="Other">Other</option>
             </select>
-            {errors.type && <div className="invalid-feedback">{errors.type}</div>}
           </div>
           <div className="form-group">
             <label>Nội dung<span className="required">*</span></label>
@@ -163,7 +120,6 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
               rows="8"
               placeholder="Enter form content"
             />
-            {errors.content && <div className="invalid-feedback">{errors.content}</div>}
           </div>
           
           <div className="form-dialog-footer">
@@ -181,17 +137,6 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
           </div>
         </form>
       </div>
-      
-      {/* Confirmation Dialog */}
-      <ConfirmationDialog
-        isOpen={showConfirmation}
-        onClose={() => setShowConfirmation(false)}
-        onConfirm={confirmUpdate}
-        title="Xác nhận cập nhật"
-        message="Bạn có chắc chắn muốn cập nhật biểu mẫu này không?"
-        confirmText="Cập nhật"
-        cancelText="Hủy"
-      />
     </div>
   );
 };
