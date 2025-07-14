@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from "react";
 import "../styles/FormDialog.css";
 import "../styles/FormCreateForm.css";
+import "../styles/FormValidation.css";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
+import FormField from "./FormField";
+import { validateForm } from "../utils/validation";
+import ConfirmationDialog from "./ConfirmationDialog";
 
 const FormEditDialog = ({ form, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({
@@ -12,6 +16,8 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
     content: "",
   });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+  const [showConfirmation, setShowConfirmation] = useState(false);
   
   const { setNotif } = useNotification();
 
@@ -29,10 +35,44 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear error when field is edited
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
+  };
+
+  const validationRules = {
+    title: [
+      { type: 'required', message: 'Tiêu đề là bắt buộc' },
+      { type: 'maxLength', value: 100, message: 'Tiêu đề không được vượt quá 100 ký tự' }
+    ],
+    className: [
+      { type: 'required', message: 'Lớp là bắt buộc' }
+    ],
+    type: [
+      { type: 'required', message: 'Loại biểu mẫu là bắt buộc' }
+    ],
+    content: [
+      { type: 'required', message: 'Nội dung là bắt buộc' }
+    ]
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form
+    const validation = validateForm(formData, validationRules);
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      return;
+    }
+    
+    // Show confirmation dialog
+    setShowConfirmation(true);
+  };
+  
+  const confirmUpdate = async () => {
     setLoading(true);
     try {
       const payload = {
@@ -43,89 +83,88 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
       };
       await API_SERVICE.formAPI.update(form.formId, payload);
       setNotif({
-        message: "Form updated successfully!",
+        message: "Cập nhật biểu mẫu thành công!",
         type: "success",
       });
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
       setNotif({
-        message: `Failed to update form. ${error?.response?.data?.message || error.message}`,
+        message: `Cập nhật biểu mẫu thất bại! ${error?.response?.data?.message || error.message}`,
         type: "error",
       });
     }
     setLoading(false);
+    setShowConfirmation(false);
   };
 
   if (!form) return null;
+
+  const typeOptions = [
+    { value: "Health", label: "Sức khỏe" },
+    { value: "Permission", label: "Xin phép" },
+    { value: "Information", label: "Thông tin" },
+    { value: "Other", label: "Khác" }
+  ];
 
   return (
     <div className="form-dialog-overlay" onClick={onClose}>
       <div className="form-dialog-content form-edit-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="form-dialog-header">
-          <h2>Edit Form</h2>
+          <h2>Chỉnh sửa biểu mẫu</h2>
           <button className="form-dialog-close" onClick={onClose}>
             ×
           </button>
         </div>
         
         <form className="form-create-form" onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Title<span className="required">*</span></label>
-            <input
-              type="text"
-              name="title"
-              value={formData.title}
-              onChange={handleChange}
-              required
-              className="form-control"
-              placeholder="Enter form title"
-            />
-          </div>
-          <div className="form-group">
-            <label>Class<span className="required">*</span></label>
-            <input
-              type="text"
-              name="className"
-              value={formData.className}
-              onChange={handleChange}
-              required
-              className="form-control"
-              placeholder="e.g. 1A, 2B"
-            />
-          </div>
-          <div className="form-group">
-            <label>Type<span className="required">*</span></label>
-            <select
-              name="type"
-              value={formData.type}
-              onChange={handleChange}
-              required
-              className="form-control"
-            >
-              <option value="">Select form type</option>
-              <option value="Health">Health</option>
-              <option value="Permission">Permission</option>
-              <option value="Information">Information</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label>Content<span className="required">*</span></label>
-            <textarea
-              name="content"
-              value={formData.content}
-              onChange={handleChange}
-              required
-              className="form-control"
-              rows="8"
-              placeholder="Enter form content"
-            />
-          </div>
+          <FormField
+            label="Tiêu đề"
+            name="title"
+            value={formData.title}
+            onChange={handleChange}
+            required
+            error={errors.title}
+            placeholder="Nhập tiêu đề biểu mẫu"
+          />
+          
+          <FormField
+            label="Lớp"
+            name="className"
+            value={formData.className}
+            onChange={handleChange}
+            required
+            error={errors.className}
+            placeholder="VD: 1A, 2B"
+          />
+          
+          <FormField
+            label="Loại biểu mẫu"
+            name="type"
+            type="select"
+            value={formData.type}
+            onChange={handleChange}
+            required
+            error={errors.type}
+            options={typeOptions}
+            placeholder="Chọn loại biểu mẫu"
+          />
+          
+          <FormField
+            label="Nội dung"
+            name="content"
+            type="textarea"
+            value={formData.content}
+            onChange={handleChange}
+            required
+            error={errors.content}
+            placeholder="Nhập nội dung biểu mẫu"
+            rows={8}
+          />
           
           <div className="form-dialog-footer">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Updating..." : "Update Form"}
+              {loading ? "Đang cập nhật..." : "Cập nhật biểu mẫu"}
             </button>
             <button
               type="button"
@@ -133,11 +172,22 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </form>
       </div>
+      
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
+        onConfirm={confirmUpdate}
+        title="Xác nhận cập nhật"
+        message="Bạn có chắc chắn muốn cập nhật biểu mẫu này không?"
+        confirmText="Cập nhật"
+        cancelText="Hủy"
+      />
     </div>
   );
 };

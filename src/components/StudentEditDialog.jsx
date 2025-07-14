@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from "react";
 import "../styles/StudentDialog.css";
 import "../styles/StudentCreateForm.css";
+import "../styles/FormValidation.css";
+import "../styles/ConfirmationDialog.css";
 import { API_SERVICE } from "../services/api";
 import TextField from '@mui/material/TextField';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { useNotification } from "../contexts/NotificationContext";
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { validateForm } from "../utils/validation";
+import FormField from "./FormField";
+import ConfirmationDialog from "./ConfirmationDialog";
 
 const StudentEditDialog = ({ student, onClose, onSuccess }) => {
   const [form, setForm] = useState({
@@ -18,6 +23,8 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
   });
   const [loading, setLoading] = useState(false);
   const [dateOfBirth, setDateOfBirth] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [showConfirmation, setShowConfirmation] = useState(false);
   
   const { setNotif } = useNotification();
 
@@ -39,10 +46,48 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    
+    // Clear error when field is edited
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: null }));
+    }
+  };
+  
+  const validationRules = {
+    fullName: [
+      { type: 'required', message: 'Họ tên là bắt buộc' },
+      { type: 'maxLength', value: 100, message: 'Họ tên không được vượt quá 100 ký tự' }
+    ],
+    dateOfBirth: [
+      { type: 'required', message: 'Ngày sinh là bắt buộc' },
+      { type: 'date', message: 'Ngày sinh không hợp lệ' }
+    ],
+    className: [
+      { type: 'required', message: 'Lớp là bắt buộc' }
+    ],
+    gender: [
+      { type: 'required', message: 'Giới tính là bắt buộc' }
+    ],
+    studentNumber: [
+      { type: 'required', message: 'Mã học sinh là bắt buộc' }
+    ]
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Validate form
+    const validation = validateForm(form, validationRules);
+    if (!validation.isValid) {
+      setErrors(validation.errors);
+      return;
+    }
+    
+    // Show confirmation dialog
+    setShowConfirmation(true);
+  };
+  
+  const confirmUpdate = async () => {
     setLoading(true);
     try {
       const payload = {
@@ -54,49 +99,53 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
       };
       await API_SERVICE.studentAPI.update(student.studentId, payload);
       setNotif({
-        message: "Student updated successfully!",
+        message: "Cập nhật học sinh thành công!",
         type: "success",
       });
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
       setNotif({
-        message: `Failed to update student. ${error?.response?.data?.message || error.message}`,
+        message: `Cập nhật học sinh thất bại! ${error?.response?.data?.message || error.message}`,
         type: "error",
       });
     }
     setLoading(false);
+    setShowConfirmation(false);
   };
 
   if (!student) return null;
+  
+  const genderOptions = [
+    { value: "Nam", label: "Nam" },
+    { value: "Nữ", label: "Nữ" }
+  ];
 
   return (
     <div className="student-dialog-overlay" onClick={onClose}>
       <div className="student-dialog-content student-edit-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="student-dialog-header">
-          <h2>Edit Student</h2>
+          <h2>Chỉnh sửa học sinh</h2>
           <button className="student-dialog-close" onClick={onClose}>
             ×
           </button>
         </div>
         
         <form className="student-create-form" onSubmit={handleSubmit}>
+          <FormField
+            label="Họ tên"
+            name="fullName"
+            value={form.fullName}
+            onChange={handleChange}
+            required
+            error={errors.fullName}
+          />
+          
           <div className="form-group">
-            <label>Full Name<span className="required">*</span></label>
-            <input
-              type="text"
-              name="fullName"
-              value={form.fullName}
-              onChange={handleChange}
-              required
-              className="form-control"
-            />
-          </div>
-          <div className="form-group">
-            <label htmlFor="dateOfBirth">Date of Birth<span className="required">*</span></label>
+            <label htmlFor="dateOfBirth">Ngày sinh<span className="required">*</span></label>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
-                label="Date of Birth"
+                label="Ngày sinh"
                 value={dateOfBirth}
                 onChange={(newValue) => {
                   setDateOfBirth(newValue);
@@ -104,53 +153,52 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
                     ...prev,
                     dateOfBirth: newValue ? newValue.toISOString().split('T')[0] : ""
                   }));
+                  // Clear error when field is edited
+                  if (errors.dateOfBirth) {
+                    setErrors((prev) => ({ ...prev, dateOfBirth: null }));
+                  }
                 }}
-                renderInput={(params) => <TextField {...params} required fullWidth />}
+                renderInput={(params) => <TextField {...params} required fullWidth error={!!errors.dateOfBirth} />}
               />
             </LocalizationProvider>
+            {errors.dateOfBirth && <div className="invalid-feedback">{errors.dateOfBirth}</div>}
           </div>
-          <div className="form-group">
-            <label>Class<span className="required">*</span></label>
-            <input
-              type="text"
-              name="className"
-              value={form.className}
-              onChange={handleChange}
-              required
-              className="form-control"
-              placeholder="e.g. 1A"
-            />
-          </div>
-          <div className="form-group">
-            <label>Gender<span className="required">*</span></label>
-            <select
-              name="gender"
-              value={form.gender}
-              onChange={handleChange}
-              required
-              className="form-control"
-            >
-              <option value="">Select gender</option>
-              <option value="Nam">Nam</option>
-              <option value="Nữ">Nữ</option>
-            </select>
-          </div>
-          <div className="form-group">
-            <label>Student Number<span className="required">*</span></label>
-            <input
-              type="text"
-              name="studentNumber"
-              value={form.studentNumber}
-              onChange={handleChange}
-              required
-              className="form-control"
-              placeholder="e.g. binhan1"
-            />
-          </div>
+          
+          <FormField
+            label="Lớp"
+            name="className"
+            value={form.className}
+            onChange={handleChange}
+            required
+            error={errors.className}
+            placeholder="VD: 1A"
+          />
+          
+          <FormField
+            label="Giới tính"
+            name="gender"
+            type="select"
+            value={form.gender}
+            onChange={handleChange}
+            required
+            error={errors.gender}
+            options={genderOptions}
+            placeholder="Chọn giới tính"
+          />
+          
+          <FormField
+            label="Mã học sinh"
+            name="studentNumber"
+            value={form.studentNumber}
+            onChange={handleChange}
+            required
+            error={errors.studentNumber}
+            placeholder="VD: binhan1"
+          />
           
           <div className="student-dialog-footer">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Updating..." : "Update Student"}
+              {loading ? "Đang cập nhật..." : "Cập nhật học sinh"}
             </button>
             <button
               type="button"
@@ -158,11 +206,22 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </form>
       </div>
+      
+      {/* Confirmation Dialog */}
+      <ConfirmationDialog
+        isOpen={showConfirmation}
+        onClose={() => setShowConfirmation(false)}
+        onConfirm={confirmUpdate}
+        title="Xác nhận cập nhật"
+        message="Bạn có chắc chắn muốn cập nhật thông tin học sinh này không?"
+        confirmText="Cập nhật"
+        cancelText="Hủy"
+      />
     </div>
   );
 };

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "../styles/Manager.css";
+import "../styles/FormValidation.css";
+import "../styles/ConfirmationDialog.css";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import TableWithPaging from "../components/TableWithPaging";
 import { API_SERVICE } from "../services/api";
@@ -7,6 +9,7 @@ import { useNotification } from "../contexts/NotificationContext";
 import { useNavigate } from "react-router-dom";
 import FormViewDialog from "../components/FormViewDialog";
 import FormEditDialog from "../components/FormEditDialog";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 const columns = [
     { title: "Mã biểu mẫu", dataIndex: "formId" },
@@ -82,7 +85,7 @@ const FormDashboard = () => {
         } catch (error) {
             console.error("Error fetching form list:", error);
             setNotif({
-                message: "Failed to refresh form list",
+                message: "Không thể tải danh sách biểu mẫu",
                 type: "error",
             });
         }
@@ -104,7 +107,7 @@ const FormDashboard = () => {
             </div>
             <div className="admin-table-container">
                 {loading ? (
-                    <div>Đang tải...</div>
+                    <div className="loading-spinner">Đang tải...</div>
                 ) : (
                     <TableWithPaging
                         columns={columns}
@@ -162,23 +165,16 @@ const FormDashboard = () => {
             )}
 
             {/* Delete Confirmation Dialog */}
-            {deleteTarget && (
-                <div className="form-delete-modal-overlay">
-                    <div className="form-delete-modal-content">
-                        <div className="form-delete-modal-title">
-                            <strong>Bạn có chắc chắn muốn xóa biểu mẫu "{deleteTarget.title}"?</strong>
-                        </div>
-                        <div className="form-delete-modal-actions">
-                            <button className="admin-btn btn-danger" onClick={confirmDelete}>
-                                Xóa
-                            </button>
-                            <button className="admin-btn btn-secondary" onClick={cancelDelete}>
-                                Hủy
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            <ConfirmationDialog
+                isOpen={deleteTarget !== null}
+                onClose={cancelDelete}
+                onConfirm={confirmDelete}
+                title="Xác nhận xóa"
+                message={`Bạn có chắc chắn muốn xóa biểu mẫu "${deleteTarget?.title}"?`}
+                confirmText="Xóa"
+                cancelText="Hủy"
+                type="danger"
+            />
         </div>
     );
 };
