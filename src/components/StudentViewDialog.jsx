@@ -8,7 +8,7 @@ const StudentViewDialog = ({ student, onClose }) => {
     <div className="student-dialog-overlay" onClick={onClose}>
       <div className="student-dialog-content" onClick={(e) => e.stopPropagation()}>
         <div className="student-dialog-header">
-          <h2>Student Details</h2>
+          <h2>Chi tiết học sinh</h2>
           <button className="student-dialog-close" onClick={onClose}>
             ×
           </button>
@@ -16,52 +16,52 @@ const StudentViewDialog = ({ student, onClose }) => {
         
         <div className="student-dialog-body">
           <div className="student-info-section">
-            <h3>Student Information</h3>
+            <h3>Thông tin học sinh</h3>
             <div className="info-grid">
               <div className="info-item">
-                <label>Student ID:</label>
+                <label>Mã số học sinh:</label>
                 <span>{student.studentId}</span>
               </div>
               <div className="info-item">
-                <label>Full Name:</label>
+                <label>Họ và tên:</label>
                 <span>{student.fullName}</span>
               </div>
               <div className="info-item">
-                <label>Gender:</label>
+                <label>Giới tính:</label>
                 <span>{student.gender}</span>
               </div>
               <div className="info-item">
-                <label>Class:</label>
+                <label>Lớp:</label>
                 <span>{student.className}</span>
               </div>
               <div className="info-item">
-                <label>Student Number:</label>
+                <label>Tên đăng nhập:</label>
                 <span>{student.studentNumber}</span>
               </div>
               <div className="info-item">
-                <label>Date of Birth:</label>
+                <label>Ngày tháng năm sinh:</label>
                 <span>{student.dateOfBirth}</span>
               </div>
             </div>
           </div>
           
           <div className="student-info-section">
-            <h3>Parent Information</h3>
+            <h3>Thông tin phụ huynh</h3>
             <div className="info-grid">
               <div className="info-item">
-                <label>Parent Name:</label>
+                <label>Họ và tên:</label>
                 <span>{student.parent?.fullName || "N/A"}</span>
               </div>
               <div className="info-item">
-                <label>Parent Phone:</label>
+                <label>Số điện thoại:</label>
                 <span>{student.parent?.phoneNumber || "N/A"}</span>
               </div>
               <div className="info-item">
-                <label>Parent Email:</label>
+                <label>Email:</label>
                 <span>{student.parent?.email || "N/A"}</span>
               </div>
               <div className="info-item">
-                <label>Parent Address:</label>
+                <label>Địa chỉ:</label>
                 <span>{student.parent?.address || "N/A"}</span>
               </div>
             </div>

@@ -8,7 +8,7 @@ const NurseViewDialog = ({ nurse, onClose }) => {
     <div className="nurse-dialog-overlay" onClick={onClose}>
       <div className="nurse-dialog-content" onClick={(e) => e.stopPropagation()}>
         <div className="nurse-dialog-header">
-          <h2>Nurse Details</h2>
+          <h2>Chi tiết y tá</h2>
           <button className="nurse-dialog-close" onClick={onClose}>
             ×
           </button>
@@ -16,14 +16,14 @@ const NurseViewDialog = ({ nurse, onClose }) => {
         
         <div className="nurse-dialog-body">
           <div className="nurse-info-section">
-            <h3>Nurse Information</h3>
+            <h3>Thông tin y tá</h3>
             <div className="info-grid">
               <div className="info-item">
-                <label>Nurse ID:</label>
+                <label>Mã y tá:</label>
                 <span>{nurse.nurseId}</span>
               </div>
               <div className="info-item">
-                <label>Full Name:</label>
+                <label>Họ và tên:</label>
                 <span>{nurse.fullName}</span>
               </div>
               <div className="info-item">
@@ -31,7 +31,7 @@ const NurseViewDialog = ({ nurse, onClose }) => {
                 <span>{nurse.email}</span>
               </div>
               <div className="info-item">
-                <label>Username:</label>
+                <label>Tên người dùng:</label>
                 <span>{nurse.username}</span>
               </div>
             </div>
@@ -40,7 +40,7 @@ const NurseViewDialog = ({ nurse, onClose }) => {
         
         <div className="nurse-dialog-footer">
           <button className="admin-btn" onClick={onClose}>
-            Close
+            Đóng
           </button>
         </div>
       </div>

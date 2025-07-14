@@ -41,11 +41,11 @@ const HealthCheckScheduleEditDialog = ({ open, onClose, data, onUpdated }) => {
         <form className="student-dialog-body" onSubmit={handleSubmit}>
           <div className="info-grid">
             <div className="info-item">
-              <label>Form ID:</label>
+              <label>Mã lịch:</label>
               <input name="formId" value={form.formId} disabled className="form-control" />
             </div>
             <div className="info-item">
-              <label>Manager ID:</label>
+              <label>Mã người tạo:</label>
               <input name="managerId" value={form.managerId} disabled className="form-control" />
             </div>
             <div className="info-item">

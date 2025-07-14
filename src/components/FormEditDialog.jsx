@@ -63,7 +63,7 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
     <div className="form-dialog-overlay" onClick={onClose}>
       <div className="form-dialog-content form-edit-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="form-dialog-header">
-          <h2>Edit Form</h2>
+          <h2>Sửa thông báo</h2>
           <button className="form-dialog-close" onClick={onClose}>
             ×
           </button>
@@ -71,7 +71,7 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
         
         <form className="form-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Title<span className="required">*</span></label>
+            <label>Tiêu đề<span className="required">*</span></label>
             <input
               type="text"
               name="title"
@@ -83,7 +83,7 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Class<span className="required">*</span></label>
+            <label>Lớp<span className="required">*</span></label>
             <input
               type="text"
               name="className"
@@ -95,7 +95,7 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Type<span className="required">*</span></label>
+            <label>Thể loại<span className="required">*</span></label>
             <select
               name="type"
               value={formData.type}
@@ -103,15 +103,14 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
               required
               className="form-control"
             >
-              <option value="">Select form type</option>
-              <option value="Health">Health</option>
-              <option value="Permission">Permission</option>
-              <option value="Information">Information</option>
+              <option value="">Chọn loại thông báo</option>
+              <option value="0">Sức khỏe</option>
+              <option value="1">Tiêm chủng</option>
               <option value="Other">Other</option>
             </select>
           </div>
           <div className="form-group">
-            <label>Content<span className="required">*</span></label>
+            <label>Nội dung<span className="required">*</span></label>
             <textarea
               name="content"
               value={formData.content}
@@ -125,7 +124,7 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
           
           <div className="form-dialog-footer">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Updating..." : "Update Form"}
+              {loading ? "Đang lưu..." : "Lưu"}
             </button>
             <button
               type="button"
@@ -133,7 +132,7 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </form>

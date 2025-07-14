@@ -7,11 +7,10 @@ import { useNotification } from "../contexts/NotificationContext";
 import { useNavigate } from "react-router-dom";
 import FormViewDialog from "../components/FormViewDialog";
 import FormEditDialog from "../components/FormEditDialog";
+import { formatDate, formatFormType } from "../services/utils";
 
 const columns = [
     { title: "Mã biểu mẫu", dataIndex: "formId" },
-    { title: "Tiêu đề", dataIndex: "title" },
-    { title: "Lớp", dataIndex: "className" },
     { title: "Loại", dataIndex: "type" },
     { title: "Ngày gửi", dataIndex: "sentDate" },
     { title: "Ngày tạo", dataIndex: "createdAt" },
@@ -78,7 +77,13 @@ const FormDashboard = () => {
         setLoading(true);
         try {
             const response = await API_SERVICE.formAPI.getAll({ keyword: "" });
-            setFormList(response);
+            const formatted = response.map((form) => ({
+                ...form,
+                type: formatFormType(form.type),
+                sentDate: formatDate(form.sentDate),
+                createdAt: formatDate(form.createdAt),
+            }));
+            setFormList(formatted);
         } catch (error) {
             console.error("Error fetching form list:", error);
             setNotif({

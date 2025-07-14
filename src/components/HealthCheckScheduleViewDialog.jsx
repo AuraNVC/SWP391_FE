@@ -12,7 +12,7 @@ const HealthCheckScheduleViewDialog = ({ open, onClose, data }) => {
         </div>
         <div className="student-dialog-body">
           <div className="info-grid">
-            <div className="info-item"><label>ID:</label><span>{data.healthCheckScheduleId}</span></div>
+            <div className="info-item"><label>Mã lịch:</label><span>{data.healthCheckScheduleId}</span></div>
             <div className="info-item"><label>Tên:</label><span>{data.name}</span></div>
             <div className="info-item"><label>Ngày khám:</label><span>{data.checkDate}</span></div>
             <div className="info-item"><label>Địa điểm:</label><span>{data.location}</span></div>
