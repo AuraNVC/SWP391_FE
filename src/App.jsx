@@ -20,6 +20,7 @@ import { NotificationProvider, useNotification } from "./contexts/NotificationCo
 import MainLayout from "./layouts/MainLayout";
 import LoginLayout from "./layouts/LoginLayout";
 import AdminLayout from "./layouts/AdminLayout";
+import NurseLayout from "./layouts/NurseLayout";
 import ProtectedRoute from "./contexts/ProtectedRoute";
 import BlogList from './pages/BlogDashboard'
 import FormDashboard from './pages/FormDashboard'
@@ -39,6 +40,11 @@ import HealthCheckScheduleDashboard from './pages/HealthCheckScheduleDashboard'
 import HealthCheckScheduleCreate from './pages/HealthCheckScheduleCreate'
 import VaccinationScheduleDashboard from './pages/VaccinationScheduleDashboard'
 import VaccinationScheduleCreate from './pages/VaccinationScheduleCreate'
+import MedEvents from './pages/MedEvents'
+import HealthResults from './pages/HealthResults'
+import VaxResults from './pages/VaxResults'
+import ConsultSchedules from './pages/ConsultSchedules'
+import Medications from './pages/Medications'
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -89,13 +95,13 @@ function AppContent() {
   const { userRole } = useUserRole();
 
   // Sử dụng context notification
-  const { notif, setNotif } = useNotification();
+  const { notif, setNotif, clearNotif } = useNotification();
 
   useEffect(() => {
     setIsLoggedIn(!!userRole)
   }, [userRole])
 
-  const handleNotifClose = () => setNotif(null);
+  const handleNotifClose = () => clearNotif();
 
   return (
     <>
@@ -106,6 +112,7 @@ function AppContent() {
             message={notif.message}
             type={notif.type}
             onClose={handleNotifClose}
+            duration={notif.duration || 3000}
           />
         </div>
       )}
@@ -131,6 +138,20 @@ function AppContent() {
             <Route path="/parent/notifications" element={<ParentNotifications />} />
             <Route path="/parent/consultations" element={<ParentConsultations />} />
             <Route path="/parent/prescriptions" element={<ParentPrescriptions />} />
+        </Route>
+
+        {/* Nurse routes */}
+        <Route element={
+          <ProtectedRoute requiredRole="nurse">
+            <NurseLayout />
+          </ProtectedRoute>
+        }>
+          <Route path="/nurse" element={<Navigate to="/nurse/medical-events" replace />} />
+          <Route path="/nurse/medical-events" element={<MedEvents />} />
+          <Route path="/nurse/health-check-results" element={<HealthResults />} />
+          <Route path="/nurse/vaccination-results" element={<VaxResults />} />
+          <Route path="/nurse/consultation-schedules" element={<ConsultSchedules />} />
+          <Route path="/nurse/medications" element={<Medications />} />
         </Route>
 
         <Route element={<LoginLayout />}>
