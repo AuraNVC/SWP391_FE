@@ -840,9 +840,6 @@ const MedEvents = () => {
             onChange={(e) => setSearchKeyword(e.target.value)}
             onKeyDown={handleSearchKeyDown}
           />
-          <button className="admin-btn" onClick={handleSearch}>
-            <FaSearch />
-          </button>
           <button
             className="admin-btn"
             style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}

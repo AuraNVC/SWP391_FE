@@ -1679,9 +1679,6 @@ const ConsultSchedules = () => {
             onChange={(e) => setSearchKeyword(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
-          <button className="admin-btn" onClick={handleSearch}>
-            <FaSearch />
-          </button>
           <button
             className="admin-btn"
             style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}

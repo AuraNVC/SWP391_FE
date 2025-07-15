@@ -788,29 +788,22 @@ const Medications = () => {
         <h2>Quản lý thuốc từ phụ huynh</h2>
         <div className="admin-header-actions">
           <div className="search-container">
-            <input
-              type="text"
-              placeholder="Tìm kiếm thuốc..."
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              className="admin-search"
-            />
-            <button 
-              className="admin-btn search-btn" 
-              onClick={handleSearch}
-              disabled={searchLoading}
-            >
-              {searchLoading ? "Đang tìm..." : <FaSearch />}
-            </button>
-            <button
-              className="admin-btn"
-              style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}
-              onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
-              title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
-            >
-              <FaFilter />
-            </button>
+                      <input
+            className="admin-search"
+            type="text"
+            placeholder="Tìm kiếm..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+          />
+          <button
+            className="admin-btn"
+            style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}
+            onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+            title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
+          >
+            <FaFilter />
+          </button>
           </div>
         </div>
       </div>
