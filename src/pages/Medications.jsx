@@ -25,6 +25,7 @@ const Medications = () => {
     medicationName: "",
     dateFrom: "",
     dateTo: "",
+    status: "all", // all, pending, accepted, rejected
     remainingQuantity: "all" // all, low, medium, high
   });
   const [sortConfig, setSortConfig] = useState({
@@ -107,6 +108,35 @@ const Medications = () => {
           )}
         </span>
       )
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "status",
+      render: (status) => {
+        let statusText = "Chưa xác định";
+        
+        if (status === "Pending" || status === 1) {
+          statusText = "Đang chờ";
+        } else if (status === "Accepted" || status === 2) {
+          statusText = "Đã duyệt";
+        } else if (status === "Rejected" || status === 3) {
+          statusText = "Đã từ chối";
+        }
+        
+        return (
+          <span 
+            style={{ cursor: 'pointer' }} 
+            onClick={() => handleSort("status")}
+          >
+            {statusText}
+            {sortConfig.key === "status" && (
+              <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+                {sortConfig.direction === 'asc' ? '▲' : '▼'}
+              </span>
+            )}
+          </span>
+        );
+      }
     },
     { 
       title: "Số lượng còn lại", 
@@ -191,6 +221,14 @@ const Medications = () => {
     applyFiltersAndSort();
   }, [medications, filters, sortConfig]);
 
+  // Hàm xử lý sắp xếp
+  const handleSort = (key) => {
+    // Nếu key giống với key hiện tại, đảo ngược hướng sắp xếp
+    // Nếu khác, đặt key mới và hướng mặc định là tăng dần
+    const direction = sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc";
+    setSortConfig({ key, direction });
+  };
+
   // Hàm áp dụng bộ lọc và sắp xếp
   const applyFiltersAndSort = () => {
     let result = [...medications];
@@ -231,6 +269,30 @@ const Medications = () => {
       });
     }
     
+    if (filters.status !== "all") {
+      result = result.filter(med => {
+        // Kiểm tra giá trị status từ API
+        console.log("Filtering status:", med.status, "Filter value:", filters.status);
+        
+        // Chuyển đổi giá trị status để so sánh
+        let statusValue;
+        if (typeof med.status === 'string') {
+          // Nếu status là string, chuyển đổi thành số
+          if (med.status === "Pending") statusValue = 1;
+          else if (med.status === "Accepted") statusValue = 2;
+          else if (med.status === "Rejected") statusValue = 3;
+          else statusValue = parseInt(med.status, 10) || 1; // Mặc định là 1 nếu không chuyển đổi được
+        } else {
+          // Nếu status đã là số
+          statusValue = med.status || 1; // Mặc định là 1 nếu không có giá trị
+        }
+        
+        // So sánh với giá trị filter
+        const filterValue = parseInt(filters.status, 10);
+        return statusValue === filterValue;
+      });
+    }
+    
     if (filters.remainingQuantity !== "all") {
       result = result.filter(med => {
         if (!med.quantity) return false;
@@ -252,35 +314,73 @@ const Medications = () => {
     // Áp dụng sắp xếp
     if (sortConfig.key) {
       result.sort((a, b) => {
-        // Xử lý giá trị null hoặc undefined
-        if (a[sortConfig.key] === null || a[sortConfig.key] === undefined) return 1;
-        if (b[sortConfig.key] === null || b[sortConfig.key] === undefined) return -1;
-        
-        // Xử lý các trường đặc biệt
-        if (sortConfig.key === "createdDate") {
-          return sortConfig.direction === "asc" 
-            ? new Date(a.createdDate) - new Date(b.createdDate)
-            : new Date(b.createdDate) - new Date(a.createdDate);
-        }
-        
-        // Xử lý trường số lượng còn lại theo tỷ lệ phần trăm
+        // Xử lý các trường hợp đặc biệt
         if (sortConfig.key === "remainingQuantity") {
+          // Tính phần trăm còn lại để so sánh
           const percentA = a.quantity ? (a.remainingQuantity / a.quantity) * 100 : 0;
           const percentB = b.quantity ? (b.remainingQuantity / b.quantity) * 100 : 0;
-          return sortConfig.direction === "asc" ? percentA - percentB : percentB - percentA;
+          
+          if (sortConfig.direction === "asc") {
+            return percentA - percentB;
+          } else {
+            return percentB - percentA;
+          }
+        } 
+        else if (sortConfig.key === "status") {
+          // Chuyển đổi trạng thái thành số để so sánh
+          const getStatusValue = (status) => {
+            if (typeof status === 'string') {
+              if (status === "Accepted") return 2;
+              if (status === "Rejected") return 3;
+              if (status === "Pending") return 1;
+              return parseInt(status, 10) || 1;
+            }
+            // Nếu status đã là số
+            return status || 1; // Mặc định là 1 nếu không có giá trị
+          };
+          
+          const statusA = getStatusValue(a.status);
+          const statusB = getStatusValue(b.status);
+          
+          console.log(`Sorting: ${a.prescriptionId} (${a.status} -> ${statusA}) vs ${b.prescriptionId} (${b.status} -> ${statusB})`);
+          
+          if (sortConfig.direction === "asc") {
+            return statusA - statusB;
+          } else {
+            return statusB - statusA;
+          }
         }
-        
-        // Sắp xếp chuỗi thông thường
-        if (typeof a[sortConfig.key] === "string") {
-          return sortConfig.direction === "asc"
-            ? a[sortConfig.key].localeCompare(b[sortConfig.key])
-            : b[sortConfig.key].localeCompare(a[sortConfig.key]);
+        else if (sortConfig.key === "createdDate") {
+          // So sánh ngày
+          const dateA = a.createdDate ? new Date(a.createdDate).getTime() : 0;
+          const dateB = b.createdDate ? new Date(b.createdDate).getTime() : 0;
+          
+          if (sortConfig.direction === "asc") {
+            return dateA - dateB;
+          } else {
+            return dateB - dateA;
+          }
         }
-        
-        // Sắp xếp số thông thường
-        return sortConfig.direction === "asc"
-          ? a[sortConfig.key] - b[sortConfig.key]
-          : b[sortConfig.key] - a[sortConfig.key];
+        else {
+          // Xử lý các trường thông thường
+          const valueA = a[sortConfig.key] || "";
+          const valueB = b[sortConfig.key] || "";
+          
+          if (sortConfig.direction === "asc") {
+            return valueA > valueB ? 1 : -1;
+          } else {
+            return valueA < valueB ? 1 : -1;
+          }
+        }
+      });
+    }
+    
+    // Ưu tiên hiển thị các đơn thuốc chưa duyệt lên đầu
+    if (sortConfig.key !== "status") {
+      result.sort((a, b) => {
+        const statusA = a.status === "Pending" || a.status === 1 ? 0 : 1;
+        const statusB = b.status === "Pending" || b.status === 1 ? 0 : 1;
+        return statusA - statusB;
       });
     }
     
@@ -296,15 +396,6 @@ const Medications = () => {
     }));
   };
   
-  // Hàm xử lý sắp xếp khi click vào tiêu đề cột
-  const handleSort = (key) => {
-    let direction = "asc";
-    if (sortConfig.key === key && sortConfig.direction === "asc") {
-      direction = "desc";
-    }
-    setSortConfig({ key, direction });
-  };
-  
   // Hàm reset bộ lọc
   const resetFilters = () => {
     setFilters({
@@ -313,6 +404,7 @@ const Medications = () => {
       medicationName: "",
       dateFrom: "",
       dateTo: "",
+      status: "all",
       remainingQuantity: "all"
     });
   };
@@ -328,6 +420,11 @@ const Medications = () => {
       
       const prescriptionsResponse = await API_SERVICE.parentPrescriptionAPI.getAll(params);
       console.log("API response:", prescriptionsResponse);
+      
+      // Kiểm tra giá trị status từ API
+      prescriptionsResponse.forEach(prescription => {
+        console.log(`Prescription ID: ${prescription.prescriptionId}, Status: ${prescription.status}, Type: ${typeof prescription.status}`);
+      });
       
       // Xử lý dữ liệu để hiển thị
       const processedMedications = await Promise.all(
@@ -398,7 +495,8 @@ const Medications = () => {
             remainingQuantity,
             medicationId,
             studentId,
-            schedule: prescription.schedule || "Không có"
+            schedule: prescription.schedule || "Không có",
+            status: prescription.status || 1 // Mặc định là Pending (1) nếu không có thông tin
           };
         })
       );
@@ -521,6 +619,80 @@ const Medications = () => {
     const percentage = Math.round((used / total) * 100);
     
     return { used, remaining, percentage };
+  };
+
+  const handleAcceptPrescription = async () => {
+    if (!selectedMedication) return;
+
+    try {
+      const updateData = {
+        prescriptionId: selectedMedication.prescriptionId,
+        status: "Accepted", // Hoặc 2
+        acceptedDate: new Date().toISOString()
+      };
+
+      await API_SERVICE.parentPrescriptionAPI.updateStatus(updateData);
+
+      setMedications(prevMedications => 
+        prevMedications.map(med => 
+          med.prescriptionId === selectedMedication.prescriptionId 
+            ? { ...med, status: "Accepted", acceptedDate: new Date().toISOString() }
+            : med
+        )
+      );
+
+      setSelectedMedication(prev => ({ ...prev, status: "Accepted", acceptedDate: new Date().toISOString() }));
+
+      setNotif({
+        message: "Đã duyệt đơn thuốc thành công",
+        type: "success"
+      });
+
+      setShowViewModal(false);
+    } catch (error) {
+      console.error("Error accepting prescription:", error);
+      setNotif({
+        message: error.message || "Không thể duyệt đơn thuốc",
+        type: "error"
+      });
+    }
+  };
+
+  const handleRejectPrescription = async () => {
+    if (!selectedMedication) return;
+
+    try {
+      const updateData = {
+        prescriptionId: selectedMedication.prescriptionId,
+        status: "Rejected", // Hoặc 3
+        rejectedDate: new Date().toISOString()
+      };
+
+      await API_SERVICE.parentPrescriptionAPI.updateStatus(updateData);
+
+      setMedications(prevMedications => 
+        prevMedications.map(med => 
+          med.prescriptionId === selectedMedication.prescriptionId 
+            ? { ...med, status: "Rejected", rejectedDate: new Date().toISOString() }
+            : med
+        )
+      );
+
+      setSelectedMedication(prev => ({ ...prev, status: "Rejected", rejectedDate: new Date().toISOString() }));
+
+      setNotif({
+        message: "Đã từ chối đơn thuốc thành công",
+        type: "success"
+      });
+
+      setShowViewModal(false);
+    } catch (error) {
+      console.error("Error rejecting prescription:", error);
+      setNotif({
+        message: error.message || "Không thể từ chối đơn thuốc",
+        type: "error"
+      });
+    }
   };
 
   return (
@@ -646,6 +818,23 @@ const Medications = () => {
             </div>
             
             <div>
+              <label htmlFor="status" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Trạng thái đơn thuốc</label>
+              <select
+                id="status"
+                name="status"
+                value={filters.status}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              >
+                <option value="all">Tất cả</option>
+                <option value="1">Đang chờ</option>
+                <option value="2">Đã duyệt</option>
+                <option value="3">Đã từ chối</option>
+              </select>
+            </div>
+
+            <div>
               <label htmlFor="remainingQuantity" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Số lượng còn lại</label>
               <select
                 id="remainingQuantity"
@@ -677,6 +866,7 @@ const Medications = () => {
                 <option value="studentName">Tên học sinh</option>
                 <option value="parentName">Tên phụ huynh</option>
                 <option value="remainingQuantity">Số lượng còn lại</option>
+                <option value="status">Trạng thái đơn thuốc</option>
               </select>
             </div>
             
@@ -775,7 +965,24 @@ const Medications = () => {
                 </div>
                 <div className="info-item">
                     <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}
-                  </div>
+                </div>
+                <div className="info-item">
+                  <strong>Trạng thái:</strong> {" "}
+                  {(() => {
+                    const status = selectedMedication.status;
+                    let statusText = "Chưa xác định";
+                    
+                    if (status === "Pending" || status === 1) {
+                      statusText = "Đang chờ";
+                    } else if (status === "Accepted" || status === 2) {
+                      statusText = "Đã duyệt";
+                    } else if (status === "Rejected" || status === 3) {
+                      statusText = "Đã từ chối";
+                    }
+                    
+                    return <span>{statusText}</span>;
+                  })()}
+                </div>
                 </div>
               </div>
               
@@ -885,6 +1092,26 @@ const Medications = () => {
               >
                 Đóng
               </button>
+              
+              {/* Hiển thị nút duyệt/từ chối chỉ khi đơn thuốc đang ở trạng thái chờ duyệt */}
+              {(selectedMedication.status === "Pending" || selectedMedication.status === 1) && (
+                <>
+                  <button
+                    className="admin-btn"
+                    style={{ backgroundColor: '#28a745', marginRight: '8px' }}
+                    onClick={handleAcceptPrescription}
+                  >
+                    Duyệt đơn thuốc
+                  </button>
+                  <button
+                    className="admin-btn"
+                    style={{ backgroundColor: '#dc3545', marginRight: '8px' }}
+                    onClick={handleRejectPrescription}
+                  >
+                    Từ chối
+                  </button>
+                </>
+              )}
             </div>
           </div>
         </div>

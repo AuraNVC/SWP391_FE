@@ -561,6 +561,16 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({...data, prescriptionId: id})
         }),
+        accept: (id) => callApi(`${API_BASE_URL}/parentPrescription/accept/${id}`, { method: 'POST' }),
+        reject: (id) => callApi(`${API_BASE_URL}/parentPrescription/reject/${id}`, { method: 'POST' }),
+        updateStatus: (data) => {
+            if (data.status === "Accepted" || data.status === 2) {
+                return callApi(`${API_BASE_URL}/parentPrescription/accept/${data.prescriptionId}`, { method: 'POST' });
+            } else if (data.status === "Rejected" || data.status === 3) {
+                return callApi(`${API_BASE_URL}/parentPrescription/reject/${data.prescriptionId}`, { method: 'POST' });
+            }
+            return Promise.reject(new Error("Trạng thái không hợp lệ"));
+        },
         // ... các hàm khác nếu cần
     },
     notificationAPI: {
