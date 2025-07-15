@@ -611,3 +611,24 @@ export const API_SERVICE = {
     },
     // Thêm các nhóm API khác nếu cần
 };
+
+const getPrescriptionFileUrl = (filePathOrName) => {
+  if (!filePathOrName) return null;
+  
+  // Nếu đã là URL đầy đủ, trả về nguyên dạng
+  if (filePathOrName.startsWith('http')) {
+    return filePathOrName;
+  }
+  
+  // Xử lý tên file để đảm bảo định dạng đúng
+  const fileName = filePathOrName.includes('/') 
+    ? filePathOrName.split('/').pop() 
+    : filePathOrName;
+  
+  console.log("Processing prescription file:", filePathOrName);
+  console.log("Extracted filename:", fileName);
+  
+  // Sử dụng API_BASE_URL từ biến môi trường hoặc cấu hình
+  // Đảm bảo sử dụng đúng port API (5273) và đường dẫn đúng
+  return `${window.location.protocol}//${window.location.hostname}:5273/api/files/parentPrecriptions/${fileName}`;
+};

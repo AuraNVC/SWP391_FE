@@ -32,6 +32,15 @@ const Medications = () => {
     key: "createdDate",
     direction: "desc"
   });
+  const [showPrescriptionImage, setShowPrescriptionImage] = useState(false);
+
+  const handleViewPrescriptionImage = () => {
+    setShowPrescriptionImage(true);
+  };
+
+  const handleClosePrescriptionImage = () => {
+    setShowPrescriptionImage(false);
+  };
 
   const { setNotif } = useNotification();
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5273/api";
@@ -200,7 +209,8 @@ const Medications = () => {
     
     // Nếu đã là URL đầy đủ, trả về nguyên dạng
     if (filePathOrName.startsWith('http')) {
-      return filePathOrName;
+      // Xử lý trường hợp có double slash trong URL
+      return filePathOrName.replace(/([^:]\/)\/+/g, "$1");
     }
     
     // Xử lý tên file để đảm bảo định dạng đúng
@@ -208,8 +218,21 @@ const Medications = () => {
       ? filePathOrName.split('/').pop() 
       : filePathOrName;
     
-    // Trả về đường dẫn đầy đủ
-    return `${API_BASE_URL}/files/prescriptions/${fileName}`;
+    console.log("Processing prescription file:", filePathOrName);
+    console.log("Extracted filename:", fileName);
+    
+    // Định nghĩa các endpoint có thể sử dụng
+    const endpoints = [
+      // Endpoint chính - sử dụng API downloadImage của parentPrescription
+      `${API_BASE_URL}/parentPrescription/downloadImage?fileName=${fileName}`,
+      // Endpoint dự phòng 1 - đường dẫn trực tiếp đến thư mục files
+      `${API_BASE_URL}/files/parentPrecriptions/${fileName}`,
+      // Endpoint dự phòng 2 - đường dẫn không có api
+      `http://localhost:5273/files/parentPrecriptions/${fileName}`
+    ];
+    
+    // Sử dụng endpoint chính
+    return endpoints[0];
   };
 
   useEffect(() => {
@@ -1039,16 +1062,25 @@ const Medications = () => {
                       <strong>Tệp đơn thuốc:</strong>
                       <div>
                         {console.log("Prescription file path:", selectedMedication.prescriptionFile)}
-                        <a 
-                          href={getPrescriptionFileUrl(selectedMedication.prescriptionFile)} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          style={{ color: '#007bff', textDecoration: 'underline' }}
-                        >
-                          Xem đơn thuốc
-                        </a>
-                </div>
-                </div>
+                        {console.log("Full URL:", getPrescriptionFileUrl(selectedMedication.prescriptionFile))}
+                        <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                          <a 
+                            onClick={handleViewPrescriptionImage}
+                            style={{ 
+                              color: '#fff', 
+                              backgroundColor: '#007bff', 
+                              padding: '6px 12px', 
+                              borderRadius: '4px',
+                              textDecoration: 'none',
+                              display: 'inline-block',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Xem đơn thuốc
+                          </a>
+                        </div>
+                      </div>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1195,6 +1227,94 @@ const Medications = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal hiển thị hình ảnh đơn thuốc */}
+      {showPrescriptionImage && selectedMedication && selectedMedication.prescriptionFile && (
+        <div className="student-dialog-overlay" style={{ zIndex: 1050 }}>
+          <div className="student-dialog-content" style={{ maxWidth: '90%', maxHeight: '90vh', padding: '10px' }}>
+            <div className="student-dialog-header" style={{ marginBottom: '10px' }}>
+              <h2>Đơn thuốc</h2>
+              <button className="student-dialog-close" onClick={handleClosePrescriptionImage}>×</button>
+            </div>
+            <div className="student-dialog-body" style={{ textAlign: 'center', overflow: 'auto', maxHeight: 'calc(90vh - 120px)' }}>
+              {/* Thêm loading indicator */}
+              <div id="image-loading-indicator" style={{ marginBottom: '10px', color: '#007bff' }}>Đang tải hình ảnh...</div>
+              
+              <img 
+                src={getPrescriptionFileUrl(selectedMedication.prescriptionFile)} 
+                alt="Đơn thuốc" 
+                style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} 
+                onLoad={() => {
+                  // Ẩn loading indicator khi ảnh đã tải xong
+                  const indicator = document.getElementById('image-loading-indicator');
+                  if (indicator) indicator.style.display = 'none';
+                }}
+                onError={(e) => {
+                  // Ẩn loading indicator và hiển thị lỗi
+                  const indicator = document.getElementById('image-loading-indicator');
+                  if (indicator) indicator.style.display = 'none';
+                  
+                  console.error("Error loading prescription image:", e.target.src);
+                  e.target.onerror = null; // Prevent infinite error loop
+                  
+                  // Lấy tên file từ đường dẫn gốc
+                  const fileName = selectedMedication.prescriptionFile.includes('/') 
+                    ? selectedMedication.prescriptionFile.split('/').pop() 
+                    : selectedMedication.prescriptionFile;
+                  
+                  // Định nghĩa các endpoint có thể sử dụng
+                  const endpoints = [
+                    // Endpoint chính - sử dụng API downloadImage của parentPrescription
+                    `${API_BASE_URL}/parentPrescription/downloadImage?fileName=${fileName}`,
+                    // Endpoint dự phòng 1 - đường dẫn trực tiếp đến thư mục files
+                    `${API_BASE_URL}/files/parentPrecriptions/${fileName}`,
+                    // Endpoint dự phòng 2 - đường dẫn không có api
+                    `http://localhost:5273/files/parentPrecriptions/${fileName}`,
+                    // Endpoint dự phòng 3 - thử port 7024
+                    `http://localhost:7024/files/parentPrecriptions/${fileName}`,
+                    // Endpoint dự phòng 4 - sử dụng thư mục blogs như trong ParentPrescriptions.jsx
+                    `${API_BASE_URL}/files/blogs/${fileName}`
+                  ];
+                  
+                  // Tìm endpoint hiện tại trong danh sách
+                  const currentSrc = e.target.src;
+                  const currentIndex = endpoints.findIndex(endpoint => 
+                    currentSrc.includes(endpoint) || endpoint.includes(currentSrc)
+                  );
+                  
+                  // Thử endpoint tiếp theo nếu có
+                  if (currentIndex < endpoints.length - 1) {
+                    const nextIndex = currentIndex + 1;
+                    console.log(`Thử URL thay thế (${nextIndex + 1}/${endpoints.length}):`, endpoints[nextIndex]);
+                    e.target.src = endpoints[nextIndex];
+                    return;
+                  }
+                  
+                  // Nếu đã thử tất cả endpoint, hiển thị ảnh placeholder
+                  e.target.src = "https://via.placeholder.com/400x600?text=Không+thể+tải+hình+ảnh";
+                  
+                  // Show error message
+                  const errorDiv = document.createElement('div');
+                  errorDiv.style.color = 'red';
+                  errorDiv.style.marginTop = '10px';
+                  errorDiv.innerText = `Không thể tải hình ảnh. Vui lòng thử tải xuống để xem.`;
+                  e.target.parentNode.appendChild(errorDiv);
+                }}
+              />
+            </div>
+            <div className="student-dialog-footer">
+              <button
+                className="admin-btn"
+                style={{ backgroundColor: '#6c757d' }}
+                onClick={handleClosePrescriptionImage}
+              >
+                Đóng
+              </button>
+              {/* Xóa nút tải xuống vì ảnh đã hiển thị thành công */}
+            </div>
           </div>
         </div>
       )}
