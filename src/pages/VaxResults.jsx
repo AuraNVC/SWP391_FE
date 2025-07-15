@@ -27,7 +27,7 @@ const StudentNameCell = ({ studentId, initialName, healthProfileId }) => {
             
             console.log(`Fetched student name for ID ${studentId}: ${name}`);
             setStudentName(name);
-            setDisplayName(`${name} (ID: ${studentId})`);
+            setDisplayName(`${name}`);
             setLoading(false);
             return;
           }
@@ -46,7 +46,7 @@ const StudentNameCell = ({ studentId, initialName, healthProfileId }) => {
               
               console.log(`Fetched student name from health profile: ${name}`);
               setStudentName(name);
-              setDisplayName(`${name} (ID: ${profileResponse.studentId})`);
+              setDisplayName(`${name}`);
               setLoading(false);
               return;
             }
@@ -102,7 +102,7 @@ const NurseNameCell = ({ nurseId, initialName }) => {
               
               console.log(`Fetched nurse name for ID ${nurseId}: ${name}`);
               setNurseName(`${name}`);
-              setDisplayName(`${name} (ID: ${nurseId})`);
+              setDisplayName(`${name}`);
               setLoading(false);
               return;
             }

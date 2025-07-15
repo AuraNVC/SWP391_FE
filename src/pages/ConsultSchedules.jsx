@@ -59,7 +59,6 @@ const ConsultSchedules = () => {
       render: (name, record) => (
         <>
           {name || "Không có"} 
-          <span style={{ fontSize: "0.9em", color: "#666", display: "block" }}>ID: {record.studentId || "N/A"}</span>
         </>
       )
     },
@@ -69,7 +68,6 @@ const ConsultSchedules = () => {
       render: (name, record) => (
         <>
           {name || "Chưa phân công"} 
-          <span style={{ fontSize: "0.9em", color: "#666", display: "block" }}>ID: {record.nurseId || "N/A"}</span>
         </>
       )
     },
