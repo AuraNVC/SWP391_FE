@@ -1,7 +1,7 @@
 import { Outlet, useLocation } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
-    FaTachometerAlt, FaUser, FaUsers, FaUserTie, FaWpforms, FaBlog, FaStethoscope, FaSyringe
+    FaTachometerAlt, FaUser, FaUsers, FaUserTie, FaWpforms, FaBlog, FaStethoscope, FaSyringe, FaPills
 } from "react-icons/fa";
 
 export default function AdminLayout() {
@@ -19,6 +19,7 @@ export default function AdminLayout() {
         <a href="/manager/vaccination-schedule" className={current === "/manager/vaccination-schedule" ? "active" : ""}>
             <FaSyringe /> Lịch tiêm
         </a>,
+        <a href="/manager/medical-inventory" className={current === "/manager/medical-inventory" ? "active" : ""}><FaPills /> Vật tư y tế</a>,
     ];
 
     return (

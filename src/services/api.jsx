@@ -600,4 +600,29 @@ export const API_SERVICE = {
         })
     },
     // Thêm các nhóm API khác nếu cần
+    medicalInventoryAPI: {
+        getById: (id) => callApi(`${API_BASE_URL}/medicalInventory/${id}`, {
+            method: "GET",
+            headers: { "Content-Type": "application/json" }
+        }),
+        delete: (id) => callApi(`${API_BASE_URL}/medicalInventory/${id}`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" }
+        }),
+        create: (data) => callApi(`${API_BASE_URL}/medicalInventory/add`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        update: (data) => callApi(`${API_BASE_URL}/medicalInventory/update`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
+        search: (data) => callApi(`${API_BASE_URL}/medicalInventory/search`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        })
+    }
 };

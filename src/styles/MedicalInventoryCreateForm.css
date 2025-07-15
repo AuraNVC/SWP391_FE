@@ -1,0 +1,93 @@
+/* MedicalInventoryCreateForm.css - Style cho trang tạo mới vật tư y tế, đồng bộ với các trang tạo mới khác */
+
+.medical-inventory-create-page-container {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  margin-top: 24px;
+}
+
+.medical-inventory-create-form {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 32px 32px 24px 32px;
+  width: 100%;
+  max-width: 500px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  font-weight: 500;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.form-group .required {
+  color: #e53935;
+  margin-left: 2px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 16px;
+  background: #fafbfc;
+  transition: border 0.2s;
+}
+
+.form-control:focus {
+  border: 1.5px solid #1976d2;
+  outline: none;
+  background: #fff;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.admin-btn {
+  background: #42a5f5;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 20px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.admin-btn:disabled {
+  background: #b3e5fc;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  background: #757575;
+}
+
+.success-msg {
+  color: #388e3c;
+  background: #e8f5e9;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  font-size: 15px;
+}
+
+.error-msg {
+  color: #d32f2f;
+  background: #ffebee;
+  border-radius: 4px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  font-size: 15px;
+} 
