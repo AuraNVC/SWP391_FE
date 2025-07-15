@@ -549,63 +549,45 @@ const ConsultSchedules = () => {
         console.log("Form API response:", formResponse);
       }
       
-      // Gửi thông báo nếu được chọn và có phụ huynh
-      if (formData.sendNotification && parentId) {
+      // Gửi thông báo đến phụ huynh nếu có thông tin phụ huynh
+      if (parentId) {
         try {
           // Chuẩn bị dữ liệu thông báo
-          const notificationTitle = formData.showFormSection && formData.formTitle
-            ? `Lịch tư vấn mới: ${formData.formTitle}`
-            : "Lịch tư vấn mới";
+          const notificationTitle = formData.formTitle 
+            ? `Cập nhật lịch tư vấn: ${formData.formTitle}`
+            : "Cập nhật lịch tư vấn";
           
-          // Tạo nội dung thông báo với thông tin chi tiết hơn
-          let notificationContent = `Bạn có lịch tư vấn vào ngày ${new Date(consultDateTime).toLocaleDateString('vi-VN')} lúc ${new Date(consultDateTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} tại ${formData.location}.`;
+          // Tạo nội dung thông báo
+          const notificationContent = `Lịch tư vấn đã được cập nhật vào ngày ${new Date(consultDateTime).toLocaleDateString('vi-VN')} lúc ${new Date(consultDateTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} tại ${formData.location}.`;
           
-          // Thêm thông tin học sinh
-          const student = students.find(s => s.studentId === studentId);
-          if (student) {
-            const studentName = student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim();
-            notificationContent += `\nHọc sinh: ${studentName}`;
-          }
-          
-          // Thêm thông tin y tá nếu có
-          if (formData.nurseId) {
-            const nurseId = parseInt(formData.nurseId);
-            if (!isNaN(nurseId)) {
-              const nurse = nurses.find(n => n.nurseId === nurseId);
-              if (nurse) {
-                const nurseName = nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim();
-                notificationContent += `\nY tá phụ trách: ${nurseName}`;
-              }
-            }
-          }
-            
           const notificationData = {
             recipientId: parentId,
             title: notificationTitle,
             content: notificationContent,
             type: "ConsultationSchedule",
-            referenceId: parseInt(scheduleId)
+            referenceId: scheduleId
           };
+          
+          console.log("Sending notification:", notificationData);
           
           // Gọi API để gửi thông báo
           const notifResult = await API_SERVICE.notificationAPI.create(notificationData);
           console.log("Notification result:", notifResult);
           
-          // Thông báo cho người dùng biết rằng tính năng gửi thông báo đang được bảo trì
-      setNotif({
-            message: "Thêm lịch tư vấn và form tư vấn thành công (Tính năng thông báo đang được bảo trì)",
-        type: "success"
-      });
+          setNotif({
+            message: "Đã cập nhật lịch tư vấn thành công.",
+            type: "success"
+          });
         } catch (notifError) {
           console.error("Error sending notification:", notifError);
           setNotif({
-            message: "Thêm lịch tư vấn và form tư vấn thành công",
+            message: "Cập nhật lịch tư vấn thành công",
             type: "success"
           });
         }
       } else {
         setNotif({
-          message: "Thêm lịch tư vấn và form tư vấn thành công",
+          message: "Cập nhật lịch tư vấn thành công",
           type: "success"
         });
       }
@@ -760,8 +742,8 @@ const ConsultSchedules = () => {
         }
       }
       
-      // Gửi thông báo nếu được chọn và có phụ huynh
-      if (formData.sendNotification && parentId) {
+      // Gửi thông báo đến phụ huynh nếu có thông tin phụ huynh
+      if (parentId) {
         try {
           // Chuẩn bị dữ liệu thông báo
           const notificationTitle = formData.formTitle 
@@ -785,17 +767,16 @@ const ConsultSchedules = () => {
           const notifResult = await API_SERVICE.notificationAPI.create(notificationData);
           console.log("Notification result:", notifResult);
           
-          // Thông báo cho người dùng biết rằng tính năng gửi thông báo đang được bảo trì
           setNotif({
-            message: "Đã cập nhật lịch tư vấn thành công. Tính năng gửi thông báo đang được bảo trì.",
+            message: "Đã cập nhật lịch tư vấn thành công.",
             type: "success"
           });
         } catch (notifError) {
           console.error("Error sending notification:", notifError);
-      setNotif({
-        message: "Cập nhật lịch tư vấn thành công",
-        type: "success"
-      });
+          setNotif({
+            message: "Cập nhật lịch tư vấn thành công",
+            type: "success"
+          });
         }
       } else {
         setNotif({
@@ -1320,29 +1301,20 @@ const ConsultSchedules = () => {
 
   const handleUpdateForm = async (e) => {
     e.preventDefault();
-    
     if (!editFormData) return;
     
     setLoading(true);
     try {
-      // Lưu phiên bản cũ vào lịch sử trước khi cập nhật
-      if (consultationForm) {
-        setFormHistory(prev => [...prev, {
-          ...consultationForm,
-          modifiedDate: new Date().toISOString(),
-          modifiedBy: localStorage.getItem("userId") || "",
-          modifiedByName: localStorage.getItem("userName") || "Y tá"
-        }]);
-      }
+      console.log("Updating form with data:", editFormData);
       
-      // Đảm bảo ID form là số nguyên
+      // Đảm bảo ID là số nguyên
       const formId = parseInt(editFormData.consultationFormId);
       if (isNaN(formId)) {
         throw new Error("ID form tư vấn không hợp lệ");
       }
       
-      // Chuẩn bị dữ liệu gửi đi cho form tư vấn
-      const formData = {
+      // Chuẩn bị dữ liệu form
+      const formDataToSubmit = {
         consultationFormId: formId,
         consultationScheduleId: parseInt(editFormData.consultationScheduleId),
         title: editFormData.title,
@@ -1357,51 +1329,38 @@ const ConsultSchedules = () => {
         modifiedBy: localStorage.getItem("userId") || ""
       };
       
-      console.log("Updating form with data:", formData);
-      
       // Gọi API để cập nhật form tư vấn
-      const formResponse = await API_SERVICE.consultationFormAPI.update(formId, formData);
-      console.log("Form API response:", formResponse);
+      const response = await API_SERVICE.consultationFormAPI.update(formId, formDataToSubmit);
+      console.log("Form API response:", response);
       
-      // Gửi thông báo nếu được chọn và có phụ huynh
-      if (editFormData.sendNotification && editFormData.parentId) {
+      // Gửi thông báo đến phụ huynh nếu có thông tin phụ huynh
+      if (editFormData.parentId) {
         try {
           console.log("Sending notification to parent ID:", editFormData.parentId);
           
-          const notificationData = {
+          const notificationResponse = await API_SERVICE.notificationAPI.create({
             recipientId: parseInt(editFormData.parentId),
             title: `Cập nhật form tư vấn: ${editFormData.title}`,
             content: `Form tư vấn "${editFormData.title}" đã được cập nhật bởi y tá.`,
             type: "ConsultationForm",
             referenceId: formId
-          };
-          
-          // Gọi API để gửi thông báo
-          const notifResult = await API_SERVICE.notificationAPI.create(notificationData);
-          console.log("Notification result:", notifResult);
-          
-          // Thông báo cho người dùng biết rằng tính năng gửi thông báo đang được bảo trì
-          setNotif({
-            message: "Đã cập nhật form tư vấn thành công. Tính năng gửi thông báo đang được bảo trì.",
-            type: "success"
           });
+          
+          console.log("Notification response:", notificationResponse);
         } catch (notifError) {
           console.error("Error sending notification:", notifError);
-          setNotif({
-            message: "Cập nhật form tư vấn thành công",
-            type: "success"
-          });
+          // Không báo lỗi cho người dùng vì đây chỉ là tính năng phụ
         }
-      } else {
-        setNotif({
-          message: "Cập nhật form tư vấn thành công",
-          type: "success"
-        });
       }
       
-      setShowEditFormModal(false);
+      // Hiển thị thông báo thành công
+      setNotif({
+        message: "Cập nhật form tư vấn thành công",
+        type: "success"
+      });
       
-      // Cập nhật lại dữ liệu form trong state
+      // Đóng modal và cập nhật danh sách
+      setShowEditFormModal(false);
       fetchConsultationForm(editFormData.consultationScheduleId);
     } catch (error) {
       console.error("Error updating consultation form:", error);
@@ -1686,25 +1645,6 @@ const ConsultSchedules = () => {
                 >
                   {formData.showFormSection ? "Ẩn form tư vấn" : "Hiển thị form tư vấn"}
                 </button>
-                <div className="form-check">
-                  <input
-                    type="checkbox"
-                    className="form-check-input"
-                    id="sendNotification"
-                    name="sendNotification"
-                    checked={formData.sendNotification || false}
-                    onChange={(e) => setFormData({...formData, sendNotification: e.target.checked})}
-                    disabled={!formData.parentId}
-                  />
-                  <label className="form-check-label" htmlFor="sendNotification">
-                    Gửi thông báo đến phụ huynh
-                  </label>
-                  {!formData.parentId && (
-                    <div className="form-text text-danger">
-                      <small>Học sinh chưa có thông tin phụ huynh</small>
-                    </div>
-                  )}
-                </div>
               </div>
               
               {/* Thông tin form tư vấn - hiển thị khi nhấn nút */}
@@ -2083,25 +2023,6 @@ const ConsultSchedules = () => {
                 >
                   {formData.showFormSection ? "Ẩn form tư vấn" : "Hiển thị form tư vấn"}
                 </button>
-                <div className="form-check">
-                  <input
-                    type="checkbox"
-                    className="form-check-input"
-                    id="edit-sendNotification"
-                    name="sendNotification"
-                    checked={formData.sendNotification || false}
-                    onChange={(e) => setFormData({...formData, sendNotification: e.target.checked})}
-                    disabled={!formData.parentId}
-                  />
-                  <label className="form-check-label" htmlFor="edit-sendNotification">
-                    Gửi thông báo cập nhật đến phụ huynh
-                  </label>
-                  {!formData.parentId && (
-                    <div className="form-text text-danger">
-                      <small>Học sinh chưa có thông tin phụ huynh</small>
-                    </div>
-                  )}
-                </div>
               </div>
               
               {/* Thông tin form tư vấn - hiển thị khi nhấn nút */}
@@ -2274,19 +2195,6 @@ const ConsultSchedules = () => {
                     </div>
                   </div>
                 )}
-                
-                <div className="mb-3 form-check">
-                  <input
-                    type="checkbox"
-                    className="form-check-input"
-                    id="send-notification"
-                    checked={editFormData.sendNotification}
-                    onChange={(e) => setEditFormData({...editFormData, sendNotification: e.target.checked})}
-                  />
-                  <label className="form-check-label" htmlFor="send-notification">
-                    Gửi thông báo cập nhật đến phụ huynh
-                  </label>
-                </div>
                 
                 <div className="d-flex justify-content-end gap-2">
                   <button type="submit" className="btn btn-primary" disabled={loading}>
