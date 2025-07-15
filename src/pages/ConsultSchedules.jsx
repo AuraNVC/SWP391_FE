@@ -64,7 +64,7 @@ const ConsultSchedules = () => {
       dataIndex: "studentName", 
       render: (name, record) => (
         <>
-          {name || "Không có"}
+          {name || "Không có"} 
         </>
       )
     },
@@ -73,7 +73,7 @@ const ConsultSchedules = () => {
       dataIndex: "nurseName", 
       render: (name, record) => (
         <>
-          {name || "Chưa phân công"}
+          {name || "Chưa phân công"} 
         </>
       )
     },
@@ -559,7 +559,7 @@ const ConsultSchedules = () => {
           
           // Tạo nội dung thông báo
           const notificationContent = `Lịch tư vấn đã được cập nhật vào ngày ${new Date(consultDateTime).toLocaleDateString('vi-VN')} lúc ${new Date(consultDateTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} tại ${formData.location}.`;
-          
+            
           const notificationData = {
             recipientId: parentId,
             title: notificationTitle,
@@ -574,10 +574,10 @@ const ConsultSchedules = () => {
           const notifResult = await API_SERVICE.notificationAPI.create(notificationData);
           console.log("Notification result:", notifResult);
           
-          setNotif({
+      setNotif({
             message: "Đã cập nhật lịch tư vấn thành công.",
-            type: "success"
-          });
+        type: "success"
+      });
         } catch (notifError) {
           console.error("Error sending notification:", notifError);
           setNotif({
@@ -773,10 +773,10 @@ const ConsultSchedules = () => {
           });
         } catch (notifError) {
           console.error("Error sending notification:", notifError);
-          setNotif({
-            message: "Cập nhật lịch tư vấn thành công",
-            type: "success"
-          });
+      setNotif({
+        message: "Cập nhật lịch tư vấn thành công",
+        type: "success"
+      });
         }
       } else {
         setNotif({
@@ -1354,10 +1354,10 @@ const ConsultSchedules = () => {
       }
       
       // Hiển thị thông báo thành công
-      setNotif({
-        message: "Cập nhật form tư vấn thành công",
-        type: "success"
-      });
+        setNotif({
+          message: "Cập nhật form tư vấn thành công",
+          type: "success"
+        });
       
       // Đóng modal và cập nhật danh sách
       setShowEditFormModal(false);
@@ -1485,14 +1485,14 @@ const ConsultSchedules = () => {
                   <input
                     type="text"
                     className="form-control"
-                    id="studentId"
+                  id="studentId"
                     name="studentSearchTerm"
                     value={formData.studentSearchTerm}
                     onChange={handleInputChange}
                     onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
                     onClick={() => setShowStudentDropdown(true)}
                     placeholder="Nhập tên hoặc ID học sinh"
-                    required
+                  required
                   />
                   {showStudentDropdown && filteredStudents.length > 0 && (
                     <div style={{
@@ -1518,8 +1518,8 @@ const ConsultSchedules = () => {
                           {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || `Học sinh ID: ${student.studentId}`}
                         </div>
                       ))}
-                    </div>
-                  )}
+              </div>
+                )}
                   {showStudentDropdown && filteredStudents.length === 0 && (
                     <div style={{
                       position: 'absolute',
@@ -1533,9 +1533,9 @@ const ConsultSchedules = () => {
                       zIndex: 1000
                     }}>
                       Không tìm thấy học sinh
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
+              </div>
               </div>
               <div className="mb-3">
                 <label htmlFor="consultationDate" className="form-label">Ngày tư vấn <span className="text-danger">*</span></label>
@@ -1584,10 +1584,10 @@ const ConsultSchedules = () => {
                   <input
                     type="text"
                     className="form-control"
-                    id="nurseId"
+                  id="nurseId"
                     name="nurseSearchTerm"
                     value={formData.nurseSearchTerm}
-                    onChange={handleInputChange}
+                  onChange={handleInputChange}
                     onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
                     onClick={() => setShowNurseDropdown(true)}
                     placeholder="Nhập tên hoặc ID y tá"
@@ -1615,7 +1615,7 @@ const ConsultSchedules = () => {
                         >
                           {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
                         </div>
-                      ))}
+                  ))}
                     </div>
                   )}
                   {showNurseDropdown && filteredNurses.length === 0 && (
@@ -1867,14 +1867,14 @@ const ConsultSchedules = () => {
                   <input
                     type="text"
                     className="form-control"
-                    id="edit-studentId"
+                  id="edit-studentId"
                     name="studentSearchTerm"
                     value={formData.studentSearchTerm}
                     onChange={handleInputChange}
                     onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
                     onClick={() => setShowStudentDropdown(true)}
                     placeholder="Nhập tên hoặc ID học sinh"
-                    required
+                  required
                   />
                   {showStudentDropdown && filteredStudents.length > 0 && (
                     <div style={{
@@ -1900,8 +1900,8 @@ const ConsultSchedules = () => {
                           {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || `Học sinh ID: ${student.studentId}`}
                         </div>
                       ))}
-                    </div>
-                  )}
+              </div>
+                )}
                   {showStudentDropdown && filteredStudents.length === 0 && (
                     <div style={{
                       position: 'absolute',
@@ -1915,8 +1915,8 @@ const ConsultSchedules = () => {
                       zIndex: 1000
                     }}>
                       Không tìm thấy học sinh
-                    </div>
-                  )}
+                  </div>
+                )}
                 </div>
               </div>
               <div className="mb-3">
@@ -1962,10 +1962,10 @@ const ConsultSchedules = () => {
                   <input
                     type="text"
                     className="form-control"
-                    id="edit-nurseId"
+                  id="edit-nurseId"
                     name="nurseSearchTerm"
                     value={formData.nurseSearchTerm}
-                    onChange={handleInputChange}
+                  onChange={handleInputChange}
                     onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
                     onClick={() => setShowNurseDropdown(true)}
                     placeholder="Nhập tên hoặc ID y tá"
@@ -1993,7 +1993,7 @@ const ConsultSchedules = () => {
                         >
                           {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
                         </div>
-                      ))}
+                  ))}
                     </div>
                   )}
                   {showNurseDropdown && filteredNurses.length === 0 && (

@@ -24,7 +24,6 @@ const Medications = () => {
     parentName: "",
     medicationName: "",
     dateFrom: "",
-    dateTo: "",
     status: "all", // all, pending, accepted, rejected
     remainingQuantity: "all" // all, low, medium, high
   });
@@ -283,15 +282,6 @@ const Medications = () => {
       });
     }
     
-    if (filters.dateTo) {
-      const toDate = new Date(filters.dateTo);
-      toDate.setHours(23, 59, 59, 999); // Đặt thời gian là cuối ngày
-      result = result.filter(med => {
-        const createdDate = new Date(med.createdDate);
-        return createdDate <= toDate;
-      });
-    }
-    
     if (filters.status !== "all") {
       result = result.filter(med => {
         // Kiểm tra giá trị status từ API
@@ -426,7 +416,6 @@ const Medications = () => {
       parentName: "",
       medicationName: "",
       dateFrom: "",
-      dateTo: "",
       status: "all",
       remainingQuantity: "all"
     });
@@ -842,19 +831,6 @@ const Medications = () => {
                 id="dateFrom"
                 name="dateFrom"
                 value={filters.dateFrom}
-                onChange={handleFilterChange}
-                className="form-control"
-                style={{ width: '100%', padding: '8px' }}
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="dateTo" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Đến ngày</label>
-              <input
-                type="date"
-                id="dateTo"
-                name="dateTo"
-                value={filters.dateTo}
                 onChange={handleFilterChange}
                 className="form-control"
                 style={{ width: '100%', padding: '8px' }}

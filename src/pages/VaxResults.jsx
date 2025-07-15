@@ -1157,13 +1157,13 @@ const VaxResults = () => {
       doseNumber: result.doseNumber || "1",
       reactionAfterInjection: result.reactionAfterInjection || "",
       status: result.status?.toString() || "1",
-      note: result.note || "",
-      vaccineName: result.vaccineName || "",
+          note: result.note || "",
+          vaccineName: result.vaccineName || "",
       injectionDate: result.injectionDate ? new Date(result.injectionDate).toISOString().split('T')[0] : "",
-      injectionTime: result.injectionTime || ""
+          injectionTime: result.injectionTime || ""
     });
-    
-    setSelectedResult(result);
+        
+        setSelectedResult(result);
     setShowEditModal(true);
   };
 
@@ -1482,11 +1482,11 @@ const VaxResults = () => {
                         type="text"
                         name="studentSearchTerm"
                         value={formData.studentSearchTerm}
-                        onChange={handleInputChange}
+                      onChange={handleInputChange}
                         onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
                         onClick={() => setShowStudentDropdown(true)}
                         placeholder="Nhập tên hoặc ID học sinh"
-                        required
+                      required
                       />
                       {showStudentDropdown && filteredStudents.length > 0 && (
                         <div style={{
@@ -1539,11 +1539,11 @@ const VaxResults = () => {
                         type="text"
                         name="nurseSearchTerm"
                         value={formData.nurseSearchTerm || ""}
-                        onChange={handleInputChange}
+                      onChange={handleInputChange}
                         onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
                         onClick={() => setShowNurseDropdown(true)}
                         placeholder="Nhập tên hoặc ID y tá"
-                        required
+                      required
                         style={{ backgroundColor: '#ffffff', borderColor: '#28a745' }}
                       />
                       {showNurseDropdown && filteredNurses.length > 0 && (
@@ -1802,11 +1802,11 @@ const VaxResults = () => {
                         type="text"
                         name="nurseSearchTerm"
                         value={formData.nurseSearchTerm || ""}
-                        onChange={handleInputChange}
+                      onChange={handleInputChange}
                         onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
                         onClick={() => setShowNurseDropdown(true)}
                         placeholder="Nhập tên hoặc ID y tá"
-                        required
+                      required
                         style={{ backgroundColor: '#ffffff', borderColor: '#28a745' }}
                       />
                       {showNurseDropdown && filteredNurses.length > 0 && (
