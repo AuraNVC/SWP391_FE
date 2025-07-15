@@ -424,6 +424,7 @@ const Medications = () => {
       // Kiểm tra giá trị status từ API
       prescriptionsResponse.forEach(prescription => {
         console.log(`Prescription ID: ${prescription.prescriptionId}, Status: ${prescription.status}, Type: ${typeof prescription.status}`);
+        console.log(`Submitted Date: ${prescription.submittedDate}, Type: ${typeof prescription.submittedDate}`);
       });
       
       // Xử lý dữ liệu để hiển thị
@@ -441,6 +442,7 @@ const Medications = () => {
           try {
             // Lấy danh sách thuốc theo đơn thuốc
             const medicationsResponse = await API_SERVICE.medicationAPI.getByPrescription(prescription.prescriptionId);
+            console.log(`Medications for prescription ${prescription.prescriptionId}:`, medicationsResponse);
             
             // Nếu có thuốc, lấy tên thuốc đầu tiên
             if (medicationsResponse && medicationsResponse.length > 0) {
@@ -451,6 +453,8 @@ const Medications = () => {
               remainingQuantity = medication.remainingQuantity;
               medicationId = medication.medicationId;
               studentId = medication.studentId;
+              
+              console.log(`Medication details - ID: ${medicationId}, Name: ${medicationName}, Remaining: ${remainingQuantity}`);
               
               // Lấy thông tin học sinh từ thuốc
               if (medication.studentId) {
@@ -483,13 +487,27 @@ const Medications = () => {
             }
           }
           
+          // Xử lý ngày kê đơn
+          let submittedDate = prescription.submittedDate;
+          if (submittedDate) {
+            // Nếu là string dạng "yyyy-MM-dd", chuyển đổi thành đối tượng Date
+            if (typeof submittedDate === 'string' && submittedDate.includes('-')) {
+              submittedDate = new Date(submittedDate);
+            } 
+            // Nếu là đối tượng DateOnly từ API, chuyển đổi thành đối tượng Date
+            else if (typeof submittedDate === 'object' && submittedDate.year && submittedDate.month && submittedDate.day) {
+              submittedDate = new Date(submittedDate.year, submittedDate.month - 1, submittedDate.day);
+            }
+          }
+          
           // Trả về dữ liệu đã xử lý
           return {
             ...prescription,
             medicationName,
             studentName,
             parentName,
-            createdDate: prescription.submittedDate,
+            createdDate: submittedDate,
+            submittedDate: submittedDate,
             dosage,
             quantity,
             remainingQuantity,
@@ -573,8 +591,11 @@ const Medications = () => {
         medicationName: selectedMedication.medicationName,
         dosage: selectedMedication.dosage,
         quantity: selectedMedication.quantity,
-        remainingQuantity: newQuantity
+        remainingQuantity: newQuantity,
+        studentId: selectedMedication.studentId
       };
+
+      console.log("Updating medication with data:", updateData);
 
       // Gọi API cập nhật
       await API_SERVICE.medicationAPI.update(updateData);
@@ -1005,10 +1026,10 @@ const Medications = () => {
                     <strong>Lịch uống:</strong> {selectedMedication.schedule || "Không có"}
                 </div>
                 <div className="info-item">
-                    <strong>Số lượng:</strong> {selectedMedication.quantity || "Không có"}
+                    <strong>Tổng số lượng:</strong> {selectedMedication.quantity || "Không có"}
                 </div>
                 <div className="info-item">
-                    <strong>Số lượng còn lại:</strong> {selectedMedication.remainingQuantity || "Không có"}
+                    <strong>Số lượng còn lại:</strong> {selectedMedication.remainingQuantity !== undefined ? selectedMedication.remainingQuantity : "Không có"}
                   </div>
                   <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
                     <strong>Ghi chú phụ huynh:</strong> {selectedMedication.parentNote || "Không có"}
