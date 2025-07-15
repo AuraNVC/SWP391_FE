@@ -960,11 +960,11 @@ const ConsultSchedules = () => {
               const nurseResponse = await API_SERVICE.nurseAPI.getById(nurseIdInt);
               console.log(`Nurse response:`, nurseResponse);
               
-              if (nurseResponse) {
-                nurseName = nurseResponse.fullName || `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim();
+                if (nurseResponse) {
+                  nurseName = nurseResponse.fullName || `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim();
               }
-            }
-          } catch (nurseError) {
+                }
+              } catch (nurseError) {
             console.error("Error fetching nurse info:", nurseError);
             nurseName = `ID: ${nurseId}`;
           }
@@ -979,12 +979,12 @@ const ConsultSchedules = () => {
               const parentResponse = await API_SERVICE.parentAPI.getById(parentIdInt);
               console.log(`Parent response:`, parentResponse);
               
-              if (parentResponse) {
-                parentName = parentResponse.fullName || `${parentResponse.firstName || ''} ${parentResponse.lastName || ''}`.trim();
-              }
+            if (parentResponse) {
+              parentName = parentResponse.fullName || `${parentResponse.firstName || ''} ${parentResponse.lastName || ''}`.trim();
             }
-          } catch (parentError) {
-            console.error("Error fetching parent info:", parentError);
+          }
+        } catch (parentError) {
+          console.error("Error fetching parent info:", parentError);
             parentName = `ID: ${parentId}`;
           }
         }
@@ -1083,8 +1083,8 @@ const ConsultSchedules = () => {
         
         // Tạo form tạm thời
         const placeholderForm = {
-          consultationFormId: null,
-          consultationScheduleId: scheduleId,
+            consultationFormId: null,
+            consultationScheduleId: scheduleId,
           title: schedule ? `Tư vấn ngày ${new Date(schedule.consultDate).toLocaleDateString('vi-VN')}` : "Form tư vấn mới",
           content: "",
           status: 0,
@@ -1764,12 +1764,7 @@ const ConsultSchedules = () => {
               <button className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowViewModal(false)}>
                 Đóng
               </button>
-              <button className="admin-btn" onClick={() => {
-                setShowViewModal(false);
-                handleEdit(selectedSchedule);
-              }}>
-                Chỉnh sửa
-              </button>
+              
             </div>
           </div>
         </div>
@@ -1859,30 +1854,7 @@ const ConsultSchedules = () => {
               </button>
               {consultationForm && consultationForm.consultationFormId && (
                 <>
-                  <button 
-                    className="admin-btn" 
-                    style={{ background: '#28a745' }}
-                    onClick={() => {
-                      // Lưu dữ liệu form hiện tại vào state để chỉnh sửa
-                      setEditFormData({
-                        consultationFormId: consultationForm.consultationFormId,
-                        consultationScheduleId: consultationForm.consultationScheduleId,
-                        title: consultationForm.title || "",
-                        content: consultationForm.content || "",
-                        status: consultationForm.status,
-                        nurseId: consultationForm.nurseId,
-                        studentId: consultationForm.studentId,
-                        parentId: consultationForm.parentId,
-                        lastModified: new Date().toISOString(),
-                        modifiedBy: localStorage.getItem("userId") || "",
-                        sendNotification: true
-                      });
-                      setShowFormModal(false);
-                      setShowEditFormModal(true);
-                    }}
-                  >
-                    Chỉnh sửa form
-                  </button>
+              
                   <button
                     className="admin-btn"
                     style={{ background: '#17a2b8' }}
@@ -2358,3 +2330,4 @@ const ConsultSchedules = () => {
 };
 
 export default ConsultSchedules;
+

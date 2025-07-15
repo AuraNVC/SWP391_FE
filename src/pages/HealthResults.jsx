@@ -1773,10 +1773,6 @@ const HealthResults = () => {
               </div>
             </div>
             <div className="student-dialog-footer">
-              <button className="admin-btn" onClick={() => {
-                setShowViewModal(false);
-                handleEdit(selectedResult);
-              }}>Chỉnh sửa</button>
               <button className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowViewModal(false)}>Đóng</button>
             </div>
           </div>

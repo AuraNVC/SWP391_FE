@@ -370,8 +370,8 @@ const Medications = () => {
             }
           } catch (medError) {
             console.error("Error fetching medications:", medError);
-          }
-          
+      }
+      
           // Lấy thông tin phụ huynh
           let parentName = "Không xác định";
           if (prescription.parentId) {
@@ -514,7 +514,7 @@ const Medications = () => {
   // Tính toán tỷ lệ sử dụng thuốc
   const calculateUsageStats = (medication) => {
     if (!medication || !medication.quantity) return { used: 0, remaining: 0, percentage: 0 };
-    
+
     const total = medication.quantity || 0;
     const remaining = medication.remainingQuantity || 0;
     const used = total - remaining;
@@ -878,15 +878,6 @@ const Medications = () => {
               )}
             </div>
             <div className="student-dialog-footer">
-              {selectedMedication.medicationId && (
-                <button 
-                  className="admin-btn" 
-                  style={{ backgroundColor: '#28a745' }}
-                  onClick={handleUpdateQuantity}
-                >
-                  Cập nhật số lượng
-              </button>
-              )}
               <button
                 className="admin-btn"
                 style={{ backgroundColor: '#6c757d' }}

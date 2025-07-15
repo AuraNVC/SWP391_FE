@@ -163,12 +163,8 @@ const VaxResults = () => {
     injectionDate: "",
     injectionTime: ""
   });
-  const [statusCounts, setStatusCounts] = useState({
-    total: 0,
-    completed: 0,
-    pending: 0,
-    cancelled: 0
-  });
+
+  const [statusCounts, setStatusCounts] = useState({ total: 0, completed: 0, pending: 0, cancelled: 0 });
 
   const { setNotif } = useNotification();
 
@@ -1255,18 +1251,7 @@ const VaxResults = () => {
     }
   };
 
-  // Tính toán số lượng theo trạng thái
-  const calculateStatusCounts = () => {
-    const total = results.length;
-    const completed = results.filter(r => r.status === "1").length;
-    const pending = results.filter(r => r.status === "0").length;
-    const cancelled = results.filter(r => r.status === "2").length;
-    setStatusCounts({ total, completed, pending, cancelled });
-  };
 
-  useEffect(() => {
-    calculateStatusCounts();
-  }, [results]);
 
   // Update the handler for student ID fetching from schedule
   const getStudentInfoFromSchedule = async (schedule) => {
@@ -1337,6 +1322,19 @@ const VaxResults = () => {
     return { studentId, studentName, healthProfileId };
   };
 
+  // Tính toán số lượng theo trạng thái
+  const calculateStatusCounts = () => {
+    const total = results.length;
+    const completed = results.filter(r => r.status === "1").length;
+    const pending = results.filter(r => r.status === "0").length;
+    const cancelled = results.filter(r => r.status === "2").length;
+    setStatusCounts({ total, completed, pending, cancelled });
+  };
+
+  useEffect(() => {
+    calculateStatusCounts();
+  }, [results]);
+
   return (
     <div className="admin-main">
       <div className="vax-results-container">
@@ -1359,9 +1357,9 @@ const VaxResults = () => {
               {searchLoading ? "Đang tìm..." : <FaSearch />}
             </button>
           </div>
-          </div>
         </div>
-        
+      </div>
+
         <div className="vax-results-add-button">
           <button className="vax-results-btn add-btn" onClick={() => setShowAddModal(true)}>
             <FaPlus /> Thêm kết quả
@@ -1628,12 +1626,6 @@ const VaxResults = () => {
             </div>
             </div>
             <div className="vax-results-modal-footer">
-              <button className="vax-results-btn" onClick={() => {
-                setShowViewModal(false);
-                handleEdit(selectedResult);
-              }}>
-                Chỉnh sửa
-              </button>
               <button className="vax-results-btn" onClick={() => setShowViewModal(false)}>
                 Đóng
               </button>
@@ -1983,3 +1975,4 @@ const VaxResults = () => {
 };
 
 export default VaxResults; 
+
