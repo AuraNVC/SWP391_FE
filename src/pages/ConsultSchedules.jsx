@@ -3,7 +3,7 @@ import { API_SERVICE } from "../services/api";
 import { useNotification } from '../contexts/NotificationContext';
 import '../styles/TableWithPaging.css';
 import TableWithPaging from "../components/TableWithPaging";
-import { FaEye, FaEdit, FaTrash, FaPlus, FaSearch, FaSync, FaCalendarAlt } from "react-icons/fa";
+import { FaEye, FaEdit, FaTrash, FaPlus, FaSearch, FaSync, FaCalendarAlt, FaFilter, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
 import "../styles/Dashboard.css";
 
 
@@ -13,6 +13,7 @@ const ConsultSchedules = () => {
   const isNurse = userRole === "nurse";
   const [showCreateFormModal, setShowCreateFormModal] = useState(false);
   const [schedules, setSchedules] = useState([]);
+  const [filteredSchedules, setFilteredSchedules] = useState([]);
   const [students, setStudents] = useState([]);
   const [nurses, setNurses] = useState([]);
   const [parents, setParents] = useState([]);
@@ -55,37 +56,264 @@ const ConsultSchedules = () => {
   const [showNurseDropdown, setShowNurseDropdown] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // State mới cho tính năng lọc nâng cao
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [filters, setFilters] = useState({
+    date: "",
+    studentName: "",
+    nurseName: "",
+    location: "",
+    formStatus: "all"
+  });
+  
+  // State mới cho tính năng sắp xếp
+  const [sortConfig, setSortConfig] = useState({
+    key: "consultationScheduleId",
+    direction: "desc"
+  });
+
   const { setNotif } = useNotification();
 
   const columns = [
-    { title: "ID", dataIndex: "consultationScheduleId" },
+    { 
+      title: "ID", 
+      dataIndex: "consultationScheduleId",
+      render: (id) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("consultationScheduleId")}>
+          {id}
+          {sortConfig.key === "consultationScheduleId" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
     { 
       title: "Học sinh", 
       dataIndex: "studentName", 
       render: (name, record) => (
-        <>
-          {name || "Không có"} 
-        </>
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
+          {name || "Không có"}
+          {sortConfig.key === "studentName" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
       )
     },
     { 
       title: "Y tá phụ trách", 
       dataIndex: "nurseName", 
       render: (name, record) => (
-        <>
-          {name || "Chưa phân công"} 
-        </>
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("nurseName")}>
+          {name || "Chưa phân công"}
+          {sortConfig.key === "nurseName" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
       )
     },
-    { title: "Địa điểm", dataIndex: "location" },
-    { title: "Ngày tư vấn", dataIndex: "consultDate", render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" },
-    { title: "Giờ tư vấn", dataIndex: "consultTime", render: (_, record) => record.consultDate ? new Date(record.consultDate).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}) : "N/A" },
+    { 
+      title: "Địa điểm", 
+      dataIndex: "location",
+      render: (location) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("location")}>
+          {location}
+          {sortConfig.key === "location" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
+    { 
+      title: "Ngày tư vấn", 
+      dataIndex: "consultDate", 
+      render: (date) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("consultDate")}>
+          {date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}
+          {sortConfig.key === "consultDate" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
+    { 
+      title: "Giờ tư vấn", 
+      dataIndex: "consultTime", 
+      render: (_, record) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("consultTime")}>
+          {record.consultDate ? new Date(record.consultDate).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}) : "N/A"}
+          {sortConfig.key === "consultTime" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    }
   ];
 
   const iconStyle = {
     view: { color: "#007bff" },
     edit: { color: "#28a745" },
     delete: { color: "#dc3545" }
+  };
+
+  // Hàm xử lý sắp xếp
+  const handleSort = (key) => {
+    // Nếu key giống với key hiện tại, đảo ngược hướng sắp xếp
+    // Nếu khác, đặt key mới và hướng mặc định là tăng dần
+    const direction = sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc";
+    setSortConfig({ key, direction });
+  };
+
+  // Thêm useEffect mới để áp dụng bộ lọc khi schedules hoặc filters thay đổi
+  useEffect(() => {
+    applyFiltersAndSort(schedules, filters, sortConfig);
+  }, [schedules, filters, sortConfig]);
+
+  // Hàm mới để áp dụng bộ lọc và sắp xếp
+  const applyFiltersAndSort = (schedulesList = schedules, currentFilters = filters, currentSortConfig = sortConfig) => {
+    let filteredData = [...schedulesList];
+    
+    // Lọc theo ngày
+    if (currentFilters.date) {
+      const selectedDate = new Date(currentFilters.date);
+      selectedDate.setHours(0, 0, 0, 0); // Đặt thời gian là đầu ngày
+      
+      // Tạo ngày kết thúc (cuối ngày)
+      const endDate = new Date(selectedDate);
+      endDate.setHours(23, 59, 59, 999);
+      
+      filteredData = filteredData.filter(schedule => {
+        if (!schedule.consultDate) return false;
+        const consultDate = new Date(schedule.consultDate);
+        return consultDate >= selectedDate && consultDate <= endDate;
+      });
+    }
+    
+    // Lọc theo tên hoặc ID học sinh
+    if (currentFilters.studentName) {
+      filteredData = filteredData.filter(schedule => {
+        // Tìm theo tên học sinh
+        const studentName = schedule.studentName || "";
+        
+        // Tìm theo ID học sinh
+        const studentId = schedule.studentId ? schedule.studentId.toString() : "";
+        
+        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
+        return studentName.toLowerCase().includes(currentFilters.studentName.toLowerCase()) || 
+               studentId.includes(currentFilters.studentName);
+      });
+    }
+    
+    // Lọc theo tên hoặc ID y tá
+    if (currentFilters.nurseName) {
+      filteredData = filteredData.filter(schedule => {
+        // Tìm theo tên y tá
+        const nurseName = schedule.nurseName || "";
+        
+        // Tìm theo ID y tá
+        const nurseId = schedule.nurseId ? schedule.nurseId.toString() : "";
+        
+        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
+        return nurseName.toLowerCase().includes(currentFilters.nurseName.toLowerCase()) || 
+               nurseId.includes(currentFilters.nurseName);
+      });
+    }
+    
+    // Lọc theo địa điểm
+    if (currentFilters.location) {
+      filteredData = filteredData.filter(schedule => 
+        schedule.location && schedule.location.toLowerCase().includes(currentFilters.location.toLowerCase())
+      );
+    }
+    
+    // Áp dụng sắp xếp
+    if (currentSortConfig.key) {
+      filteredData.sort((a, b) => {
+        if (currentSortConfig.key === "consultationScheduleId") {
+          // So sánh ID (số)
+          const idA = a.consultationScheduleId || 0;
+          const idB = b.consultationScheduleId || 0;
+          
+          if (currentSortConfig.direction === "asc") {
+            return idA - idB;
+          } else {
+            return idB - idA;
+          }
+        }
+        else if (currentSortConfig.key === "consultDate") {
+          // So sánh ngày
+          const dateA = a.consultDate ? new Date(a.consultDate).getTime() : 0;
+          const dateB = b.consultDate ? new Date(b.consultDate).getTime() : 0;
+          
+          if (currentSortConfig.direction === "asc") {
+            return dateA - dateB;
+          } else {
+            return dateB - dateA;
+          }
+        }
+        else if (currentSortConfig.key === "consultTime") {
+          // So sánh giờ
+          const timeA = a.consultDate ? new Date(a.consultDate).getTime() % (24 * 60 * 60 * 1000) : 0;
+          const timeB = b.consultDate ? new Date(b.consultDate).getTime() % (24 * 60 * 60 * 1000) : 0;
+          
+          if (currentSortConfig.direction === "asc") {
+            return timeA - timeB;
+          } else {
+            return timeB - timeA;
+          }
+        }
+        else {
+          // Xử lý các trường thông thường
+          const valueA = a[currentSortConfig.key] || "";
+          const valueB = b[currentSortConfig.key] || "";
+          
+          if (currentSortConfig.direction === "asc") {
+            return valueA.toString().localeCompare(valueB.toString());
+          } else {
+            return valueB.toString().localeCompare(valueA.toString());
+          }
+        }
+      });
+    }
+    
+    setFilteredSchedules(filteredData);
+  };
+
+  // Hàm xử lý thay đổi bộ lọc
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Áp dụng bộ lọc ngay lập tức khi người dùng nhập
+    applyFiltersAndSort(schedules, { ...filters, [name]: value }, sortConfig);
+  };
+
+  // Hàm reset bộ lọc
+  const resetFilters = () => {
+    const resetFilterValues = {
+      date: "",
+      studentName: "",
+      nurseName: "",
+      location: "",
+      formStatus: "all"
+    };
+    setFilters(resetFilterValues);
+    // Áp dụng ngay lập tức các bộ lọc đã reset
+    applyFiltersAndSort(schedules, resetFilterValues, sortConfig);
   };
 
   useEffect(() => {
@@ -376,7 +604,35 @@ const ConsultSchedules = () => {
   const handleSearch = async () => {
     setSearchLoading(true);
     try {
+      console.log("Tìm kiếm với từ khóa:", searchKeyword);
+      
+      // Kiểm tra xem searchKeyword có phải là ID không
+      const isNumeric = /^\d+$/.test(searchKeyword);
+      
+      if (isNumeric) {
+        // Nếu là ID, tìm kiếm trong danh sách schedules hiện có
+        const foundSchedules = schedules.filter(schedule => 
+          schedule.consultationScheduleId?.toString() === searchKeyword ||
+          schedule.studentId?.toString() === searchKeyword ||
+          schedule.nurseId?.toString() === searchKeyword
+        );
+        
+        if (foundSchedules.length > 0) {
+          // Nếu tìm thấy, cập nhật filteredSchedules
+          setFilteredSchedules(foundSchedules);
+          setSearchLoading(false);
+          return;
+        }
+      }
+      
+      // Nếu không phải ID hoặc không tìm thấy, gọi API
       await fetchConsultationSchedules(searchKeyword);
+    } catch (error) {
+      console.error("Error during search:", error);
+      setNotif({
+        message: "Lỗi khi tìm kiếm: " + (error.message || "Không xác định"),
+        type: "error"
+      });
     } finally {
       setSearchLoading(false);
     }
@@ -1409,25 +1665,175 @@ const ConsultSchedules = () => {
 
   return (
     <div className="admin-main">
-      <h2 className="dashboard-title">Quản lý lịch tư vấn</h2>
+      <h2 className="dashboard-title">Lịch tư vấn</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={() => setShowAddModal(true)}>
           <FaPlus /> Thêm lịch tư vấn
         </button>
-          <div className="search-container">
-            <input
+        <div className="search-container">
+          <input
             className="admin-search"
-              type="text"
+            type="text"
             placeholder="Tìm kiếm..."
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
-          <button className="admin-btn" onClick={handleSearch} disabled={searchLoading}>
-              {searchLoading ? "Đang tìm..." : <FaSearch />}
+          <button className="admin-btn" onClick={handleSearch}>
+            <FaSearch />
+          </button>
+          <button
+            className="admin-btn"
+            style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}
+            onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+            title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
+          >
+            <FaFilter />
           </button>
         </div>
       </div>
+
+      {/* Phần bộ lọc nâng cao */}
+      {showAdvancedFilter && (
+        <div className="admin-advanced-filter" style={{ 
+          backgroundColor: '#f8f9fa', 
+          padding: '15px', 
+          borderRadius: '5px', 
+          marginBottom: '20px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <h3 style={{ margin: '0', fontSize: '1.1rem', color: '#333' }}>Tìm kiếm nâng cao</h3>
+            <button
+              className="admin-btn"
+              style={{ backgroundColor: '#6c757d', padding: '4px 8px', fontSize: '0.8rem' }}
+              onClick={resetFilters}
+            >
+              Đặt lại bộ lọc
+            </button>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            {/* Lọc theo ngày tư vấn */}
+            <div>
+              <label htmlFor="date" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Ngày tư vấn</label>
+              <input
+                type="date"
+                id="date"
+                name="date"
+                value={filters.date}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo học sinh */}
+            <div>
+              <label htmlFor="studentName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Học sinh</label>
+              <input
+                type="text"
+                id="studentName"
+                name="studentName"
+                value={filters.studentName}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên học sinh hoặc ID"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo y tá */}
+            <div>
+              <label htmlFor="nurseName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Y tá</label>
+              <input
+                type="text"
+                id="nurseName"
+                name="nurseName"
+                value={filters.nurseName}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên y tá hoặc ID"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo địa điểm */}
+            <div>
+              <label htmlFor="location" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Địa điểm</label>
+              <input
+                type="text"
+                id="location"
+                name="location"
+                value={filters.location}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập địa điểm..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo trạng thái form */}
+            <div>
+              <label htmlFor="formStatus" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Trạng thái form</label>
+              <select
+                id="formStatus"
+                name="formStatus"
+                value={filters.formStatus}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              >
+                <option value="all">Tất cả</option>
+                <option value="noform">Chưa có form</option>
+                <option value="pending">Đang chờ</option>
+                <option value="accepted">Đã chấp nhận</option>
+                <option value="rejected">Đã từ chối</option>
+              </select>
+            </div>
+          </div>
+          
+          {/* Thêm phần sắp xếp vào trong bộ lọc */}
+          <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center' }}>
+            <div style={{ marginRight: '15px' }}>
+              <span style={{ fontSize: '0.9rem', marginRight: '8px' }}>Sắp xếp theo:</span>
+              <select
+                value={sortConfig.key}
+                onChange={(e) => setSortConfig({...sortConfig, key: e.target.value})}
+                className="form-control"
+                style={{ display: 'inline-block', width: 'auto', padding: '6px' }}
+              >
+                <option value="consultationScheduleId">ID</option>
+                <option value="studentName">Học sinh</option>
+                <option value="nurseName">Y tá</option>
+                <option value="location">Địa điểm</option>
+                <option value="consultDate">Ngày tư vấn</option>
+                <option value="consultTime">Giờ tư vấn</option>
+              </select>
+            </div>
+            
+            <div>
+              <button
+                className="admin-btn"
+                style={{ 
+                  backgroundColor: sortConfig.direction === 'asc' ? '#28a745' : '#007bff',
+                  padding: '6px 10px'
+                }}
+                onClick={() => setSortConfig({...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'})}
+              >
+                {sortConfig.direction === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
+                <span style={{ marginLeft: '5px' }}>
+                  {sortConfig.direction === 'asc' ? 'Tăng dần' : 'Giảm dần'}
+                </span>
+              </button>
+            </div>
+          </div>
+          
+          <div style={{ marginTop: '10px', fontSize: '0.9rem', color: '#6c757d' }}>
+            <span>Đang hiển thị: <strong>{filteredSchedules.length}</strong> / {schedules.length} kết quả</span>
+          </div>
+        </div>
+      )}
 
       <div className="admin-table-container">
         {loading ? (
@@ -1440,28 +1846,28 @@ const ConsultSchedules = () => {
         ) : (
           <TableWithPaging
             columns={columns}
-            data={schedules}
+            data={filteredSchedules.length > 0 || Object.values(filters).some(val => val !== "") ? filteredSchedules : schedules}
             pageSize={10}
             page={page}
             onPageChange={setPage}
             renderActions={(row) => (
               <div className="admin-action-group">
                 <button
-                  className="admin-action-btn admin-action-view admin-action-btn-reset"
+                  className="admin-action-btn admin-action-btn-reset"
                   title="Xem chi tiết"
                   onClick={() => handleView(row)}
                 >
                   <FaEye style={iconStyle.view} size={18} />
                 </button>
                 <button
-                  className="admin-action-btn admin-action-edit admin-action-btn-reset"
+                  className="admin-action-btn admin-action-btn-reset"
                   title="Chỉnh sửa"
                   onClick={() => handleEdit(row)}
                 >
                   <FaEdit style={iconStyle.edit} size={18} />
                 </button>
                 <button
-                  className="admin-action-btn admin-action-delete admin-action-btn-reset"
+                  className="admin-action-btn admin-action-btn-reset"
                   title="Xóa"
                   onClick={() => handleDeleteSchedule(row.consultationScheduleId)}
                 >
@@ -1469,6 +1875,7 @@ const ConsultSchedules = () => {
                 </button>
               </div>
             )}
+            loading={loading}
           />
         )}
       </div>

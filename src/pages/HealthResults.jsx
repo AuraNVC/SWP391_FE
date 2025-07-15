@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
-import { FaEye, FaEdit, FaPlus, FaSearch, FaSync, FaTrash } from "react-icons/fa";
+import { FaEye, FaEdit, FaPlus, FaSearch, FaSync, FaTrash, FaFilter, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
 import "../styles/Dashboard.css";
 
 // Component riêng để hiển thị tên học sinh
@@ -101,6 +101,7 @@ const StudentNameCell = ({ studentId, initialName, healthProfileId, showIdInTabl
 const HealthResults = () => {
   // State variables for data
   const [results, setResults] = useState([]);
+  const [filteredResults, setFilteredResults] = useState([]);
   const [students, setStudents] = useState([]);
   const [nurses, setNurses] = useState([]);
   const [schedules, setSchedules] = useState([]);
@@ -150,28 +151,130 @@ const HealthResults = () => {
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
   const [showNurseDropdown, setShowNurseDropdown] = useState(false);
   
+  // State mới cho tính năng lọc nâng cao
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [filters, setFilters] = useState({
+    date: "",
+    studentName: "",
+    nurseName: "",
+    height: "",
+    weight: "",
+    vision: "",
+    result: ""
+  });
+  
+  // State mới cho tính năng sắp xếp
+  const [sortConfig, setSortConfig] = useState({
+    key: "healthCheckupRecordId",
+    direction: "desc"
+  });
+  
   const [statusCounts, setStatusCounts] = useState({});
 
   const { setNotif } = useNotification();
 
   const [columns, setColumns] = useState([
-    { title: "ID", dataIndex: "healthCheckupRecordId", key: "recordId" },
-    { title: "Học sinh", dataIndex: "studentName", key: "studentName", render: (name, record) => {
-      // Luôn sử dụng StudentNameCell để hiển thị tên học sinh
-      return <StudentNameCell 
-               studentId={record.studentId} 
-               initialName={record.studentName} 
-               healthProfileId={record.healthProfileId} 
-             />;
-    }},
-    { title: "Chiều cao", dataIndex: "height", key: "heightValue", render: (height) => height ? `${height} cm` : "N/A" },
-    { title: "Cân nặng", dataIndex: "weight", key: "weightValue", render: (weight) => weight ? `${weight} kg` : "N/A" },
-    { title: "Thị lực", dataIndex: "vision", key: "visionValue", render: (_, record) => {
-      const leftVision = record.leftVision || "N/A";
-      const rightVision = record.rightVision || "N/A";
-      return `Trái: ${leftVision} - Phải: ${rightVision}`;
-    }},
-    { title: "Kết quả", dataIndex: "result", key: "resultValue" }
+    { 
+      title: "ID", 
+      dataIndex: "healthCheckupRecordId", 
+      key: "recordId",
+      render: (id) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("healthCheckupRecordId")}>
+          {id}
+          {sortConfig.key === "healthCheckupRecordId" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
+    { 
+      title: "Học sinh", 
+      dataIndex: "studentName", 
+      key: "studentName", 
+      render: (name, record) => {
+        // Luôn sử dụng StudentNameCell để hiển thị tên học sinh
+        return (
+          <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
+            <StudentNameCell 
+              studentId={record.studentId} 
+              initialName={record.studentName} 
+              healthProfileId={record.healthProfileId} 
+            />
+            {sortConfig.key === "studentName" && (
+              <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+                {sortConfig.direction === 'asc' ? '▲' : '▼'}
+              </span>
+            )}
+          </span>
+        );
+      }
+    },
+    { 
+      title: "Chiều cao", 
+      dataIndex: "height", 
+      key: "heightValue", 
+      render: (height) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("height")}>
+          {height ? `${height} cm` : "N/A"}
+          {sortConfig.key === "height" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
+    { 
+      title: "Cân nặng", 
+      dataIndex: "weight", 
+      key: "weightValue", 
+      render: (weight) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("weight")}>
+          {weight ? `${weight} kg` : "N/A"}
+          {sortConfig.key === "weight" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
+    { 
+      title: "Thị lực", 
+      dataIndex: "vision", 
+      key: "visionValue", 
+      render: (_, record) => {
+        const leftVision = record.leftVision || "N/A";
+        const rightVision = record.rightVision || "N/A";
+        return (
+          <span style={{ cursor: 'pointer' }} onClick={() => handleSort("leftVision")}>
+            {`Trái: ${leftVision} - Phải: ${rightVision}`}
+            {sortConfig.key === "leftVision" && (
+              <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+                {sortConfig.direction === 'asc' ? '▲' : '▼'}
+              </span>
+            )}
+          </span>
+        );
+      }
+    },
+    { 
+      title: "Kết quả", 
+      dataIndex: "result", 
+      key: "resultValue",
+      render: (result) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("result")}>
+          {result}
+          {sortConfig.key === "result" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    }
   ]);
 
   const iconStyle = {
@@ -543,17 +646,34 @@ const HealthResults = () => {
     setSearchLoading(true);
     try {
       console.log("Tìm kiếm với từ khóa:", searchKeyword);
-      setPage(1);
       
-      // Gọi hàm fetchHealthCheckResults với từ khóa tìm kiếm
+      // Kiểm tra xem searchKeyword có phải là ID không
+      const isNumeric = /^\d+$/.test(searchKeyword);
+      
+      if (isNumeric) {
+        // Nếu là ID, tìm kiếm trong danh sách results hiện có
+        const foundResults = results.filter(result => 
+          result.healthCheckupRecordId?.toString() === searchKeyword ||
+          result.studentId?.toString() === searchKeyword ||
+          result.nurseId?.toString() === searchKeyword
+        );
+        
+        if (foundResults.length > 0) {
+          // Nếu tìm thấy, cập nhật filteredResults
+          setFilteredResults(foundResults);
+          setSearchLoading(false);
+          return;
+        }
+      }
+      
+      // Nếu không phải ID hoặc không tìm thấy, gọi API
+      setPage(1);
       await fetchHealthCheckResults(searchKeyword);
     } catch (error) {
       console.error("Error during search:", error);
       setNotif({
         message: "Lỗi khi tìm kiếm: " + (error.message || "Không xác định"),
-        type: "error",
-        autoDismiss: true,
-        duration: 5000
+        type: "error"
       });
     } finally {
       setSearchLoading(false);
@@ -1502,27 +1622,379 @@ const HealthResults = () => {
     setShowNurseDropdown(false);
   };
 
+  // Hàm xử lý sắp xếp
+  const handleSort = (key) => {
+    // Nếu key giống với key hiện tại, đảo ngược hướng sắp xếp
+    // Nếu khác, đặt key mới và hướng mặc định là tăng dần
+    const direction = sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc";
+    setSortConfig({ key, direction });
+  };
+
+  // Thêm useEffect mới để áp dụng bộ lọc khi results hoặc filters thay đổi
+  useEffect(() => {
+    applyFiltersAndSort(results, filters, sortConfig);
+  }, [results, filters, sortConfig]);
+
+  // Hàm mới để áp dụng bộ lọc và sắp xếp
+  const applyFiltersAndSort = (resultsList = results, currentFilters = filters, currentSortConfig = sortConfig) => {
+    let filteredData = [...resultsList];
+    
+    // Lọc theo ngày
+    if (currentFilters.date) {
+      const selectedDate = new Date(currentFilters.date);
+      selectedDate.setHours(0, 0, 0, 0); // Đặt thời gian là đầu ngày
+      
+      // Tạo ngày kết thúc (cuối ngày)
+      const endDate = new Date(selectedDate);
+      endDate.setHours(23, 59, 59, 999);
+      
+      filteredData = filteredData.filter(result => {
+        if (!result.checkupDate) return false;
+        const checkupDate = new Date(result.checkupDate);
+        return checkupDate >= selectedDate && checkupDate <= endDate;
+      });
+    }
+    
+    // Lọc theo tên hoặc ID học sinh
+    if (currentFilters.studentName) {
+      filteredData = filteredData.filter(result => {
+        // Tìm theo tên học sinh
+        const studentName = result.studentName || getStudentName(result.studentId) || "";
+        
+        // Tìm theo ID học sinh
+        const studentId = result.studentId ? result.studentId.toString() : "";
+        
+        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
+        return studentName.toLowerCase().includes(currentFilters.studentName.toLowerCase()) || 
+               studentId.includes(currentFilters.studentName);
+      });
+    }
+    
+    // Lọc theo tên hoặc ID y tá
+    if (currentFilters.nurseName) {
+      filteredData = filteredData.filter(result => {
+        // Tìm theo tên y tá
+        const nurseName = result.nurseName || getNurseName(result.nurseId) || "";
+        
+        // Tìm theo ID y tá
+        const nurseId = result.nurseId ? result.nurseId.toString() : "";
+        
+        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
+        return nurseName.toLowerCase().includes(currentFilters.nurseName.toLowerCase()) || 
+               nurseId.includes(currentFilters.nurseName);
+      });
+    }
+    
+    // Lọc theo chiều cao
+    if (currentFilters.height) {
+      filteredData = filteredData.filter(result => 
+        result.height && result.height.toString().includes(currentFilters.height)
+      );
+    }
+    
+    // Lọc theo cân nặng
+    if (currentFilters.weight) {
+      filteredData = filteredData.filter(result => 
+        result.weight && result.weight.toString().includes(currentFilters.weight)
+      );
+    }
+    
+    // Lọc theo thị lực
+    if (currentFilters.vision) {
+      filteredData = filteredData.filter(result => {
+        const leftVision = result.leftVision || "";
+        const rightVision = result.rightVision || "";
+        return leftVision.includes(currentFilters.vision) || 
+               rightVision.includes(currentFilters.vision);
+      });
+    }
+    
+    // Lọc theo kết quả
+    if (currentFilters.result) {
+      filteredData = filteredData.filter(result => 
+        result.result && result.result.toLowerCase().includes(currentFilters.result.toLowerCase())
+      );
+    }
+    
+    // Áp dụng sắp xếp
+    if (currentSortConfig.key) {
+      filteredData.sort((a, b) => {
+        if (currentSortConfig.key === "healthCheckupRecordId") {
+          // So sánh ID (số)
+          const idA = a.healthCheckupRecordId || 0;
+          const idB = b.healthCheckupRecordId || 0;
+          
+          if (currentSortConfig.direction === "asc") {
+            return idA - idB;
+          } else {
+            return idB - idA;
+          }
+        }
+        else if (currentSortConfig.key === "studentName") {
+          // So sánh tên học sinh
+          const nameA = a.studentName || getStudentName(a.studentId) || "";
+          const nameB = b.studentName || getStudentName(b.studentId) || "";
+          
+          if (currentSortConfig.direction === "asc") {
+            return nameA.localeCompare(nameB);
+          } else {
+            return nameB.localeCompare(nameA);
+          }
+        }
+        else if (currentSortConfig.key === "height" || currentSortConfig.key === "weight") {
+          // So sánh chiều cao hoặc cân nặng (số)
+          const valueA = parseFloat(a[currentSortConfig.key]) || 0;
+          const valueB = parseFloat(b[currentSortConfig.key]) || 0;
+          
+          if (currentSortConfig.direction === "asc") {
+            return valueA - valueB;
+          } else {
+            return valueB - valueA;
+          }
+        }
+        else {
+          // Xử lý các trường thông thường
+          const valueA = a[currentSortConfig.key] || "";
+          const valueB = b[currentSortConfig.key] || "";
+          
+          if (currentSortConfig.direction === "asc") {
+            return valueA.toString().localeCompare(valueB.toString());
+          } else {
+            return valueB.toString().localeCompare(valueA.toString());
+          }
+        }
+      });
+    }
+    
+    setFilteredResults(filteredData);
+  };
+
+  // Hàm xử lý thay đổi bộ lọc
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Áp dụng bộ lọc ngay lập tức khi người dùng nhập
+    applyFiltersAndSort(results, { ...filters, [name]: value }, sortConfig);
+  };
+
+  // Hàm reset bộ lọc
+  const resetFilters = () => {
+    const resetFilterValues = {
+      date: "",
+      studentName: "",
+      nurseName: "",
+      height: "",
+      weight: "",
+      vision: "",
+      result: ""
+    };
+    setFilters(resetFilterValues);
+    // Áp dụng ngay lập tức các bộ lọc đã reset
+    applyFiltersAndSort(results, resetFilterValues, sortConfig);
+  };
+
   return (
     <div className="admin-main">
-      <h2 className="dashboard-title">Quản lý kết quả khám sức khỏe</h2>
+      <h2 className="dashboard-title">Kết quả khám sức khỏe</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={() => setShowAddModal(true)}>
-          <FaPlus style={{ marginRight: '5px' }} /> Thêm kết quả khám sức khỏe
+          <FaPlus /> Thêm kết quả khám
         </button>
-          <div className="search-container">
-            <input
+        <div className="search-container">
+          <input
             className="admin-search"
-              type="text"
+            type="text"
             placeholder="Tìm kiếm..."
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-            />
-          <button className="admin-btn" onClick={handleSearch} disabled={searchLoading}>
-              {searchLoading ? "Đang tìm..." : <FaSearch />}
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+          />
+          <button className="admin-btn" onClick={handleSearch}>
+            <FaSearch />
+          </button>
+          <button
+            className="admin-btn"
+            style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}
+            onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+            title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
+          >
+            <FaFilter />
+          </button>
+        </div>
+      </div>
+
+      {/* Phần bộ lọc nâng cao */}
+      {showAdvancedFilter && (
+        <div className="admin-advanced-filter" style={{ 
+          backgroundColor: '#f8f9fa', 
+          padding: '15px', 
+          borderRadius: '5px', 
+          marginBottom: '20px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <h3 style={{ margin: '0', fontSize: '1.1rem', color: '#333' }}>Tìm kiếm nâng cao</h3>
+            <button
+              className="admin-btn"
+              style={{ backgroundColor: '#6c757d', padding: '4px 8px', fontSize: '0.8rem' }}
+              onClick={resetFilters}
+            >
+              Đặt lại bộ lọc
             </button>
           </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            {/* Lọc theo ngày */}
+            <div>
+              <label htmlFor="date" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Ngày khám</label>
+              <input
+                type="date"
+                id="date"
+                name="date"
+                value={filters.date}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo học sinh */}
+            <div>
+              <label htmlFor="studentName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Học sinh</label>
+              <input
+                type="text"
+                id="studentName"
+                name="studentName"
+                value={filters.studentName}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên học sinh hoặc ID"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo y tá */}
+            <div>
+              <label htmlFor="nurseName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Y tá</label>
+              <input
+                type="text"
+                id="nurseName"
+                name="nurseName"
+                value={filters.nurseName}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên y tá hoặc ID"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo chiều cao */}
+            <div>
+              <label htmlFor="height" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Chiều cao</label>
+              <input
+                type="text"
+                id="height"
+                name="height"
+                value={filters.height}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập chiều cao..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo cân nặng */}
+            <div>
+              <label htmlFor="weight" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Cân nặng</label>
+              <input
+                type="text"
+                id="weight"
+                name="weight"
+                value={filters.weight}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập cân nặng..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo thị lực */}
+            <div>
+              <label htmlFor="vision" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Thị lực</label>
+              <input
+                type="text"
+                id="vision"
+                name="vision"
+                value={filters.vision}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập thị lực..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo kết quả */}
+            <div>
+              <label htmlFor="result" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Kết quả</label>
+              <input
+                type="text"
+                id="result"
+                name="result"
+                value={filters.result}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập kết quả khám..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+          </div>
+          
+          {/* Thêm phần sắp xếp vào trong bộ lọc */}
+          <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center' }}>
+            <div style={{ marginRight: '15px' }}>
+              <span style={{ fontSize: '0.9rem', marginRight: '8px' }}>Sắp xếp theo:</span>
+              <select
+                value={sortConfig.key}
+                onChange={(e) => setSortConfig({...sortConfig, key: e.target.value})}
+                className="form-control"
+                style={{ display: 'inline-block', width: 'auto', padding: '6px' }}
+              >
+                <option value="healthCheckupRecordId">ID</option>
+                <option value="studentName">Học sinh</option>
+                <option value="height">Chiều cao</option>
+                <option value="weight">Cân nặng</option>
+                <option value="leftVision">Thị lực</option>
+                <option value="result">Kết quả</option>
+              </select>
+            </div>
+            
+            <div>
+              <button
+                className="admin-btn"
+                style={{ 
+                  backgroundColor: sortConfig.direction === 'asc' ? '#28a745' : '#007bff',
+                  padding: '6px 10px'
+                }}
+                onClick={() => setSortConfig({...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'})}
+              >
+                {sortConfig.direction === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
+                <span style={{ marginLeft: '5px' }}>
+                  {sortConfig.direction === 'asc' ? 'Tăng dần' : 'Giảm dần'}
+                </span>
+              </button>
+            </div>
+          </div>
+          
+          <div style={{ marginTop: '10px', fontSize: '0.9rem', color: '#6c757d' }}>
+            <span>Đang hiển thị: <strong>{filteredResults.length}</strong> / {results.length} kết quả</span>
+          </div>
         </div>
+      )}
+
       <div className="admin-table-container">
         {loading ? (
           <div className="loading-container">
@@ -1534,8 +2006,8 @@ const HealthResults = () => {
         ) : (
           <TableWithPaging
             columns={columns}
-            data={results}
-            pageSize={10}
+            data={filteredResults.length > 0 || Object.values(filters).some(val => val !== "") ? filteredResults : results}
+            pageSize={pageSize}
             page={page}
             onPageChange={setPage}
             renderActions={(row) => (
@@ -1549,7 +2021,7 @@ const HealthResults = () => {
                 </button>
                 <button
                   className="admin-action-btn admin-action-btn-reset"
-                  title="Sửa"
+                  title="Chỉnh sửa"
                   onClick={() => handleEdit(row)}
                 >
                   <FaEdit style={iconStyle.edit} size={18} />
@@ -1563,6 +2035,7 @@ const HealthResults = () => {
                 </button>
               </div>
             )}
+            loading={loading}
           />
         )}
       </div>

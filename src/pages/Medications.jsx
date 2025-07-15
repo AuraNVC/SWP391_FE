@@ -18,7 +18,7 @@ const Medications = () => {
   const [updatedQuantity, setUpdatedQuantity] = useState("");
   const [updatingQuantity, setUpdatingQuantity] = useState(false);
   // Thêm các state cho tính năng tìm kiếm nâng cao
-  const [showAdvancedSearch, setShowAdvancedSearch] = useState(false);
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [filters, setFilters] = useState({
     studentName: "",
     parentName: "",
@@ -252,40 +252,64 @@ const Medications = () => {
   };
 
   // Hàm áp dụng bộ lọc và sắp xếp
-  const applyFiltersAndSort = () => {
-    let result = [...medications];
+  const applyFiltersAndSort = (medicationsList = medications, currentFilters = filters, currentSortConfig = sortConfig) => {
+    let result = [...medicationsList];
     
     // Áp dụng các bộ lọc
-    if (filters.studentName) {
-      result = result.filter(med => 
-        med.studentName?.toLowerCase().includes(filters.studentName.toLowerCase())
-      );
+    if (currentFilters.studentName) {
+      result = result.filter(med => {
+        // Tìm theo tên học sinh
+        const studentName = med.studentName?.toLowerCase() || "";
+        
+        // Tìm theo ID học sinh
+        const studentId = med.studentId ? med.studentId.toString() : "";
+        
+        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
+        return studentName.includes(currentFilters.studentName.toLowerCase()) || 
+               studentId.includes(currentFilters.studentName);
+      });
     }
     
-    if (filters.parentName) {
-      result = result.filter(med => 
-        med.parentName?.toLowerCase().includes(filters.parentName.toLowerCase())
-      );
+    if (currentFilters.parentName) {
+      result = result.filter(med => {
+        // Tìm theo tên phụ huynh
+        const parentName = med.parentName?.toLowerCase() || "";
+        
+        // Tìm theo ID phụ huynh
+        const parentId = med.parentId ? med.parentId.toString() : "";
+        
+        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
+        return parentName.includes(currentFilters.parentName.toLowerCase()) || 
+               parentId.includes(currentFilters.parentName);
+      });
     }
     
-    if (filters.medicationName) {
-      result = result.filter(med => 
-        med.medicationName?.toLowerCase().includes(filters.medicationName.toLowerCase())
-      );
+    if (currentFilters.medicationName) {
+      result = result.filter(med => {
+        // Tìm theo tên thuốc
+        const medicationName = med.medicationName?.toLowerCase() || "";
+        
+        // Tìm theo ID thuốc
+        const medicationId = med.medicationId ? med.medicationId.toString() : "";
+        
+        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
+        return medicationName.includes(currentFilters.medicationName.toLowerCase()) || 
+               medicationId.includes(currentFilters.medicationName);
+      });
     }
     
-    if (filters.dateFrom) {
-      const fromDate = new Date(filters.dateFrom);
+    if (currentFilters.dateFrom) {
+      const fromDate = new Date(currentFilters.dateFrom);
       result = result.filter(med => {
         const createdDate = new Date(med.createdDate);
         return createdDate >= fromDate;
       });
     }
     
-    if (filters.status !== "all") {
+    if (currentFilters.status !== "all") {
       result = result.filter(med => {
         // Kiểm tra giá trị status từ API
-        console.log("Filtering status:", med.status, "Filter value:", filters.status);
+        console.log("Filtering status:", med.status, "Filter value:", currentFilters.status);
         
         // Chuyển đổi giá trị status để so sánh
         let statusValue;
@@ -301,17 +325,17 @@ const Medications = () => {
         }
         
         // So sánh với giá trị filter
-        const filterValue = parseInt(filters.status, 10);
+        const filterValue = parseInt(currentFilters.status, 10);
         return statusValue === filterValue;
       });
     }
     
-    if (filters.remainingQuantity !== "all") {
+    if (currentFilters.remainingQuantity !== "all") {
       result = result.filter(med => {
         if (!med.quantity) return false;
         const percentage = Math.round((med.remainingQuantity / med.quantity) * 100);
         
-        switch (filters.remainingQuantity) {
+        switch (currentFilters.remainingQuantity) {
           case "low": // Dưới 20%
             return percentage < 20;
           case "medium": // 20% đến 50%
@@ -325,21 +349,21 @@ const Medications = () => {
     }
     
     // Áp dụng sắp xếp
-    if (sortConfig.key) {
+    if (currentSortConfig.key) {
       result.sort((a, b) => {
         // Xử lý các trường hợp đặc biệt
-        if (sortConfig.key === "remainingQuantity") {
+        if (currentSortConfig.key === "remainingQuantity") {
           // Tính phần trăm còn lại để so sánh
           const percentA = a.quantity ? (a.remainingQuantity / a.quantity) * 100 : 0;
           const percentB = b.quantity ? (b.remainingQuantity / b.quantity) * 100 : 0;
           
-          if (sortConfig.direction === "asc") {
+          if (currentSortConfig.direction === "asc") {
             return percentA - percentB;
           } else {
             return percentB - percentA;
           }
         } 
-        else if (sortConfig.key === "status") {
+        else if (currentSortConfig.key === "status") {
           // Chuyển đổi trạng thái thành số để so sánh
           const getStatusValue = (status) => {
             if (typeof status === 'string') {
@@ -357,18 +381,18 @@ const Medications = () => {
           
           console.log(`Sorting: ${a.prescriptionId} (${a.status} -> ${statusA}) vs ${b.prescriptionId} (${b.status} -> ${statusB})`);
           
-          if (sortConfig.direction === "asc") {
+          if (currentSortConfig.direction === "asc") {
             return statusA - statusB;
           } else {
             return statusB - statusA;
           }
         }
-        else if (sortConfig.key === "createdDate") {
+        else if (currentSortConfig.key === "createdDate") {
           // So sánh ngày
           const dateA = a.createdDate ? new Date(a.createdDate).getTime() : 0;
           const dateB = b.createdDate ? new Date(b.createdDate).getTime() : 0;
           
-          if (sortConfig.direction === "asc") {
+          if (currentSortConfig.direction === "asc") {
             return dateA - dateB;
           } else {
             return dateB - dateA;
@@ -376,10 +400,10 @@ const Medications = () => {
         }
         else {
           // Xử lý các trường thông thường
-          const valueA = a[sortConfig.key] || "";
-          const valueB = b[sortConfig.key] || "";
+          const valueA = a[currentSortConfig.key] || "";
+          const valueB = b[currentSortConfig.key] || "";
           
-          if (sortConfig.direction === "asc") {
+          if (currentSortConfig.direction === "asc") {
             return valueA > valueB ? 1 : -1;
           } else {
             return valueA < valueB ? 1 : -1;
@@ -389,7 +413,7 @@ const Medications = () => {
     }
     
     // Ưu tiên hiển thị các đơn thuốc chưa duyệt lên đầu
-    if (sortConfig.key !== "status") {
+    if (currentSortConfig.key !== "status") {
       result.sort((a, b) => {
         const statusA = a.status === "Pending" || a.status === 1 ? 0 : 1;
         const statusB = b.status === "Pending" || b.status === 1 ? 0 : 1;
@@ -407,18 +431,24 @@ const Medications = () => {
       ...prev,
       [name]: value
     }));
+    
+    // Áp dụng bộ lọc ngay lập tức khi người dùng nhập
+    applyFiltersAndSort(medications, { ...filters, [name]: value }, sortConfig);
   };
   
   // Hàm reset bộ lọc
   const resetFilters = () => {
-    setFilters({
+    const resetFilterValues = {
       studentName: "",
       parentName: "",
       medicationName: "",
       dateFrom: "",
       status: "all",
       remainingQuantity: "all"
-    });
+    };
+    setFilters(resetFilterValues);
+    // Áp dụng ngay lập tức các bộ lọc đã reset
+    applyFiltersAndSort(medications, resetFilterValues, sortConfig);
   };
 
   const fetchMedications = async (keyword = "") => {
@@ -547,9 +577,33 @@ const Medications = () => {
     }
   };
 
+  // Cập nhật hàm handleSearch để tìm kiếm theo ID
   const handleSearch = async () => {
     setSearchLoading(true);
     try {
+      console.log("Tìm kiếm với từ khóa:", searchKeyword);
+      
+      // Kiểm tra xem searchKeyword có phải là ID không
+      const isNumeric = /^\d+$/.test(searchKeyword);
+      
+      if (isNumeric) {
+        // Nếu là ID, tìm kiếm trong danh sách medications hiện có
+        const foundMedications = medications.filter(med => 
+          med.prescriptionId?.toString() === searchKeyword ||
+          med.medicationId?.toString() === searchKeyword ||
+          med.studentId?.toString() === searchKeyword ||
+          med.parentId?.toString() === searchKeyword
+        );
+        
+        if (foundMedications.length > 0) {
+          // Nếu tìm thấy, cập nhật filteredMedications
+          setFilteredMedications(foundMedications);
+          setSearchLoading(false);
+          return;
+        }
+      }
+      
+      // Nếu không phải ID hoặc không tìm thấy, gọi API
       await fetchMedications(searchKeyword);
     } finally {
       setSearchLoading(false);
@@ -751,9 +805,9 @@ const Medications = () => {
             </button>
             <button
               className="admin-btn"
-              style={{ marginLeft: '8px', backgroundColor: showAdvancedSearch ? '#6c757d' : '#007bff' }}
-              onClick={() => setShowAdvancedSearch(!showAdvancedSearch)}
-              title={showAdvancedSearch ? "Ẩn tìm kiếm nâng cao" : "Hiện tìm kiếm nâng cao"}
+              style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}
+              onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+              title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
             >
               <FaFilter />
             </button>
@@ -762,7 +816,7 @@ const Medications = () => {
       </div>
 
       {/* Phần tìm kiếm nâng cao */}
-      {showAdvancedSearch && (
+      {showAdvancedFilter && (
         <div className="admin-advanced-search" style={{ 
           backgroundColor: '#f8f9fa', 
           padding: '15px', 
@@ -782,6 +836,7 @@ const Medications = () => {
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            {/* Lọc theo tên thuốc */}
             <div>
               <label htmlFor="medicationName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Tên thuốc</label>
               <input
@@ -796,6 +851,7 @@ const Medications = () => {
               />
             </div>
             
+            {/* Lọc theo tên học sinh */}
             <div>
               <label htmlFor="studentName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Học sinh</label>
               <input
@@ -805,11 +861,12 @@ const Medications = () => {
                 value={filters.studentName}
                 onChange={handleFilterChange}
                 className="form-control"
-                placeholder="Nhập tên học sinh..."
+                placeholder="Nhập tên học sinh hoặc ID"
                 style={{ width: '100%', padding: '8px' }}
               />
             </div>
             
+            {/* Lọc theo tên phụ huynh */}
             <div>
               <label htmlFor="parentName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Phụ huynh</label>
               <input
@@ -819,26 +876,14 @@ const Medications = () => {
                 value={filters.parentName}
                 onChange={handleFilterChange}
                 className="form-control"
-                placeholder="Nhập tên phụ huynh..."
+                placeholder="Nhập tên phụ huynh hoặc ID"
                 style={{ width: '100%', padding: '8px' }}
               />
             </div>
             
+            {/* Lọc theo trạng thái */}
             <div>
-              <label htmlFor="dateFrom" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Từ ngày</label>
-              <input
-                type="date"
-                id="dateFrom"
-                name="dateFrom"
-                value={filters.dateFrom}
-                onChange={handleFilterChange}
-                className="form-control"
-                style={{ width: '100%', padding: '8px' }}
-              />
-            </div>
-            
-            <div>
-              <label htmlFor="status" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Trạng thái đơn thuốc</label>
+              <label htmlFor="status" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Trạng thái</label>
               <select
                 id="status"
                 name="status"
@@ -848,30 +893,15 @@ const Medications = () => {
                 style={{ width: '100%', padding: '8px' }}
               >
                 <option value="all">Tất cả</option>
-                <option value="1">Đang chờ</option>
-                <option value="2">Đã duyệt</option>
-                <option value="3">Đã từ chối</option>
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="remainingQuantity" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Số lượng còn lại</label>
-              <select
-                id="remainingQuantity"
-                name="remainingQuantity"
-                value={filters.remainingQuantity}
-                onChange={handleFilterChange}
-                className="form-control"
-                style={{ width: '100%', padding: '8px' }}
-              >
-                <option value="all">Tất cả</option>
-                <option value="low">Thấp (dưới 20%)</option>
-                <option value="medium">Trung bình (20% - 50%)</option>
-                <option value="high">Cao (trên 50%)</option>
+                <option value="Pending">Chờ duyệt</option>
+                <option value="Approved">Đã duyệt</option>
+                <option value="Rejected">Từ chối</option>
+                <option value="Completed">Hoàn thành</option>
               </select>
             </div>
           </div>
           
+          {/* Thêm phần sắp xếp vào trong bộ lọc */}
           <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center' }}>
             <div style={{ marginRight: '15px' }}>
               <span style={{ fontSize: '0.9rem', marginRight: '8px' }}>Sắp xếp theo:</span>
@@ -881,12 +911,12 @@ const Medications = () => {
                 className="form-control"
                 style={{ display: 'inline-block', width: 'auto', padding: '6px' }}
               >
-                <option value="createdDate">Ngày gửi</option>
+                <option value="medicationId">ID</option>
                 <option value="medicationName">Tên thuốc</option>
-                <option value="studentName">Tên học sinh</option>
-                <option value="parentName">Tên phụ huynh</option>
-                <option value="remainingQuantity">Số lượng còn lại</option>
-                <option value="status">Trạng thái đơn thuốc</option>
+                <option value="studentName">Học sinh</option>
+                <option value="quantity">Số lượng</option>
+                <option value="status">Trạng thái</option>
+                <option value="createdDate">Ngày tạo</option>
               </select>
             </div>
             

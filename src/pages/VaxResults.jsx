@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaPlus, FaSearch, FaEye, FaEdit, FaTrash } from "react-icons/fa";
+import { FaPlus, FaSearch, FaEye, FaEdit, FaTrash, FaFilter, FaSortAmountDown, FaSortAmountUp, FaSync } from "react-icons/fa";
 import { API_SERVICE } from "../services/api";
 import TableWithPaging from "../components/TableWithPaging";
 import { useNotification } from "../contexts/NotificationContext";
@@ -133,6 +133,7 @@ const NurseNameCell = ({ nurseId, initialName }) => {
 
 const VaxResults = () => {
   const [results, setResults] = useState([]);
+  const [filteredResults, setFilteredResults] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [nurses, setNurses] = useState([]);
   const [students, setStudents] = useState([]);
@@ -170,37 +171,126 @@ const VaxResults = () => {
     injectionTime: ""
   });
 
+  // State mới cho tính năng lọc nâng cao
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [filters, setFilters] = useState({
+    date: "",
+    studentName: "",
+    nurseName: "",
+    vaccineName: "",
+    doseNumber: "",
+    status: "all"
+  });
+  
+  // State mới cho tính năng sắp xếp
+  const [sortConfig, setSortConfig] = useState({
+    key: "vaccinationResultId",
+    direction: "desc"
+  });
+
   const [statusCounts, setStatusCounts] = useState({ total: 0, completed: 0, pending: 0, cancelled: 0 });
 
   const { setNotif } = useNotification();
 
   const columns = [
-    { title: "ID", dataIndex: "vaccinationResultId", key: "resultId" },
+    { 
+      title: "ID", 
+      dataIndex: "vaccinationResultId", 
+      key: "resultId",
+      render: (id) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("vaccinationResultId")}>
+          {id}
+          {sortConfig.key === "vaccinationResultId" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
     { 
       title: "Học sinh", 
       dataIndex: "studentName", 
       key: "studentName",
       render: (name, record) => {
-        return <StudentNameCell 
-                 studentId={record.studentId} 
-                 initialName={record.studentName} 
-                 healthProfileId={record.healthProfileId} 
-               />;
+        return (
+          <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
+            <StudentNameCell 
+              studentId={record.studentId} 
+              initialName={record.studentName} 
+              healthProfileId={record.healthProfileId} 
+            />
+            {sortConfig.key === "studentName" && (
+              <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+                {sortConfig.direction === 'asc' ? '▲' : '▼'}
+              </span>
+            )}
+          </span>
+        );
       }
     },
-    { title: "Vaccine", dataIndex: "vaccineName", key: "vaccineName" },
-    { title: "Mũi số", dataIndex: "doseNumber", key: "doseNumber" },
+    { 
+      title: "Vaccine", 
+      dataIndex: "vaccineName", 
+      key: "vaccineName",
+      render: (name) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("vaccineName")}>
+          {name}
+          {sortConfig.key === "vaccineName" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
+    { 
+      title: "Mũi số", 
+      dataIndex: "doseNumber", 
+      key: "doseNumber",
+      render: (dose) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("doseNumber")}>
+          {dose}
+          {sortConfig.key === "doseNumber" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
     { 
       title: "Ngày tiêm", 
       dataIndex: "injectionDate", 
       key: "injectionDate",
-      render: (date) => date ? new Date(date).toLocaleDateString('vi-VN') : "N/A" 
+      render: (date) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("injectionDate")}>
+          {date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}
+          {sortConfig.key === "injectionDate" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
     },
     { 
       title: "Trạng thái", 
       dataIndex: "status", 
       key: "status",
-      render: (status) => getStatusText(status) 
+      render: (status) => {
+        const statusText = getStatusText(status);
+        return (
+          <span style={{ cursor: 'pointer' }} onClick={() => handleSort("status")}>
+            {statusText}
+            {sortConfig.key === "status" && (
+              <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+                {sortConfig.direction === 'asc' ? '▲' : '▼'}
+              </span>
+            )}
+          </span>
+        );
+      }
     }
   ];
 
@@ -610,7 +700,35 @@ const VaxResults = () => {
   const handleSearch = async () => {
     setSearchLoading(true);
     try {
+      console.log("Tìm kiếm với từ khóa:", searchKeyword);
+      
+      // Kiểm tra xem searchKeyword có phải là ID không
+      const isNumeric = /^\d+$/.test(searchKeyword);
+      
+      if (isNumeric) {
+        // Nếu là ID, tìm kiếm trong danh sách results hiện có
+        const foundResults = results.filter(result => 
+          result.vaccinationResultId?.toString() === searchKeyword ||
+          result.studentId?.toString() === searchKeyword ||
+          result.nurseId?.toString() === searchKeyword
+        );
+        
+        if (foundResults.length > 0) {
+          // Nếu tìm thấy, cập nhật filteredResults
+          setFilteredResults(foundResults);
+          setSearchLoading(false);
+          return;
+        }
+      }
+      
+      // Nếu không phải ID hoặc không tìm thấy, gọi API
       await fetchVaccinationResults(searchKeyword);
+    } catch (error) {
+      console.error("Error during search:", error);
+      setNotif({
+        message: "Lỗi khi tìm kiếm: " + (error.message || "Không xác định"),
+        type: "error"
+      });
     } finally {
       setSearchLoading(false);
     }
@@ -1369,81 +1487,415 @@ const VaxResults = () => {
     setShowNurseDropdown(false);
   };
 
+  // Hàm xử lý sắp xếp
+  const handleSort = (key) => {
+    // Nếu key giống với key hiện tại, đảo ngược hướng sắp xếp
+    // Nếu khác, đặt key mới và hướng mặc định là tăng dần
+    const direction = sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc";
+    setSortConfig({ key, direction });
+  };
+
+  // Thêm useEffect mới để áp dụng bộ lọc khi results hoặc filters thay đổi
+  useEffect(() => {
+    applyFiltersAndSort(results, filters, sortConfig);
+  }, [results, filters, sortConfig]);
+
+  // Hàm mới để áp dụng bộ lọc và sắp xếp
+  const applyFiltersAndSort = (resultsList = results, currentFilters = filters, currentSortConfig = sortConfig) => {
+    let filteredData = [...resultsList];
+    
+    // Lọc theo ngày
+    if (currentFilters.date) {
+      const selectedDate = new Date(currentFilters.date);
+      selectedDate.setHours(0, 0, 0, 0); // Đặt thời gian là đầu ngày
+      
+      // Tạo ngày kết thúc (cuối ngày)
+      const endDate = new Date(selectedDate);
+      endDate.setHours(23, 59, 59, 999);
+      
+      filteredData = filteredData.filter(result => {
+        if (!result.injectionDate) return false;
+        const injectionDate = new Date(result.injectionDate);
+        return injectionDate >= selectedDate && injectionDate <= endDate;
+      });
+    }
+    
+    // Lọc theo tên hoặc ID học sinh
+    if (currentFilters.studentName) {
+      filteredData = filteredData.filter(result => {
+        // Tìm theo tên học sinh
+        const studentName = result.studentName || "";
+        
+        // Tìm theo ID học sinh
+        const studentId = result.studentId ? result.studentId.toString() : "";
+        
+        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
+        return studentName.toLowerCase().includes(currentFilters.studentName.toLowerCase()) || 
+               studentId.includes(currentFilters.studentName);
+      });
+    }
+    
+    // Lọc theo tên hoặc ID y tá
+    if (currentFilters.nurseName) {
+      filteredData = filteredData.filter(result => {
+        // Tìm theo tên y tá
+        const nurseName = result.nurseName || "";
+        
+        // Tìm theo ID y tá
+        const nurseId = result.nurseId ? result.nurseId.toString() : "";
+        
+        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
+        return nurseName.toLowerCase().includes(currentFilters.nurseName.toLowerCase()) || 
+               nurseId.includes(currentFilters.nurseName);
+      });
+    }
+    
+    // Lọc theo tên vaccine
+    if (currentFilters.vaccineName) {
+      filteredData = filteredData.filter(result => 
+        result.vaccineName && result.vaccineName.toLowerCase().includes(currentFilters.vaccineName.toLowerCase())
+      );
+    }
+    
+    // Lọc theo mũi số
+    if (currentFilters.doseNumber) {
+      filteredData = filteredData.filter(result => 
+        result.doseNumber && result.doseNumber.toString() === currentFilters.doseNumber
+      );
+    }
+    
+    // Lọc theo trạng thái
+    if (currentFilters.status !== "all") {
+      filteredData = filteredData.filter(result => 
+        result.status && result.status.toString() === currentFilters.status
+      );
+    }
+    
+    // Áp dụng sắp xếp
+    if (currentSortConfig.key) {
+      filteredData.sort((a, b) => {
+        if (currentSortConfig.key === "vaccinationResultId") {
+          // So sánh ID (số)
+          const idA = a.vaccinationResultId || 0;
+          const idB = b.vaccinationResultId || 0;
+          
+          if (currentSortConfig.direction === "asc") {
+            return idA - idB;
+          } else {
+            return idB - idA;
+          }
+        }
+        else if (currentSortConfig.key === "injectionDate") {
+          // So sánh ngày
+          const dateA = a.injectionDate ? new Date(a.injectionDate).getTime() : 0;
+          const dateB = b.injectionDate ? new Date(b.injectionDate).getTime() : 0;
+          
+          if (currentSortConfig.direction === "asc") {
+            return dateA - dateB;
+          } else {
+            return dateB - dateA;
+          }
+        }
+        else if (currentSortConfig.key === "doseNumber") {
+          // So sánh mũi số (số)
+          const doseA = parseInt(a.doseNumber) || 0;
+          const doseB = parseInt(b.doseNumber) || 0;
+          
+          if (currentSortConfig.direction === "asc") {
+            return doseA - doseB;
+          } else {
+            return doseB - doseA;
+          }
+        }
+        else if (currentSortConfig.key === "status") {
+          // So sánh trạng thái (số)
+          const statusA = parseInt(a.status) || 0;
+          const statusB = parseInt(b.status) || 0;
+          
+          if (currentSortConfig.direction === "asc") {
+            return statusA - statusB;
+          } else {
+            return statusB - statusA;
+          }
+        }
+        else {
+          // Xử lý các trường thông thường
+          const valueA = a[currentSortConfig.key] || "";
+          const valueB = b[currentSortConfig.key] || "";
+          
+          if (currentSortConfig.direction === "asc") {
+            return valueA.toString().localeCompare(valueB.toString());
+          } else {
+            return valueB.toString().localeCompare(valueA.toString());
+          }
+        }
+      });
+    }
+    
+    setFilteredResults(filteredData);
+  };
+
+  // Hàm xử lý thay đổi bộ lọc
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Áp dụng bộ lọc ngay lập tức khi người dùng nhập
+    applyFiltersAndSort(results, { ...filters, [name]: value }, sortConfig);
+  };
+
+  // Hàm reset bộ lọc
+  const resetFilters = () => {
+    const resetFilterValues = {
+      date: "",
+      studentName: "",
+      nurseName: "",
+      vaccineName: "",
+      doseNumber: "",
+      status: "all"
+    };
+    setFilters(resetFilterValues);
+    // Áp dụng ngay lập tức các bộ lọc đã reset
+    applyFiltersAndSort(results, resetFilterValues, sortConfig);
+  };
+
   return (
     <div className="admin-main">
-      <div className="vax-results-container">
-        <div className="vax-results-header">
-        <h2>Quản lý kết quả tiêm chủng</h2>
-          <div className="vax-results-actions">
-            <div className="vax-results-search">
-            <input
-              type="text"
-              placeholder="Tìm kiếm kết quả tiêm..."
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-            />
-            <button 
-                className="vax-results-btn search-btn" 
-              onClick={handleSearch}
-              disabled={searchLoading}
-            >
-              {searchLoading ? "Đang tìm..." : <FaSearch />}
-            </button>
-          </div>
+      <h2 className="dashboard-title">Kết quả tiêm chủng</h2>
+      <div className="admin-header">
+        <button className="admin-btn" onClick={() => setShowAddModal(true)}>
+          <FaPlus /> Thêm kết quả tiêm chủng
+        </button>
+        <div className="search-container">
+          <input
+            className="admin-search"
+            type="text"
+            placeholder="Tìm kiếm..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+          />
+          <button className="admin-btn" onClick={handleSearch}>
+            <FaSearch />
+          </button>
+          <button
+            className="admin-btn"
+            style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}
+            onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+            title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
+          >
+            <FaFilter />
+          </button>
         </div>
       </div>
 
-        <div className="vax-results-add-button">
-          <button className="vax-results-btn add-btn" onClick={() => setShowAddModal(true)}>
-            <FaPlus /> Thêm kết quả
-          </button>
+      {/* Phần bộ lọc nâng cao */}
+      {showAdvancedFilter && (
+        <div className="admin-advanced-filter" style={{ 
+          backgroundColor: '#f8f9fa', 
+          padding: '15px', 
+          borderRadius: '5px', 
+          marginBottom: '20px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <h3 style={{ margin: '0', fontSize: '1.1rem', color: '#333' }}>Tìm kiếm nâng cao</h3>
+            <button
+              className="admin-btn"
+              style={{ backgroundColor: '#6c757d', padding: '4px 8px', fontSize: '0.8rem' }}
+              onClick={resetFilters}
+            >
+              Đặt lại bộ lọc
+            </button>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            {/* Lọc theo ngày */}
+            <div>
+              <label htmlFor="date" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Ngày tiêm</label>
+              <input
+                type="date"
+                id="date"
+                name="date"
+                value={filters.date}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo học sinh */}
+            <div>
+              <label htmlFor="studentName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Học sinh</label>
+              <input
+                type="text"
+                id="studentName"
+                name="studentName"
+                value={filters.studentName}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên học sinh hoặc ID"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo y tá */}
+            <div>
+              <label htmlFor="nurseName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Y tá</label>
+              <input
+                type="text"
+                id="nurseName"
+                name="nurseName"
+                value={filters.nurseName}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên y tá hoặc ID"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo tên vaccine */}
+            <div>
+              <label htmlFor="vaccineName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Vaccine</label>
+              <input
+                type="text"
+                id="vaccineName"
+                name="vaccineName"
+                value={filters.vaccineName}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên vaccine..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo mũi số */}
+            <div>
+              <label htmlFor="doseNumber" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Mũi số</label>
+              <select
+                id="doseNumber"
+                name="doseNumber"
+                value={filters.doseNumber}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              >
+                <option value="">Tất cả</option>
+                <option value="1">Mũi 1</option>
+                <option value="2">Mũi 2</option>
+                <option value="3">Mũi 3</option>
+                <option value="4">Mũi 4</option>
+              </select>
+            </div>
+            
+            {/* Lọc theo trạng thái */}
+            <div>
+              <label htmlFor="status" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Trạng thái</label>
+              <select
+                id="status"
+                name="status"
+                value={filters.status}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              >
+                <option value="all">Tất cả</option>
+                <option value="1">Hoàn thành</option>
+                <option value="2">Đang chờ</option>
+                <option value="3">Đã hủy</option>
+              </select>
+            </div>
+          </div>
+          
+          {/* Thêm phần sắp xếp vào trong bộ lọc */}
+          <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center' }}>
+            <div style={{ marginRight: '15px' }}>
+              <span style={{ fontSize: '0.9rem', marginRight: '8px' }}>Sắp xếp theo:</span>
+              <select
+                value={sortConfig.key}
+                onChange={(e) => setSortConfig({...sortConfig, key: e.target.value})}
+                className="form-control"
+                style={{ display: 'inline-block', width: 'auto', padding: '6px' }}
+              >
+                <option value="vaccinationResultId">ID</option>
+                <option value="injectionDate">Ngày tiêm</option>
+                <option value="studentName">Học sinh</option>
+                <option value="nurseName">Y tá</option>
+                <option value="doseNumber">Mũi số</option>
+                <option value="reactionAfterInjection">Phản ứng</option>
+                <option value="status">Trạng thái</option>
+              </select>
+            </div>
+            
+            <div>
+              <button
+                className="admin-btn"
+                style={{ 
+                  backgroundColor: sortConfig.direction === 'asc' ? '#28a745' : '#007bff',
+                  padding: '6px 10px'
+                }}
+                onClick={() => setSortConfig({...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'})}
+              >
+                {sortConfig.direction === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
+                <span style={{ marginLeft: '5px' }}>
+                  {sortConfig.direction === 'asc' ? 'Tăng dần' : 'Giảm dần'}
+                </span>
+              </button>
+            </div>
+          </div>
+          
+          <div style={{ marginTop: '10px', fontSize: '0.9rem', color: '#6c757d' }}>
+            <span>Đang hiển thị: <strong>{filteredResults.length}</strong> / {results.length} kết quả</span>
+          </div>
         </div>
+      )}
 
-
-
-        <div className="vax-results-table-container">
+      <div className="admin-table-container">
         {loading ? (
-          <div className="loading-spinner">Đang tải...</div>
+          <div className="loading-container">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Đang tải...</span>
+            </div>
+            <p>Đang tải dữ liệu...</p>
+          </div>
         ) : (
           <TableWithPaging
             columns={columns}
-            data={results}
-            page={page}
+            data={filteredResults.length > 0 || Object.values(filters).some(val => val !== "" && val !== "all") ? filteredResults : results}
             pageSize={10}
-            onPageChange={(newPage) => {
-              console.log("Changing page to:", newPage);
-              setPage(newPage);
-              // No need to refetch data, we'll use the already processed and sorted results
-            }}
+            page={page}
+            onPageChange={setPage}
             renderActions={(row) => (
               <div className="admin-action-group">
                 <button
-                  className="admin-action-btn admin-action-view admin-action-btn-reset"
+                  className="admin-action-btn admin-action-btn-reset"
                   title="Xem chi tiết"
                   onClick={() => handleView(row)}
                 >
-                  <FaEye style={iconStyle.view} size={18} />
+                  <FaEye style={{ color: "#007bff" }} size={18} />
                 </button>
                 <button
-                  className="admin-action-btn admin-action-edit admin-action-btn-reset"
+                  className="admin-action-btn admin-action-btn-reset"
                   title="Chỉnh sửa"
                   onClick={() => handleEdit(row)}
                 >
-                  <FaEdit style={iconStyle.edit} size={18} />
+                  <FaEdit style={{ color: "#28a745" }} size={18} />
                 </button>
-                  <button
-                    className="admin-action-btn admin-action-delete admin-action-btn-reset"
-                    title="Xóa"
-                    onClick={() => handleDelete(row)}
-                  >
-                    <FaTrash style={iconStyle.delete} size={18} />
+                <button
+                  className="admin-action-btn admin-action-btn-reset"
+                  title="Xóa"
+                  onClick={() => handleDelete(row)}
+                >
+                  <FaTrash style={{ color: "#dc3545" }} size={18} />
                 </button>
               </div>
             )}
+            loading={loading}
           />
         )}
-          </div>
       </div>
 
       {/* Modal thêm kết quả tiêm */}

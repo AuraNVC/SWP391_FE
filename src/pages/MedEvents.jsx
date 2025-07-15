@@ -829,7 +829,7 @@ const MedEvents = () => {
       <h2 className="dashboard-title">Quản lý sự kiện y tế</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={() => setShowAddModal(true)}>
-          + Thêm sự kiện y tế
+          <FaPlus /> Thêm sự kiện y tế
         </button>
         <div className="search-container">
           <input
@@ -850,51 +850,6 @@ const MedEvents = () => {
             title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
           >
             <FaFilter />
-          </button>
-        </div>
-      </div>
-
-      {/* Thêm phần sắp xếp bên ngoài bộ lọc nâng cao */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        marginTop: '15px', 
-        marginBottom: '15px',
-        backgroundColor: '#f8f9fa',
-        padding: '10px',
-        borderRadius: '5px'
-      }}>
-        <div style={{ marginRight: '10px' }}>
-          <span style={{ fontSize: '0.9rem' }}>Sắp xếp theo:</span>
-        </div>
-        <div style={{ marginRight: '10px' }}>
-          <select
-            value={sortConfig.key}
-            onChange={(e) => setSortConfig({...sortConfig, key: e.target.value})}
-            className="form-control"
-            style={{ display: 'inline-block', width: 'auto', padding: '6px' }}
-          >
-            <option value="eventDate">Ngày</option>
-            <option value="medicalEventId">ID</option>
-            <option value="studentName">Học sinh</option>
-            <option value="nurseName">Y tá</option>
-            <option value="symptoms">Triệu chứng</option>
-            <option value="actionTaken">Hành động</option>
-          </select>
-        </div>
-        <div>
-          <button
-            className="admin-btn"
-            style={{ 
-              backgroundColor: sortConfig.direction === 'asc' ? '#28a745' : '#007bff',
-              padding: '6px 10px'
-            }}
-            onClick={() => setSortConfig({...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'})}
-          >
-            {sortConfig.direction === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
-            <span style={{ marginLeft: '5px' }}>
-              {sortConfig.direction === 'asc' ? 'Tăng dần' : 'Giảm dần'}
-            </span>
           </button>
         </div>
       </div>
@@ -995,7 +950,7 @@ const MedEvents = () => {
             </div>
           </div>
           
-          {/* Thêm phần sắp xếp */}
+          {/* Thêm phần sắp xếp vào trong bộ lọc */}
           <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center' }}>
             <div style={{ marginRight: '15px' }}>
               <span style={{ fontSize: '0.9rem', marginRight: '8px' }}>Sắp xếp theo:</span>
@@ -1005,8 +960,8 @@ const MedEvents = () => {
                 className="form-control"
                 style={{ display: 'inline-block', width: 'auto', padding: '6px' }}
               >
-                <option value="eventDate">Ngày</option>
                 <option value="medicalEventId">ID</option>
+                <option value="eventDate">Ngày</option>
                 <option value="studentName">Học sinh</option>
                 <option value="nurseName">Y tá</option>
                 <option value="symptoms">Triệu chứng</option>
