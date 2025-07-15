@@ -768,10 +768,10 @@ const Medications = () => {
                     <strong>ID:</strong> {selectedMedication.prescriptionId}
                 </div>
                 <div className="info-item">
-                  <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"}
+                  <strong>Phụ huynh:</strong> {selectedMedication.parentName || "Không có"} (ID: {selectedMedication.parentId || "N/A"})
                 </div>
                 <div className="info-item">
-                  <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"}
+                  <strong>Học sinh:</strong> {selectedMedication.studentName || "Không có"} (ID: {selectedMedication.studentId || "N/A"})
                 </div>
                 <div className="info-item">
                     <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}

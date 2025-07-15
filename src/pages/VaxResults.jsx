@@ -27,7 +27,7 @@ const StudentNameCell = ({ studentId, initialName, healthProfileId }) => {
             
             console.log(`Fetched student name for ID ${studentId}: ${name}`);
             setStudentName(name);
-            setDisplayName(`${name}`);
+            setDisplayName(`${name} (ID: ${studentId})`);
             setLoading(false);
             return;
           }
@@ -46,7 +46,7 @@ const StudentNameCell = ({ studentId, initialName, healthProfileId }) => {
               
               console.log(`Fetched student name from health profile: ${name}`);
               setStudentName(name);
-              setDisplayName(`${name}`);
+              setDisplayName(`${name} (ID: ${profileResponse.studentId})`);
               setLoading(false);
               return;
             }
@@ -57,7 +57,7 @@ const StudentNameCell = ({ studentId, initialName, healthProfileId }) => {
         // Nếu có lỗi nhưng có initialName hợp lệ, sử dụng initialName
         if (initialName && !initialName.includes("ID:") && !initialName.includes("Học sinh ID")) {
           setStudentName(initialName);
-          setDisplayName(initialName);
+          setDisplayName(`${initialName} (ID: ${studentId || "N/A"})`);
         }
       } finally {
         setLoading(false);
@@ -102,7 +102,7 @@ const NurseNameCell = ({ nurseId, initialName }) => {
               
               console.log(`Fetched nurse name for ID ${nurseId}: ${name}`);
               setNurseName(`${name}`);
-              setDisplayName(`${name}`);
+              setDisplayName(`${name} (ID: ${nurseId})`);
               setLoading(false);
               return;
             }
@@ -113,7 +113,7 @@ const NurseNameCell = ({ nurseId, initialName }) => {
         // Nếu có lỗi nhưng có initialName hợp lệ, sử dụng initialName
         if (initialName && !initialName.includes("ID:") && !initialName.includes("Y tá ID")) {
           setNurseName(initialName);
-          setDisplayName(initialName);
+          setDisplayName(`${initialName} (ID: ${nurseId || "N/A"})`);
         }
       } finally {
         setLoading(false);
@@ -136,6 +136,10 @@ const VaxResults = () => {
   const [schedules, setSchedules] = useState([]);
   const [nurses, setNurses] = useState([]);
   const [students, setStudents] = useState([]);
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [filteredNurses, setFilteredNurses] = useState([]);
+  const [showStudentDropdown, setShowStudentDropdown] = useState(false);
+  const [showNurseDropdown, setShowNurseDropdown] = useState(false);
   const [loading, setLoading] = useState(true);
   const [searchLoading, setSearchLoading] = useState(false);
   const [page, setPage] = useState(1);
@@ -153,8 +157,10 @@ const VaxResults = () => {
     healthProfileId: "",
     studentId: "",
     studentName: "",
+    studentSearchTerm: "",
     nurseId: localStorage.getItem("userId") || "",
     nurseName: "",
+    nurseSearchTerm: "",
     doseNumber: "1",
     reactionAfterInjection: "",
     status: "1", // Default status: Completed
@@ -660,6 +666,30 @@ const VaxResults = () => {
     } else if (name === "vaccinationScheduleId") {
       handleScheduleChange(value);
     }
+    
+    // Xử lý tìm kiếm học sinh khi người dùng nhập vào ô tìm kiếm học sinh
+    if (name === "studentSearchTerm") {
+      const filtered = students.filter(student => 
+        (student.fullName?.toLowerCase().includes(value.toLowerCase())) ||
+        (student.firstName?.toLowerCase().includes(value.toLowerCase())) ||
+        (student.lastName?.toLowerCase().includes(value.toLowerCase())) ||
+        `${student.studentId}`.includes(value)
+      );
+      setFilteredStudents(filtered);
+      setShowStudentDropdown(true);
+    }
+    
+    // Xử lý tìm kiếm y tá khi người dùng nhập vào ô tìm kiếm y tá
+    if (name === "nurseSearchTerm") {
+      const filtered = nurses.filter(nurse => 
+        (nurse.fullName?.toLowerCase().includes(value.toLowerCase())) ||
+        (nurse.firstName?.toLowerCase().includes(value.toLowerCase())) ||
+        (nurse.lastName?.toLowerCase().includes(value.toLowerCase())) ||
+        `${nurse.nurseId}`.includes(value)
+      );
+      setFilteredNurses(filtered);
+      setShowNurseDropdown(true);
+    }
   };
 
   // Cập nhật phần định nghĩa hàm validateForm
@@ -1016,17 +1046,30 @@ const VaxResults = () => {
 
   // Thêm hàm resetForm để khởi tạo lại form sau khi thêm hoặc sửa
   const resetForm = () => {
+    // Lấy thông tin y tá hiện tại từ localStorage
+    const currentNurseId = localStorage.getItem("userId") || "";
+    let nurseName = "";
+    
+    // Nếu có ID y tá, tìm tên y tá từ danh sách
+    if (currentNurseId) {
+      const nurse = nurses.find(n => n.nurseId.toString() === currentNurseId.toString());
+      if (nurse) {
+        nurseName = nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${currentNurseId}`;
+      }
+    }
+    
     setFormData({
-      vaccinationResultId: "",
       vaccinationScheduleId: "",
       healthProfileId: "",
       studentId: "",
       studentName: "",
-      nurseId: localStorage.getItem("userId") || "",
-      nurseName: "",
+      studentSearchTerm: "",
+      nurseId: currentNurseId,
+      nurseName: nurseName,
+      nurseSearchTerm: nurseName,
       doseNumber: "1",
       reactionAfterInjection: "",
-      status: "1",
+      status: "1", // Default status: Completed
       note: "",
       vaccineName: "",
       injectionDate: "",
@@ -1082,80 +1125,46 @@ const VaxResults = () => {
   const handleEdit = (result) => {
     console.log("Editing result:", result);
     
-    // First try to get detailed information to ensure we have all fields
-    API_SERVICE.vaccinationResultAPI.getById(result.vaccinationResultId)
-      .then(detailedResult => {
-        console.log("Detailed result for edit:", detailedResult);
-        
-        // Merge the detailed result with the original result
-        const mergedResult = {
-          ...result,
-          ...detailedResult,
-          // Ensure we keep the original ID
-          vaccinationResultId: result.vaccinationResultId
-        };
-        
-        console.log("Merged result data for edit:", mergedResult);
-        
-        // Ensure we have all required fields
-        const studentId = mergedResult.studentId?.toString() || "";
-        const healthProfileId = mergedResult.healthProfileId?.toString() || "";
-        const vaccinationScheduleId = mergedResult.vaccinationScheduleId?.toString() || "";
-        const nurseId = mergedResult.nurseId?.toString() || "";
-        
-        // Create a complete form data object with all required fields
-        const initialFormData = {
-          vaccinationResultId: mergedResult.vaccinationResultId?.toString() || "",
-          vaccinationScheduleId: vaccinationScheduleId,
-          healthProfileId: healthProfileId,
-          studentId: studentId,
-          studentName: mergedResult.studentName || "",
-          nurseId: nurseId,
-          nurseName: mergedResult.nurseName || "",
-          doseNumber: mergedResult.doseNumber?.toString() || "1",
-          reactionAfterInjection: mergedResult.reactionAfterInjection || "",
-          status: mergedResult.status?.toString() || "1",
-          note: mergedResult.note || "",
-          vaccineName: mergedResult.vaccineName || "",
-          injectionDate: mergedResult.injectionDate || "",
-          injectionTime: mergedResult.injectionTime || ""
-        };
-        
-        // Set the selected result for reference
-        setSelectedResult(mergedResult);
-        
-        console.log("Setting complete form data for edit:", initialFormData);
-        setFormData(initialFormData);
-        setShowEditModal(true);
-      })
-      .catch(error => {
-        console.error("Error fetching detailed result for edit:", error);
-        
-        // Fallback to using only the data we have
-        const initialFormData = {
-          vaccinationResultId: result.vaccinationResultId?.toString() || "",
-          vaccinationScheduleId: result.vaccinationScheduleId?.toString() || "",
-          healthProfileId: result.healthProfileId?.toString() || "",
-          studentId: result.studentId?.toString() || "",
-          studentName: result.studentName || "",
-          nurseId: result.nurseId?.toString() || "",
-          nurseName: result.nurseName || "",
-      doseNumber: result.doseNumber?.toString() || "1",
+    // Lấy thông tin y tá từ ID
+    let nurseName = result.nurseName || "";
+    if (result.nurseId && !nurseName) {
+      const nurse = nurses.find(n => n.nurseId.toString() === result.nurseId.toString());
+      if (nurse) {
+        nurseName = nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim();
+      }
+    }
+    
+    // Lấy thông tin học sinh từ ID
+    let studentName = result.studentName || "";
+    if (result.studentId && !studentName) {
+      const student = students.find(s => s.studentId.toString() === result.studentId.toString());
+      if (student) {
+        studentName = student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim();
+      }
+    }
+    
+    // Cập nhật form data
+    setFormData({
+      vaccinationResultId: result.vaccinationResultId,
+      vaccinationScheduleId: result.vaccinationScheduleId || "",
+      healthProfileId: result.healthProfileId || "",
+      studentId: result.studentId || "",
+      studentName: studentName || result.studentName || "",
+      studentSearchTerm: studentName || result.studentName || "",
+      nurseId: result.nurseId || "",
+      nurseName: nurseName || result.nurseName || "",
+      nurseSearchTerm: nurseName || result.nurseName || "",
+      doseNumber: result.doseNumber || "1",
       reactionAfterInjection: result.reactionAfterInjection || "",
       status: result.status?.toString() || "1",
-          note: result.note || "",
-          vaccineName: result.vaccineName || "",
-          injectionDate: result.injectionDate || "",
-          injectionTime: result.injectionTime || ""
-        };
-        
-        // Set the selected result for reference
-        setSelectedResult(result);
-        
-        console.log("Setting fallback form data for edit:", initialFormData);
-        setFormData(initialFormData);
+      note: result.note || "",
+      vaccineName: result.vaccineName || "",
+      injectionDate: result.injectionDate ? new Date(result.injectionDate).toISOString().split('T')[0] : "",
+      injectionTime: result.injectionTime || ""
+    });
+    
+    setSelectedResult(result);
     setShowEditModal(true);
-      });
   };
 
   const handleDelete = (result) => {
@@ -1335,6 +1344,31 @@ const VaxResults = () => {
     calculateStatusCounts();
   }, [results]);
 
+  // Hàm xử lý khi người dùng chọn một học sinh từ dropdown
+  const handleSelectStudent = (student) => {
+    setFormData({
+      ...formData,
+      studentId: student.studentId,
+      studentName: student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || `Học sinh ID: ${student.studentId}`,
+      studentSearchTerm: student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || `Học sinh ID: ${student.studentId}`
+    });
+    setShowStudentDropdown(false);
+    
+    // Gọi hàm handleStudentChange để xử lý các logic liên quan đến việc chọn học sinh
+    handleStudentChange(student.studentId);
+  };
+
+  // Hàm xử lý khi người dùng chọn một y tá từ dropdown
+  const handleSelectNurse = (nurse) => {
+    setFormData({
+      ...formData,
+      nurseId: nurse.nurseId,
+      nurseName: nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`,
+      nurseSearchTerm: nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`
+    });
+    setShowNurseDropdown(false);
+  };
+
   return (
     <div className="admin-main">
       <div className="vax-results-container">
@@ -1443,39 +1477,118 @@ const VaxResults = () => {
                   
                   <div className="vax-results-form-group">
                     <label>Học sinh <span className="required">*</span></label>
-                    <select
-                      name="studentId"
-                      value={formData.studentId || ""}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="">-- Chọn học sinh --</option>
-                      {students.map((student) => (
-                        <option key={student.studentId} value={student.studentId}>
-                          {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || `Học sinh #${student.studentId}`}
-                        </option>
-                      ))}
-                    </select>
-                    {formData.studentName && (
-                      <div className="selected-info">Đã chọn: {formData.studentName}</div>
-                    )}
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        name="studentSearchTerm"
+                        value={formData.studentSearchTerm}
+                        onChange={handleInputChange}
+                        onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
+                        onClick={() => setShowStudentDropdown(true)}
+                        placeholder="Nhập tên hoặc ID học sinh"
+                        required
+                      />
+                      {showStudentDropdown && filteredStudents.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          backgroundColor: 'white',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          zIndex: 1000,
+                          boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                        }}>
+                          {filteredStudents.map(student => (
+                            <div 
+                              key={student.studentId} 
+                              className="dropdown-item" 
+                              style={{ padding: '8px 12px', cursor: 'pointer' }}
+                              onClick={() => handleSelectStudent(student)}
+                            >
+                              {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || `Học sinh ID: ${student.studentId}`}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {showStudentDropdown && filteredStudents.length === 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          padding: '8px 12px',
+                          backgroundColor: 'white',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          zIndex: 1000
+                        }}>
+                          Không tìm thấy học sinh
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="vax-results-form-group">
                     <label>Y tá phụ trách <span className="required">*</span></label>
-                    <select
-                      name="nurseId"
-                      value={formData.nurseId || ""}
-                      onChange={handleInputChange}
-                      required
-                    >
-                      <option value="">-- Chọn y tá --</option>
-                      {nurses.map((nurse) => (
-                        <option key={nurse.nurseId} value={nurse.nurseId}>
-                          {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá #${nurse.nurseId}`}
-                        </option>
-                      ))}
-                    </select>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        name="nurseSearchTerm"
+                        value={formData.nurseSearchTerm || ""}
+                        onChange={handleInputChange}
+                        onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
+                        onClick={() => setShowNurseDropdown(true)}
+                        placeholder="Nhập tên hoặc ID y tá"
+                        required
+                        style={{ backgroundColor: '#ffffff', borderColor: '#28a745' }}
+                      />
+                      {showNurseDropdown && filteredNurses.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          backgroundColor: 'white',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          zIndex: 1000,
+                          boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                        }}>
+                          {filteredNurses.map(nurse => (
+                            <div 
+                              key={nurse.nurseId} 
+                              className="dropdown-item" 
+                              style={{ padding: '8px 12px', cursor: 'pointer' }}
+                              onClick={() => handleSelectNurse(nurse)}
+                            >
+                              {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {showNurseDropdown && filteredNurses.length === 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          padding: '8px 12px',
+                          backgroundColor: 'white',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          zIndex: 1000
+                        }}>
+                          Không tìm thấy y tá
+                        </div>
+                      )}
+                    </div>
+                    <small style={{ color: '#28a745' }}>Có thể thay đổi y tá phụ trách</small>
                   </div>
                 </div>
 
@@ -1585,18 +1698,11 @@ const VaxResults = () => {
                 </div>
                 <div className="info-item">
                     <strong>Học sinh:</strong> 
-                    <StudentNameCell 
-                      studentId={selectedResult.studentId} 
-                      initialName={selectedResult.studentName} 
-                      healthProfileId={selectedResult.healthProfileId} 
-                    />
+                    {selectedResult.studentName || "Không có"} (ID: {selectedResult.studentId || "N/A"})
                 </div>
                 <div className="info-item">
                     <strong>Y tá phụ trách:</strong> 
-                    <NurseNameCell 
-                      nurseId={selectedResult.nurseId} 
-                      initialName={selectedResult.nurseName} 
-                    />
+                    {selectedResult.nurseName || "Không có"} (ID: {selectedResult.nurseId || "N/A"})
                 </div>
                 </div>
               </div>
@@ -1691,20 +1797,60 @@ const VaxResults = () => {
                   
                   <div className="vax-results-form-group">
                     <label>Y tá phụ trách <span className="required">*</span></label>
-                    <select
-                      name="nurseId"
-                      value={formData.nurseId || ""}
-                      onChange={handleInputChange}
-                      required
-                      style={{ backgroundColor: '#ffffff', borderColor: '#28a745' }} // Highlight trường có thể cập nhật
-                    >
-                      <option value="">-- Chọn y tá --</option>
-                      {nurses.map((nurse) => (
-                        <option key={nurse.nurseId} value={nurse.nurseId}>
-                          {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá #${nurse.nurseId}`}
-                        </option>
-                      ))}
-                    </select>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="text"
+                        name="nurseSearchTerm"
+                        value={formData.nurseSearchTerm || ""}
+                        onChange={handleInputChange}
+                        onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
+                        onClick={() => setShowNurseDropdown(true)}
+                        placeholder="Nhập tên hoặc ID y tá"
+                        required
+                        style={{ backgroundColor: '#ffffff', borderColor: '#28a745' }}
+                      />
+                      {showNurseDropdown && filteredNurses.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          maxHeight: '200px',
+                          overflowY: 'auto',
+                          backgroundColor: 'white',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          zIndex: 1000,
+                          boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                        }}>
+                          {filteredNurses.map(nurse => (
+                            <div 
+                              key={nurse.nurseId} 
+                              className="dropdown-item" 
+                              style={{ padding: '8px 12px', cursor: 'pointer' }}
+                              onClick={() => handleSelectNurse(nurse)}
+                            >
+                              {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {showNurseDropdown && filteredNurses.length === 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: 0,
+                          right: 0,
+                          padding: '8px 12px',
+                          backgroundColor: 'white',
+                          border: '1px solid #ddd',
+                          borderRadius: '4px',
+                          zIndex: 1000
+                        }}>
+                          Không tìm thấy y tá
+                        </div>
+                      )}
+                    </div>
                     <small style={{ color: '#28a745' }}>Trường này có thể được cập nhật</small>
                   </div>
                 </div>
