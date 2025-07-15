@@ -32,6 +32,9 @@ const Medications = () => {
     direction: "desc"
   });
   const [showPrescriptionImage, setShowPrescriptionImage] = useState(false);
+  // Thêm state cho xác nhận thay đổi trạng thái
+  const [showConfirmAccept, setShowConfirmAccept] = useState(false);
+  const [showConfirmReject, setShowConfirmReject] = useState(false);
 
   const handleViewPrescriptionImage = () => {
     setShowPrescriptionImage(true);
@@ -709,6 +712,11 @@ const Medications = () => {
   };
 
   const handleAcceptPrescription = async () => {
+    setShowConfirmAccept(true);
+  };
+
+  const confirmAcceptPrescription = async () => {
+    setShowConfirmAccept(false);
     if (!selectedMedication) return;
 
     try {
@@ -746,6 +754,11 @@ const Medications = () => {
   };
 
   const handleRejectPrescription = async () => {
+    setShowConfirmReject(true);
+  };
+
+  const confirmRejectPrescription = async () => {
+    setShowConfirmReject(false);
     if (!selectedMedication) return;
 
     try {
@@ -788,22 +801,22 @@ const Medications = () => {
         <h2>Quản lý thuốc từ phụ huynh</h2>
         <div className="admin-header-actions">
           <div className="search-container">
-                      <input
-            className="admin-search"
-            type="text"
-            placeholder="Tìm kiếm..."
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-          />
-          <button
-            className="admin-btn"
-            style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}
-            onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
-            title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
-          >
-            <FaFilter />
-          </button>
+            <input
+              className="admin-search"
+              type="text"
+              placeholder="Tìm kiếm..."
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+            />
+            <button
+              className="admin-btn"
+              style={{ marginLeft: '8px', padding: '8px' }}
+              onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+              title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
+            >
+              <FaFilter />
+            </button>
           </div>
         </div>
       </div>
@@ -916,16 +929,11 @@ const Medications = () => {
             <div>
               <button
                 className="admin-btn"
-                style={{ 
-                  backgroundColor: sortConfig.direction === 'asc' ? '#28a745' : '#007bff',
-                  padding: '6px 10px'
-                }}
+                style={{ padding: '6px' }}
                 onClick={() => setSortConfig({...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'})}
+                title={sortConfig.direction === 'asc' ? 'Sắp xếp giảm dần' : 'Sắp xếp tăng dần'}
               >
                 {sortConfig.direction === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
-                <span style={{ marginLeft: '5px' }}>
-                  {sortConfig.direction === 'asc' ? 'Tăng dần' : 'Giảm dần'}
-                </span>
               </button>
             </div>
           </div>
@@ -1313,6 +1321,44 @@ const Medications = () => {
                 Đóng
               </button>
               {/* Xóa nút tải xuống vì ảnh đã hiển thị thành công */}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Thêm modal xác nhận duyệt đơn thuốc */}
+      {showConfirmAccept && (
+        <div className="student-delete-modal-overlay">
+          <div className="student-delete-modal-content">
+            <div className="student-delete-modal-title">
+              <strong>Xác nhận duyệt đơn thuốc?</strong>
+            </div>
+            <div className="student-delete-modal-actions">
+              <button className="btn btn-primary" onClick={confirmAcceptPrescription}>
+                Xác nhận
+              </button>
+              <button className="btn btn-secondary" onClick={() => setShowConfirmAccept(false)}>
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Thêm modal xác nhận từ chối đơn thuốc */}
+      {showConfirmReject && (
+        <div className="student-delete-modal-overlay">
+          <div className="student-delete-modal-content">
+            <div className="student-delete-modal-title">
+              <strong>Xác nhận từ chối đơn thuốc?</strong>
+            </div>
+            <div className="student-delete-modal-actions">
+              <button className="btn btn-danger" onClick={confirmRejectPrescription}>
+                Xác nhận
+              </button>
+              <button className="btn btn-secondary" onClick={() => setShowConfirmReject(false)}>
+                Hủy
+              </button>
             </div>
           </div>
         </div>

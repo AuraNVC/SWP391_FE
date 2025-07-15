@@ -22,6 +22,10 @@ const ConsultSchedules = () => {
   
   // State cho xác nhận xóa
   const [showConfirmRequest, setShowConfirmRequest] = useState(false);
+  
+  // State mới cho xác nhận thêm và cập nhật
+  const [showConfirmAdd, setShowConfirmAdd] = useState(false);
+  const [showConfirmUpdate, setShowConfirmUpdate] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [page, setPage] = useState(1);
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -746,128 +750,155 @@ const ConsultSchedules = () => {
   const handleAddSchedule = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
     
+    // Hiển thị hộp thoại xác nhận thay vì gửi ngay
+    setShowConfirmAdd(true);
+  };
+
+  // Thêm hàm xác nhận thêm lịch tư vấn
+  const confirmAddSchedule = async () => {
+    setShowConfirmAdd(false);
     setLoading(true);
+    
     try {
-      // Kết hợp ngày và giờ thành một đối tượng Date
-      const [year, month, day] = formData.consultationDate.split('-');
-      const [hour, minute] = formData.consultationTime.split(':');
-      const consultDateTime = new Date(year, month - 1, day, hour, minute);
+      // Xử lý ngày và giờ
+      const consultDate = formData.consultDate;
+      const consultTime = formData.consultTime;
       
-      // Lấy thông tin phụ huynh từ học sinh
-      const studentId = parseInt(formData.studentId);
-      if (isNaN(studentId)) {
-        throw new Error("ID học sinh không hợp lệ");
+      // Kết hợp ngày và giờ thành một chuỗi ISO
+      const consultDateTime = new Date(`${consultDate}T${consultTime}`).toISOString();
+      
+      // Tìm studentId từ tên học sinh đã nhập
+      let studentId = formData.studentId;
+      if (!studentId && formData.studentSearchTerm) {
+        const foundStudent = students.find(s => 
+          s.fullName === formData.studentSearchTerm || 
+          formData.studentSearchTerm.includes(`ID: ${s.studentId}`)
+        );
+        if (foundStudent) {
+          studentId = foundStudent.studentId;
+        } else {
+          throw new Error("Không tìm thấy học sinh. Vui lòng chọn học sinh từ danh sách.");
+        }
       }
       
-      const student = students.find(s => s.studentId === studentId);
-      const parentId = student?.parentId ? parseInt(student.parentId) : null;
+      // Tìm nurseId từ tên y tá đã nhập
+      let nurseId = formData.nurseId;
+      if (!nurseId && formData.nurseSearchTerm) {
+        const foundNurse = nurses.find(n => 
+          n.fullName === formData.nurseSearchTerm || 
+          formData.nurseSearchTerm.includes(`ID: ${n.nurseId}`)
+        );
+        if (foundNurse) {
+          nurseId = foundNurse.nurseId;
+        } else {
+          throw new Error("Không tìm thấy y tá. Vui lòng chọn y tá từ danh sách.");
+        }
+      }
       
-      // Chuẩn bị dữ liệu gửi đi cho lịch tư vấn
+      // Tìm parentId từ danh sách học sinh nếu có
+      let parentId = formData.parentId;
+      if (!parentId && studentId) {
+        try {
+          // Tìm thông tin học sinh để lấy parentId
+          const studentInfo = await API_SERVICE.studentAPI.getById(studentId);
+          if (studentInfo && studentInfo.parentId) {
+            parentId = studentInfo.parentId;
+          }
+        } catch (err) {
+          console.warn("Could not fetch student info for parent ID:", err);
+        }
+      }
+      
+      // Chuẩn bị dữ liệu để gửi
       const scheduleData = {
-        nurseId: parseInt(formData.nurseId) || null,
-        studentId: studentId,
+        consultDate: consultDateTime,
+        studentId: parseInt(studentId),
+        nurseId: parseInt(nurseId),
         location: formData.location,
-        consultDate: consultDateTime.toISOString()
+        parentId: parentId ? parseInt(parentId) : null
       };
       
-      console.log("Submitting schedule data:", scheduleData);
-      
       // Gọi API để tạo lịch tư vấn
-      const scheduleResponse = await API_SERVICE.consultationScheduleAPI.create(scheduleData);
-      console.log("Schedule API response:", scheduleResponse);
+      const response = await API_SERVICE.consultationScheduleAPI.create(scheduleData);
+      console.log("API response:", response);
       
-      // Lấy ID của lịch tư vấn vừa tạo
-      const scheduleId = scheduleResponse.consultationScheduleId || scheduleResponse.id;
-      
-      if (!scheduleId) {
-        throw new Error("Không nhận được ID lịch tư vấn từ API");
-      }
-      
-      // Nếu có hiển thị phần form tư vấn và đã nhập thông tin form
-      if (scheduleId && formData.showFormSection && formData.formTitle && formData.formContent) {
-        // Chuẩn bị dữ liệu form tư vấn
-        const formDataToSubmit = {
-          consultationScheduleId: parseInt(scheduleId),
-          nurseId: parseInt(formData.nurseId) || null,
-          studentId: studentId,
-          parentId: parentId,
-          title: formData.formTitle,
-          content: formData.formContent,
-          status: 0 // Pending
-        };
-        
-        console.log("Submitting form data:", formDataToSubmit);
-        
-        // Gọi API để tạo form tư vấn
-        const formResponse = await API_SERVICE.consultationFormAPI.create(formDataToSubmit);
-        console.log("Form API response:", formResponse);
+      // Nếu người dùng muốn tạo form tư vấn và có parentId
+      if (formData.createForm && parentId) {
+        try {
+          // Lấy ID lịch tư vấn vừa tạo
+          const scheduleId = response.consultationScheduleId || response.id;
+          
+          // Chuẩn bị dữ liệu form
+          const formData = {
+            consultationScheduleId: scheduleId,
+            title: "Form tư vấn: " + new Date(consultDateTime).toLocaleDateString('vi-VN'),
+            content: "Nội dung tư vấn sẽ được cập nhật sau.",
+            status: 0, // Pending
+            nurseId: parseInt(nurseId),
+            studentId: parseInt(studentId),
+            parentId: parseInt(parentId)
+          };
+          
+          // Gọi API để tạo form tư vấn
+          const formResponse = await API_SERVICE.consultationFormAPI.create(formData);
+          console.log("Form API response:", formResponse);
+        } catch (formError) {
+          console.error("Error creating consultation form:", formError);
+          // Không throw lỗi ở đây vì lịch tư vấn đã được tạo thành công
+        }
       }
       
       // Gửi thông báo đến phụ huynh nếu có thông tin phụ huynh
-      if (parentId) {
+      if (formData.sendNotification && parentId) {
         try {
           // Chuẩn bị dữ liệu thông báo
-          const notificationTitle = formData.formTitle 
-            ? `Cập nhật lịch tư vấn: ${formData.formTitle}`
-            : "Cập nhật lịch tư vấn";
-          
-          // Tạo nội dung thông báo
-          const notificationContent = `Lịch tư vấn đã được cập nhật vào ngày ${new Date(consultDateTime).toLocaleDateString('vi-VN')} lúc ${new Date(consultDateTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} tại ${formData.location}.`;
-            
           const notificationData = {
             recipientId: parentId,
-            title: notificationTitle,
-            content: notificationContent,
+            title: "Lịch tư vấn mới",
+            content: `Bạn có lịch tư vấn mới vào ngày ${new Date(consultDateTime).toLocaleDateString('vi-VN')} lúc ${new Date(consultDateTime).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})} tại ${formData.location}.`,
             type: "ConsultationSchedule",
-            referenceId: scheduleId
+            referenceId: response.consultationScheduleId || response.id
           };
           
-          console.log("Sending notification:", notificationData);
-          
           // Gọi API để gửi thông báo
-          const notifResult = await API_SERVICE.notificationAPI.create(notificationData);
-          console.log("Notification result:", notifResult);
-          
-      setNotif({
-            message: "Đã cập nhật lịch tư vấn thành công.",
-        type: "success"
-      });
+          await API_SERVICE.notificationAPI.create(notificationData);
         } catch (notifError) {
           console.error("Error sending notification:", notifError);
-          setNotif({
-            message: "Cập nhật lịch tư vấn thành công",
-            type: "success"
-          });
+          // Không throw lỗi ở đây vì lịch tư vấn đã được tạo thành công
         }
-      } else {
-        setNotif({
-          message: "Cập nhật lịch tư vấn thành công",
-          type: "success"
-        });
       }
       
-      setShowAddModal(false);
-      setFormData({
-        consultationDate: new Date().toISOString().split('T')[0],
-        consultationTime: "08:00",
-        location: "Phòng y tế",
-        studentId: "",
-        nurseId: localStorage.getItem("userId") || "",
-        parentId: "",
-        parentName: "",
-        formTitle: "",
-        formContent: "",
-        sendNotification: true,
-        showFormSection: false
+      // Hiển thị thông báo thành công
+      setNotif({
+        message: "Thêm lịch tư vấn thành công",
+        type: "success"
       });
       
-      fetchConsultationSchedules(searchKeyword);
+      // Đóng modal và tải lại dữ liệu
+      setShowAddModal(false);
+      fetchConsultationSchedules();
+      
+      // Reset form data
+      setFormData({
+        consultDate: new Date().toISOString().split('T')[0],
+        consultTime: new Date().toTimeString().slice(0, 5),
+        studentId: "",
+        studentSearchTerm: "",
+        nurseId: localStorage.getItem("userId") || "",
+        nurseSearchTerm: "",
+        location: "",
+        createForm: true,
+        sendNotification: true,
+        parentId: ""
+      });
     } catch (error) {
-      console.error("Error adding consultation schedule and form:", error);
+      console.error("Error adding consultation schedule:", error);
       setNotif({
-        message: "Không thể thêm lịch tư vấn và form: " + (error.message || "Lỗi không xác định"),
+        message: error.message || "Không thể thêm lịch tư vấn. Vui lòng thử lại.",
         type: "error"
       });
     } finally {
@@ -878,123 +909,114 @@ const ConsultSchedules = () => {
   const handleUpdateSchedule = async (e) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      return;
+    }
     
+    // Hiển thị hộp thoại xác nhận thay vì gửi ngay
+    setShowConfirmUpdate(true);
+  };
+
+  // Thêm hàm xác nhận cập nhật lịch tư vấn
+  const confirmUpdateSchedule = async () => {
+    setShowConfirmUpdate(false);
     setLoading(true);
+    
     try {
-      // Kết hợp ngày và giờ thành một đối tượng Date
-      const [year, month, day] = formData.consultationDate.split('-');
-      const [hour, minute] = formData.consultationTime.split(':');
-      const consultDateTime = new Date(year, month - 1, day, hour, minute);
+      // Xử lý ngày và giờ
+      const consultDate = formData.consultationDate;
+      const consultTime = formData.consultationTime;
       
-      // Đảm bảo ID lịch tư vấn là số nguyên
-      const scheduleIdNum = parseInt(selectedSchedule.consultationScheduleId);
+      // Kết hợp ngày và giờ thành một chuỗi ISO
+      const consultDateTime = new Date(`${consultDate}T${consultTime}`).toISOString();
+      
+      // Đảm bảo ID là số nguyên
+      const scheduleIdNum = parseInt(formData.consultationScheduleId);
       if (isNaN(scheduleIdNum)) {
         throw new Error("ID lịch tư vấn không hợp lệ");
       }
       
-      // Đảm bảo ID học sinh là số nguyên
-      const studentId = parseInt(formData.studentId);
-      if (isNaN(studentId)) {
-        throw new Error("ID học sinh không hợp lệ");
-      }
-      
-      // Đảm bảo ID y tá là số nguyên nếu có
-      let nurseId = null;
-      if (formData.nurseId) {
-        nurseId = parseInt(formData.nurseId);
-        if (isNaN(nurseId)) {
-          nurseId = null;
+      // Tìm studentId từ tên học sinh đã nhập
+      let studentId = formData.studentId;
+      if (!studentId && formData.studentSearchTerm) {
+        const foundStudent = students.find(s => 
+          s.fullName === formData.studentSearchTerm || 
+          formData.studentSearchTerm.includes(`ID: ${s.studentId}`)
+        );
+        if (foundStudent) {
+          studentId = foundStudent.studentId;
+        } else {
+          throw new Error("Không tìm thấy học sinh. Vui lòng chọn học sinh từ danh sách.");
         }
       }
       
-      // Chuẩn bị dữ liệu gửi đi cho lịch tư vấn
+      // Tìm nurseId từ tên y tá đã nhập
+      let nurseId = formData.nurseId;
+      if (!nurseId && formData.nurseSearchTerm) {
+        const foundNurse = nurses.find(n => 
+          n.fullName === formData.nurseSearchTerm || 
+          formData.nurseSearchTerm.includes(`ID: ${n.nurseId}`)
+        );
+        if (foundNurse) {
+          nurseId = foundNurse.nurseId;
+        } else {
+          throw new Error("Không tìm thấy y tá. Vui lòng chọn y tá từ danh sách.");
+        }
+      }
+      
+      // Tìm parentId từ danh sách học sinh nếu có
+      let parentId = formData.parentId;
+      if (!parentId && studentId) {
+        try {
+          // Tìm thông tin học sinh để lấy parentId
+          const studentInfo = await API_SERVICE.studentAPI.getById(studentId);
+          if (studentInfo && studentInfo.parentId) {
+            parentId = studentInfo.parentId;
+          }
+        } catch (err) {
+          console.warn("Could not fetch student info for parent ID:", err);
+        }
+      }
+      
+      // Chuẩn bị dữ liệu để gửi
       const scheduleData = {
         consultationScheduleId: scheduleIdNum,
-        nurseId: nurseId,
-        studentId: studentId,
+        consultDate: consultDateTime,
+        studentId: parseInt(studentId),
+        nurseId: parseInt(nurseId),
         location: formData.location,
-        consultDate: consultDateTime.toISOString()
+        parentId: parentId ? parseInt(parentId) : null
       };
       
       console.log("Updating schedule with data:", scheduleData);
       
       // Gọi API để cập nhật lịch tư vấn
-      const scheduleResponse = await API_SERVICE.consultationScheduleAPI.update(scheduleIdNum, scheduleData);
-      console.log("Schedule API response:", scheduleResponse);
+      const response = await API_SERVICE.consultationScheduleAPI.update(scheduleIdNum, scheduleData);
+      console.log("Schedule update response:", response);
       
-      // Lấy ID của lịch tư vấn
-      const scheduleId = selectedSchedule.consultationScheduleId;
-      
-      // Lấy thông tin học sinh để biết phụ huynh
-      const student = students.find(s => s.studentId === studentId);
-      const parentId = student?.parentId ? parseInt(student.parentId) : null;
-      
-      // Cập nhật hoặc tạo form tư vấn nếu có thông tin form
-      if (formData.formTitle && formData.formContent) {
-        // Lưu phiên bản cũ vào lịch sử nếu đã có form
-        if (formData.formId) {
-          try {
-            // Lấy thông tin form hiện tại
-            const currentForm = await API_SERVICE.consultationFormAPI.getById(formData.formId);
-            if (currentForm) {
-              // Lưu vào lịch sử
-              setFormHistory(prev => [...prev, {
-                ...currentForm,
-                modifiedDate: new Date().toISOString(),
-                modifiedBy: localStorage.getItem("userId") || "",
-                modifiedByName: localStorage.getItem("userName") || "Y tá"
-              }]);
-            }
-          } catch (historyError) {
-            console.error("Error saving form history:", historyError);
-          }
-          
-          // Kiểm tra trạng thái form hiện tại
-          let newStatus = formData.formStatus;
-          
-          // Nếu form đã được phụ huynh phản hồi (chấp nhận/từ chối), đặt lại trạng thái thành "Đang chờ"
-          if (formData.formStatus === 1 || formData.formStatus === "Accepted" || 
-              formData.formStatus === 2 || formData.formStatus === "Rejected") {
-            newStatus = 0; // Pending
-          }
-          
-          // Nếu đã có form, cập nhật
+      // Nếu có form tư vấn và có parentId
+      if (formData.showFormSection && formData.formId && parentId) {
+        try {
+          // Chuẩn bị dữ liệu form
           const formDataToSubmit = {
             consultationFormId: parseInt(formData.formId),
             consultationScheduleId: scheduleIdNum,
-            nurseId: nurseId,
-            studentId: studentId,
-            parentId: parentId,
             title: formData.formTitle,
             content: formData.formContent,
-            status: newStatus,
-            lastModified: new Date().toISOString(),
-            modifiedBy: localStorage.getItem("userId") || ""
+            status: 0, // Đặt lại trạng thái thành Pending
+            nurseId: parseInt(nurseId),
+            studentId: parseInt(studentId),
+            parentId: parseInt(parentId)
           };
           
           console.log("Updating form with data:", formDataToSubmit);
           
           // Gọi API để cập nhật form tư vấn
           const formResponse = await API_SERVICE.consultationFormAPI.update(formData.formId, formDataToSubmit);
-          console.log("Form API response:", formResponse);
-        } else {
-          // Nếu chưa có form, tạo mới
-          const formDataToSubmit = {
-            consultationScheduleId: scheduleIdNum,
-            nurseId: nurseId,
-            studentId: studentId,
-            parentId: parentId,
-            title: formData.formTitle,
-            content: formData.formContent,
-            status: 0 // Pending
-          };
-          
-          console.log("Creating new form with data:", formDataToSubmit);
-          
-          // Gọi API để tạo form tư vấn
-          const formResponse = await API_SERVICE.consultationFormAPI.create(formDataToSubmit);
-          console.log("Form API response:", formResponse);
+          console.log("Form update response:", formResponse);
+        } catch (formError) {
+          console.error("Error updating consultation form:", formError);
+          // Không throw lỗi ở đây vì lịch tư vấn đã được cập nhật thành công
         }
       }
       
@@ -1681,7 +1703,7 @@ const ConsultSchedules = () => {
           />
           <button
             className="admin-btn"
-            style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}
+            style={{ marginLeft: '8px', padding: '8px' }}
             onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
             title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
           >
@@ -1812,16 +1834,11 @@ const ConsultSchedules = () => {
             <div>
               <button
                 className="admin-btn"
-                style={{ 
-                  backgroundColor: sortConfig.direction === 'asc' ? '#28a745' : '#007bff',
-                  padding: '6px 10px'
-                }}
+                style={{ padding: '6px' }}
                 onClick={() => setSortConfig({...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'})}
+                title={sortConfig.direction === 'asc' ? 'Sắp xếp giảm dần' : 'Sắp xếp tăng dần'}
               >
                 {sortConfig.direction === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
-                <span style={{ marginLeft: '5px' }}>
-                  {sortConfig.direction === 'asc' ? 'Tăng dần' : 'Giảm dần'}
-                </span>
               </button>
             </div>
           </div>
@@ -2682,6 +2699,44 @@ const ConsultSchedules = () => {
             <div className="student-dialog-footer">
               <button className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowHistoryModal(false)}>
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Add Dialog */}
+      {showConfirmAdd && (
+        <div className="student-delete-modal-overlay">
+          <div className="student-delete-modal-content">
+            <div className="student-delete-modal-title">
+              <strong>Xác nhận thêm lịch tư vấn mới?</strong>
+            </div>
+            <div className="student-delete-modal-actions">
+              <button className="btn btn-primary" onClick={confirmAddSchedule}>
+                Xác nhận
+              </button>
+              <button className="btn btn-secondary" onClick={() => setShowConfirmAdd(false)}>
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirm Update Dialog */}
+      {showConfirmUpdate && (
+        <div className="student-delete-modal-overlay">
+          <div className="student-delete-modal-content">
+            <div className="student-delete-modal-title">
+              <strong>Xác nhận cập nhật lịch tư vấn?</strong>
+            </div>
+            <div className="student-delete-modal-actions">
+              <button className="btn btn-primary" onClick={confirmUpdateSchedule}>
+                Xác nhận
+              </button>
+              <button className="btn btn-secondary" onClick={() => setShowConfirmUpdate(false)}>
+                Hủy
               </button>
             </div>
           </div>

@@ -216,9 +216,9 @@ const VaxResults = () => {
         return (
           <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
             <StudentNameCell 
-              studentId={record.studentId} 
-              initialName={record.studentName} 
-              healthProfileId={record.healthProfileId} 
+                 studentId={record.studentId} 
+                 initialName={record.studentName} 
+                 healthProfileId={record.healthProfileId} 
             />
             {sortConfig.key === "studentName" && (
               <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
@@ -1670,22 +1670,23 @@ const VaxResults = () => {
           <FaPlus /> Thêm kết quả tiêm chủng
         </button>
         <div className="search-container">
-          <input
+            <input
             className="admin-search"
-            type="text"
+              type="text"
             placeholder="Tìm kiếm..."
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-          />
-          <button
-            className="admin-btn"
-            style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}
-            onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
-            title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
-          >
-            <FaFilter />
-          </button>
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+            />
+            <button 
+              className="admin-btn"
+              style={{ marginLeft: '8px', padding: '8px' }}
+              onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+              title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
+            >
+              <FaFilter />
+            </button>
+            
         </div>
       </div>
 
@@ -1706,9 +1707,9 @@ const VaxResults = () => {
               onClick={resetFilters}
             >
               Đặt lại bộ lọc
-            </button>
-          </div>
-          
+          </button>
+        </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
             {/* Lọc theo ngày */}
             <div>
@@ -1807,7 +1808,7 @@ const VaxResults = () => {
             </div>
           </div>
           
-          {/* Thêm phần sắp xếp vào trong bộ lọc */}
+          {/* Phần sắp xếp */}
           <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center' }}>
             <div style={{ marginRight: '15px' }}>
               <span style={{ fontSize: '0.9rem', marginRight: '8px' }}>Sắp xếp theo:</span>
@@ -1830,16 +1831,11 @@ const VaxResults = () => {
             <div>
               <button
                 className="admin-btn"
-                style={{ 
-                  backgroundColor: sortConfig.direction === 'asc' ? '#28a745' : '#007bff',
-                  padding: '6px 10px'
-                }}
+                style={{ padding: '6px' }}
                 onClick={() => setSortConfig({...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'})}
+                title={sortConfig.direction === 'asc' ? 'Sắp xếp giảm dần' : 'Sắp xếp tăng dần'}
               >
                 {sortConfig.direction === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
-                <span style={{ marginLeft: '5px' }}>
-                  {sortConfig.direction === 'asc' ? 'Tăng dần' : 'Giảm dần'}
-                </span>
               </button>
             </div>
           </div>
@@ -1881,11 +1877,11 @@ const VaxResults = () => {
                 >
                   <FaEdit style={{ color: "#28a745" }} size={18} />
                 </button>
-                <button
+                  <button
                   className="admin-action-btn admin-action-btn-reset"
-                  title="Xóa"
-                  onClick={() => handleDelete(row)}
-                >
+                    title="Xóa"
+                    onClick={() => handleDelete(row)}
+                  >
                   <FaTrash style={{ color: "#dc3545" }} size={18} />
                 </button>
               </div>
@@ -2408,61 +2404,16 @@ const VaxResults = () => {
 
       {/* Modal xác nhận xóa */}
       {showDeleteModal && selectedResult && (
-        <div className="vax-results-modal-overlay">
-          <div className="vax-results-modal">
-            <div className="vax-results-modal-header">
-              <h3>Xác nhận xóa</h3>
-              <button className="vax-results-modal-close" onClick={() => setShowDeleteModal(false)}>×</button>
+        <div className="student-delete-modal-overlay">
+          <div className="student-delete-modal-content">
+            <div className="student-delete-modal-title">
+              <strong>Xác nhận xóa kết quả tiêm chủng?</strong>
             </div>
-            <div className="vax-results-modal-body">
-              <p>Bạn có chắc chắn muốn xóa kết quả tiêm chủng này không?</p>
-              <div className="info-section">
-                <div className="info-grid">
-                  <div className="info-item">
-                    <strong>ID:</strong> {selectedResult.vaccinationResultId}
-                  </div>
-                  <div className="info-item">
-                    <strong>Học sinh:</strong> 
-                    <StudentNameCell 
-                      studentId={selectedResult.studentId} 
-                      initialName={selectedResult.studentName} 
-                      healthProfileId={selectedResult.healthProfileId} 
-                    />
-                  </div>
-                  <div className="info-item">
-                    <strong>Y tá phụ trách:</strong>
-                    <NurseNameCell 
-                      nurseId={selectedResult.nurseId} 
-                      initialName={selectedResult.nurseName} 
-                    />
-                  </div>
-                  <div className="info-item">
-                    <strong>Vaccine:</strong> {selectedResult.vaccineName || "Không có"}
-                  </div>
-                  <div className="info-item">
-                    <strong>Mũi số:</strong> {selectedResult.doseNumber || "Không có"}
-                  </div>
-                  <div className="info-item">
-                    <strong>Ngày tiêm:</strong> {selectedResult.injectionDate ? new Date(selectedResult.injectionDate).toLocaleDateString('vi-VN') : "Không có"}
-                  </div>
-
-                </div>
-              </div>
-              <p className="warning-text">Hành động này không thể hoàn tác!</p>
-            </div>
-            <div className="vax-results-modal-footer">
-              <button 
-                className="vax-results-btn delete-btn" 
-                onClick={handleDeleteResult}
-                disabled={loading}
-              >
-                {loading ? "Đang xóa..." : "Xóa"}
+            <div className="student-delete-modal-actions">
+              <button className="btn btn-danger" onClick={handleDeleteResult}>
+                Xác nhận
               </button>
-              <button 
-                className="vax-results-btn cancel-btn" 
-                onClick={() => setShowDeleteModal(false)}
-                disabled={loading}
-              >
+              <button className="btn btn-secondary" onClick={() => setShowDeleteModal(false)}>
                 Hủy
               </button>
             </div>
@@ -2472,45 +2423,16 @@ const VaxResults = () => {
 
       {/* Modal xác nhận thêm kết quả */}
       {showConfirmAdd && (
-        <div className="vax-results-modal-overlay">
-          <div className="vax-results-modal">
-            <div className="vax-results-modal-header">
-              <h3>Xác nhận thêm kết quả</h3>
-              <button className="vax-results-modal-close" onClick={() => setShowConfirmAdd(false)}>×</button>
+        <div className="student-delete-modal-overlay">
+          <div className="student-delete-modal-content">
+            <div className="student-delete-modal-title">
+              <strong>Xác nhận thêm kết quả tiêm chủng mới?</strong>
             </div>
-            <div className="vax-results-modal-body">
-              <p>Bạn có chắc chắn muốn thêm kết quả tiêm chủng này không?</p>
-              <div className="info-grid">
-                <div className="info-item">
-                  <strong>Học sinh:</strong> {formData.studentName || "Không xác định"}
-                </div>
-                <div className="info-item">
-                  <strong>Lịch tiêm:</strong> {formData.vaccinationScheduleId ? schedules.find(s => s.vaccinationScheduleId.toString() === formData.vaccinationScheduleId)?.vaccineName : "Không xác định"}
-                </div>
-                <div className="info-item">
-                  <strong>Mũi số:</strong> {formData.doseNumber}
-                </div>
-                <div className="info-item">
-                  <strong>Ngày tiêm:</strong> {formData.injectionDate ? new Date(formData.injectionDate).toLocaleDateString('vi-VN') : "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Giờ tiêm:</strong> {formData.injectionTime || "Không có"}
-                </div>
-              </div>
-            </div>
-            <div className="vax-results-modal-footer">
-              <button 
-                className="vax-results-btn confirm-btn" 
-                onClick={confirmAddResult}
-                disabled={loading}
-              >
-                {loading ? "Đang thêm..." : "Xác nhận"}
+            <div className="student-delete-modal-actions">
+              <button className="btn btn-primary" onClick={confirmAddResult}>
+                Xác nhận
               </button>
-              <button 
-                className="vax-results-btn cancel-btn" 
-                onClick={() => setShowConfirmAdd(false)}
-                disabled={loading}
-              >
+              <button className="btn btn-secondary" onClick={() => setShowConfirmAdd(false)}>
                 Hủy
               </button>
             </div>
@@ -2520,45 +2442,16 @@ const VaxResults = () => {
 
       {/* Modal xác nhận cập nhật kết quả */}
       {showConfirmUpdate && (
-        <div className="vax-results-modal-overlay">
-          <div className="vax-results-modal">
-            <div className="vax-results-modal-header">
-              <h3>Xác nhận cập nhật kết quả</h3>
-              <button className="vax-results-modal-close" onClick={() => setShowConfirmUpdate(false)}>×</button>
+        <div className="student-delete-modal-overlay">
+          <div className="student-delete-modal-content">
+            <div className="student-delete-modal-title">
+              <strong>Xác nhận cập nhật kết quả tiêm chủng?</strong>
             </div>
-            <div className="vax-results-modal-body">
-              <p>Bạn có chắc chắn muốn cập nhật kết quả tiêm chủng này không?</p>
-              <div className="info-grid">
-                <div className="info-item">
-                  <strong>Học sinh:</strong> {formData.studentName || "Không xác định"}
-                </div>
-                <div className="info-item">
-                  <strong>Lịch tiêm:</strong> {formData.vaccinationScheduleId ? schedules.find(s => s.vaccinationScheduleId.toString() === formData.vaccinationScheduleId)?.vaccineName : "Không xác định"}
-                </div>
-                <div className="info-item">
-                  <strong>Mũi số:</strong> {formData.doseNumber}
-                </div>
-                <div className="info-item">
-                  <strong>Ngày tiêm:</strong> {formData.injectionDate ? new Date(formData.injectionDate).toLocaleDateString('vi-VN') : "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Giờ tiêm:</strong> {formData.injectionTime || "Không có"}
-                </div>
-              </div>
-            </div>
-            <div className="vax-results-modal-footer">
-              <button 
-                className="vax-results-btn confirm-btn" 
-                onClick={confirmUpdateResult}
-                disabled={loading}
-              >
-                {loading ? "Đang cập nhật..." : "Xác nhận"}
+            <div className="student-delete-modal-actions">
+              <button className="btn btn-primary" onClick={confirmUpdateResult}>
+                Xác nhận
               </button>
-              <button 
-                className="vax-results-btn cancel-btn" 
-                onClick={() => setShowConfirmUpdate(false)}
-                disabled={loading}
-              >
+              <button className="btn btn-secondary" onClick={() => setShowConfirmUpdate(false)}>
                 Hủy
               </button>
             </div>

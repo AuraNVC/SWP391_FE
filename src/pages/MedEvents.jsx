@@ -730,10 +730,10 @@ const MedEvents = () => {
       }
       
       // Chuẩn bị dữ liệu để gửi
-      const eventData = {
+        const eventData = {
         medicalEventId: formData.medicalEventId,
         title: formData.title,
-        eventDate: formData.eventDate,
+          eventDate: formData.eventDate,
         studentId: studentId,
         nurseId: nurseId,
         symptoms: formData.symptoms,
@@ -743,15 +743,15 @@ const MedEvents = () => {
       
       // Gọi API để cập nhật sự kiện y tế
       const response = await API_SERVICE.medicalEventAPI.update(eventData);
-      
-      // Nếu API thành công, cập nhật UI
-      setNotif({
-        message: "Cập nhật sự kiện y tế thành công!",
-        type: "success"
-      });
-      
+        
+        // Nếu API thành công, cập nhật UI
+        setNotif({
+          message: "Cập nhật sự kiện y tế thành công!",
+          type: "success"
+        });
+        
       // Đóng modal và tải lại dữ liệu
-      setShowEditModal(false);
+        setShowEditModal(false);
       fetchMedicalEvents(searchKeyword);
     } catch (error) {
       console.error("Error updating medical event:", error);
@@ -842,7 +842,7 @@ const MedEvents = () => {
           />
           <button
             className="admin-btn"
-            style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}
+            style={{ marginLeft: '8px', padding: '8px' }}
             onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
             title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
           >
@@ -969,16 +969,11 @@ const MedEvents = () => {
             <div>
               <button
                 className="admin-btn"
-                style={{ 
-                  backgroundColor: sortConfig.direction === 'asc' ? '#28a745' : '#007bff',
-                  padding: '6px 10px'
-                }}
+                style={{ padding: '6px' }}
                 onClick={() => setSortConfig({...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'})}
+                title={sortConfig.direction === 'asc' ? 'Sắp xếp giảm dần' : 'Sắp xếp tăng dần'}
               >
                 {sortConfig.direction === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
-                <span style={{ marginLeft: '5px' }}>
-                  {sortConfig.direction === 'asc' ? 'Tăng dần' : 'Giảm dần'}
-                </span>
               </button>
             </div>
           </div>
@@ -1070,10 +1065,10 @@ const MedEvents = () => {
                   <input
                     type="text"
                     className="form-control"
-                    id="studentId"
+                  id="studentId"
                     name="studentSearchTerm"
                     value={formData.studentSearchTerm}
-                    onChange={handleInputChange}
+                  onChange={handleInputChange}
                     onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
                     onClick={() => setShowStudentDropdown(true)}
                     placeholder="Nhập tên hoặc ID học sinh"
@@ -1127,10 +1122,10 @@ const MedEvents = () => {
                   <input
                     type="text"
                     className="form-control"
-                    id="nurseId"
+                  id="nurseId"
                     name="nurseSearchTerm"
                     value={formData.nurseSearchTerm}
-                    onChange={handleInputChange}
+                  onChange={handleInputChange}
                     onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
                     onClick={() => setShowNurseDropdown(true)}
                     placeholder="Nhập tên hoặc ID y tá"
@@ -1322,10 +1317,10 @@ const MedEvents = () => {
                     <input
                       type="text"
                       className="form-control"
-                      id="studentId"
+                    id="studentId"
                       name="studentSearchTerm"
                       value={formData.studentSearchTerm}
-                      onChange={handleInputChange}
+                  onChange={handleInputChange}
                       onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
                       onClick={() => setShowStudentDropdown(true)}
                       placeholder="Nhập tên hoặc ID học sinh"
@@ -1372,14 +1367,14 @@ const MedEvents = () => {
                       </div>
                     )}
                   </div>
-                </div>
+              </div>
                 <div className="mb-3">
                   <label htmlFor="nurseId" className="form-label">Y tá <span className="text-danger">*</span></label>
                 <div style={{ position: 'relative' }}>
                     <input
                       type="text"
                       className="form-control"
-                      id="nurseId"
+                    id="nurseId"
                       name="nurseSearchTerm"
                       value={formData.nurseSearchTerm}
                   onChange={handleInputChange}
@@ -1429,7 +1424,7 @@ const MedEvents = () => {
                   </div>
                 )}
               </div>
-            </div>
+              </div>
                 <div className="mb-3">
                   <label htmlFor="symptoms" className="form-label">Triệu chứng <span className="text-danger">*</span></label>
                   <textarea

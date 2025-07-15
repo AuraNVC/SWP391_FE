@@ -194,13 +194,13 @@ const HealthResults = () => {
       dataIndex: "studentName", 
       key: "studentName", 
       render: (name, record) => {
-        // Luôn sử dụng StudentNameCell để hiển thị tên học sinh
+      // Luôn sử dụng StudentNameCell để hiển thị tên học sinh
         return (
           <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
             <StudentNameCell 
-              studentId={record.studentId} 
-              initialName={record.studentName} 
-              healthProfileId={record.healthProfileId} 
+               studentId={record.studentId} 
+               initialName={record.studentName} 
+               healthProfileId={record.healthProfileId} 
             />
             {sortConfig.key === "studentName" && (
               <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
@@ -246,8 +246,8 @@ const HealthResults = () => {
       dataIndex: "vision", 
       key: "visionValue", 
       render: (_, record) => {
-        const leftVision = record.leftVision || "N/A";
-        const rightVision = record.rightVision || "N/A";
+      const leftVision = record.leftVision || "N/A";
+      const rightVision = record.rightVision || "N/A";
         return (
           <span style={{ cursor: 'pointer' }} onClick={() => handleSort("leftVision")}>
             {`Trái: ${leftVision} - Phải: ${rightVision}`}
@@ -1036,13 +1036,13 @@ const HealthResults = () => {
       await API_SERVICE.healthCheckResultAPI.create(resultData);
       
       // Nếu API thành công, cập nhật UI
-      setNotif({
+          setNotif({
         message: "Thêm kết quả khám sức khỏe thành công!",
         type: "success"
       });
       
       // Đóng modal và tải lại dữ liệu
-      setShowAddModal(false);
+          setShowAddModal(false);
       fetchHealthCheckResults();
       
       // Reset form data
@@ -1141,14 +1141,14 @@ const HealthResults = () => {
       await API_SERVICE.healthCheckResultAPI.update(resultData);
       
       // Nếu API thành công, cập nhật UI
-      setNotif({
+          setNotif({
         message: "Cập nhật kết quả khám sức khỏe thành công!",
         type: "success"
       });
       
       // Đóng modal và tải lại dữ liệu
-      setShowEditModal(false);
-      fetchHealthCheckResults(searchKeyword);
+          setShowEditModal(false);
+          fetchHealthCheckResults(searchKeyword);
     } catch (error) {
       console.error("Error updating health check result:", error);
       setNotif({
@@ -1413,11 +1413,11 @@ const HealthResults = () => {
           studentName = student.fullName || `Học sinh ID: ${record.studentId}`;
         } else {
           try {
-            const studentResponse = await API_SERVICE.studentAPI.getById(record.studentId);
-            if (studentResponse) {
+        const studentResponse = await API_SERVICE.studentAPI.getById(record.studentId);
+                  if (studentResponse) {
               studentName = studentResponse.fullName || 
-                          `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
-                          `Học sinh ID: ${record.studentId}`;
+                                `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
+                    `Học sinh ID: ${record.studentId}`;
             } else {
               studentName = record.studentName || `Học sinh ID: ${record.studentId}`;
             }
@@ -1442,35 +1442,35 @@ const HealthResults = () => {
                         `Y tá ID: ${record.nurseId}`;
             } else {
               nurseName = record.nurseName || `Y tá ID: ${record.nurseId}`;
-            }
-          } catch (error) {
+          }
+        } catch (error) {
             console.error("Error fetching nurse:", error);
             nurseName = record.nurseName || `Y tá ID: ${record.nurseId}`;
           }
         }
       }
-      
-      // Cập nhật formData cho chỉnh sửa
-      setFormData({
+        
+        // Cập nhật formData cho chỉnh sửa
+        setFormData({
         healthCheckupRecordId: record.healthCheckupRecordId,
-        healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "",
-        healthProfileId: record.healthProfileId || "",
-        studentId: record.studentId || "",
+          healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "",
+          healthProfileId: record.healthProfileId || "",
+          studentId: record.studentId || "",
         studentSearchTerm: studentName,
-        nurseId: record.nurseId || localStorage.getItem("userId") || "",
-        nurseName: record.nurseName || "",
+          nurseId: record.nurseId || localStorage.getItem("userId") || "",
+          nurseName: record.nurseName || "",
         nurseSearchTerm: nurseName,
-        height: record.height || "",
-        weight: record.weight || "",
-        leftVision: record.leftVision || "",
-        rightVision: record.rightVision || "",
-        result: record.result || "",
-        status: String(record.status) || "1",
-        note: record.note === null || record.note === undefined ? "" : record.note
-      });
-      
+          height: record.height || "",
+          weight: record.weight || "",
+          leftVision: record.leftVision || "",
+          rightVision: record.rightVision || "",
+          result: record.result || "",
+          status: String(record.status) || "1",
+          note: record.note === null || record.note === undefined ? "" : record.note
+    });
+    
       setSelectedResult(record);
-      setShowEditModal(true);
+    setShowEditModal(true);
     } catch (error) {
       console.error("Error preparing edit data:", error);
       setNotif({
@@ -1804,25 +1804,25 @@ const HealthResults = () => {
         <button className="admin-btn" onClick={() => setShowAddModal(true)}>
           <FaPlus /> Thêm kết quả khám
         </button>
-        <div className="search-container">
-          <input
+          <div className="search-container">
+            <input
             className="admin-search"
-            type="text"
+              type="text"
             placeholder="Tìm kiếm..."
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-          />
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
+            />
           <button
             className="admin-btn"
-            style={{ marginLeft: '8px', backgroundColor: showAdvancedFilter ? '#6c757d' : '#007bff' }}
+            style={{ marginLeft: '8px', padding: '8px' }}
             onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
             title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
           >
             <FaFilter />
           </button>
+          </div>
         </div>
-      </div>
 
       {/* Phần bộ lọc nâng cao */}
       {showAdvancedFilter && (
@@ -1972,16 +1972,11 @@ const HealthResults = () => {
             <div>
               <button
                 className="admin-btn"
-                style={{ 
-                  backgroundColor: sortConfig.direction === 'asc' ? '#28a745' : '#007bff',
-                  padding: '6px 10px'
-                }}
+                style={{ padding: '6px' }}
                 onClick={() => setSortConfig({...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'})}
+                title={sortConfig.direction === 'asc' ? 'Sắp xếp giảm dần' : 'Sắp xếp tăng dần'}
               >
                 {sortConfig.direction === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
-                <span style={{ marginLeft: '5px' }}>
-                  {sortConfig.direction === 'asc' ? 'Tăng dần' : 'Giảm dần'}
-                </span>
               </button>
             </div>
           </div>
@@ -2174,7 +2169,7 @@ const HealthResults = () => {
                       <div style={{ position: 'relative' }}>
                         <input
                           type="text"
-                          className="form-control"
+                  className="form-control"
                           id="edit-studentSearchTerm"
                           name="studentSearchTerm"
                           value={formData.studentSearchTerm}
@@ -2183,7 +2178,7 @@ const HealthResults = () => {
                           onClick={() => setShowStudentDropdown(true)}
                           placeholder="Nhập tên hoặc ID học sinh"
                           required
-                          style={{ backgroundColor: '#f8f9fa' }}
+                        style={{ backgroundColor: '#f8f9fa' }}
                         />
                         {showStudentDropdown && filteredStudents.length > 0 && (
                           <div style={{
@@ -2227,7 +2222,7 @@ const HealthResults = () => {
                           </div>
                         )}
                       </div>
-                    </div>
+              </div>
                     <div className="info-item">
                       <label htmlFor="edit-nurseId">Y tá phụ trách <span className="text-danger">*</span></label>
                       <div style={{ position: 'relative' }}>
@@ -2237,12 +2232,12 @@ const HealthResults = () => {
                           id="edit-nurseSearchTerm"
                           name="nurseSearchTerm"
                           value={formData.nurseSearchTerm}
-                          onChange={handleInputChange}
+                  onChange={handleInputChange}
                           onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
                           onClick={() => setShowNurseDropdown(true)}
                           placeholder="Nhập tên hoặc ID y tá"
-                          required
-                          style={{ backgroundColor: '#f8f9fa' }}
+                  required
+                        style={{ backgroundColor: '#f8f9fa' }}
                         />
                         {showNurseDropdown && filteredNurses.length > 0 && (
                           <div style={{
@@ -2268,7 +2263,7 @@ const HealthResults = () => {
                                 {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
                               </div>
                             ))}
-                          </div>
+              </div>
                         )}
                         {showNurseDropdown && filteredNurses.length === 0 && (
                           <div style={{
@@ -2436,7 +2431,7 @@ const HealthResults = () => {
                       <div style={{ position: 'relative' }}>
                         <input
                           type="text"
-                          className="form-control"
+                  className="form-control"
                           id="studentSearchTerm"
                           name="studentSearchTerm"
                           value={formData.studentSearchTerm}
@@ -2445,7 +2440,7 @@ const HealthResults = () => {
                           onClick={() => setShowStudentDropdown(true)}
                           placeholder="Nhập tên hoặc ID học sinh"
                           required
-                          style={{ backgroundColor: '#f8f9fa' }}
+                        style={{ backgroundColor: '#f8f9fa' }}
                         />
                         {showStudentDropdown && filteredStudents.length > 0 && (
                           <div style={{
@@ -2489,7 +2484,7 @@ const HealthResults = () => {
                           </div>
                         )}
                       </div>
-                    </div>
+              </div>
                     <div className="info-item">
                       <label htmlFor="nurseId">Y tá phụ trách <span className="text-danger">*</span></label>
                       <div style={{ position: 'relative' }}>
@@ -2499,12 +2494,12 @@ const HealthResults = () => {
                           id="nurseSearchTerm"
                           name="nurseSearchTerm"
                           value={formData.nurseSearchTerm}
-                          onChange={handleInputChange}
+                  onChange={handleInputChange}
                           onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
                           onClick={() => setShowNurseDropdown(true)}
                           placeholder="Nhập tên hoặc ID y tá"
-                          required
-                          style={{ backgroundColor: '#f8f9fa' }}
+                  required
+                        style={{ backgroundColor: '#f8f9fa' }}
                         />
                         {showNurseDropdown && filteredNurses.length > 0 && (
                           <div style={{
@@ -2530,7 +2525,7 @@ const HealthResults = () => {
                                 {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
                               </div>
                             ))}
-                          </div>
+              </div>
                         )}
                         {showNurseDropdown && filteredNurses.length === 0 && (
                           <div style={{
