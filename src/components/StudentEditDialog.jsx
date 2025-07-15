@@ -54,14 +54,14 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
       };
       await API_SERVICE.studentAPI.update(student.studentId, payload);
       setNotif({
-        message: "Student updated successfully!",
+        message: "Cập nhật học sinh thành công!",
         type: "success",
       });
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
       setNotif({
-        message: `Failed to update student. ${error?.response?.data?.message || error.message}`,
+        message: `Cập nhật học sinh thất bại! ${error?.response?.data?.message || error.message}`,
         type: "error",
       });
     }
@@ -96,7 +96,7 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
             <label htmlFor="dateOfBirth">Ngày tháng năm sinh<span className="required">*</span></label>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
-                label="Date of Birth"
+                label="Ngày sinh"
                 value={dateOfBirth}
                 onChange={(newValue) => {
                   setDateOfBirth(newValue);
