@@ -26,6 +26,10 @@ const ParentHealthProfile = () => {
   const [loadingMedicalEvents, setLoadingMedicalEvents] = useState(false);
   const [selectedStudentForMedicalEvents, setSelectedStudentForMedicalEvents] = useState(null);
 
+  // Hàm lấy lịch sử khám và tiêm cho từng học sinh
+  const [checkupHistories, setCheckupHistories] = useState({});
+  const [vaccinationHistories, setVaccinationHistories] = useState({});
+
   useEffect(() => {
     const fetchStudents = async () => {
       try {
@@ -34,16 +38,56 @@ const ParentHealthProfile = () => {
           throw new Error('Parent ID not found');
         }
 
-        const data = await API_SERVICE.parentAPI.getParent(parentId);
+        const data = await API_SERVICE.studentAPI.getByParent(parentId);
         setStudents(data);
 
         // Fetch health profiles for each student
         const profiles = {};
         for (const student of data) {
-          const healthData = await API_SERVICE.healthProfileAPI.get(student.studentId);
-          profiles[student.studentId] = healthData;
+          try {
+            const healthProfile = await API_SERVICE.healthProfileAPI.get(student.studentId);
+            profiles[student.studentId] = healthProfile;
+          } catch (e) {
+            profiles[student.studentId] = null;
+          }
         }
         setHealthProfiles(profiles);
+
+        // Fetch histories for each student (sau khi setHealthProfiles)
+        const checkup = {};
+        const vaccination = {};
+        for (const student of data) {
+          const profile = profiles[student.studentId];
+          if (profile && profile.healthProfileId) {
+            try {
+              checkup[student.studentId] = await API_SERVICE.healthCheckResultAPI.getByProfile(profile.healthProfileId);
+            } catch {
+              checkup[student.studentId] = [];
+            }
+            try {
+              const vacData = await API_SERVICE.vaccinationResultAPI.getByProfile(profile.healthProfileId);
+              const enrichedVac = await Promise.all(
+                vacData.map(async (result) => {
+                  if (result.vaccinationScheduleId) {
+                    try {
+                      const scheduleData = await API_SERVICE.vaccinationScheduleAPI.getById(result.vaccinationScheduleId);
+                      return { ...result, schedule: scheduleData };
+                    } catch {}
+                  }
+                  return { ...result, schedule: null };
+                })
+              );
+              vaccination[student.studentId] = enrichedVac;
+            } catch {
+              vaccination[student.studentId] = [];
+            }
+          } else {
+            checkup[student.studentId] = [];
+            vaccination[student.studentId] = [];
+          }
+        }
+        setCheckupHistories(checkup);
+        setVaccinationHistories(vaccination);
       } catch (error) {
         console.error(error);
         setError(error.message);
@@ -54,6 +98,35 @@ const ParentHealthProfile = () => {
 
     fetchStudents();
   }, []);
+
+  useEffect(() => {
+    const fetchHistories = async () => {
+      if (!students || students.length === 0 || !healthProfiles) return;
+      const checkup = {};
+      const vaccination = {};
+      for (const student of students) {
+        const profile = healthProfiles[student.studentId];
+        if (profile && profile.healthProfileId) {
+          try {
+            checkup[student.studentId] = await API_SERVICE.healthCheckResultAPI.getByProfile(profile.healthProfileId);
+          } catch {
+            checkup[student.studentId] = [];
+          }
+          try {
+            vaccination[student.studentId] = await API_SERVICE.vaccinationResultAPI.getByProfile(profile.healthProfileId);
+          } catch {
+            vaccination[student.studentId] = [];
+          }
+        } else {
+          checkup[student.studentId] = [];
+          vaccination[student.studentId] = [];
+        }
+      }
+      setCheckupHistories(checkup);
+      setVaccinationHistories(vaccination);
+    };
+    fetchHistories();
+  }, [students, healthProfiles]);
 
   const handleUpdateClick = (profile) => {
     setSelectedProfile(profile);
@@ -288,189 +361,192 @@ const ParentHealthProfile = () => {
                 <div className="alert alert-info">Không có học sinh nào</div>
               ) : (
                 <div className="list-group">
-                  {students.map((student) => (
-                    <div key={student.studentId} className="list-group-item list-group-item-action p-4 mb-3 shadow-sm rounded">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <div className="w-100">
-                          <h5 className="mb-3 text-primary fw-bold">{student.fullName}</h5>
-                          <div className="row mb-3">
-                            <div className="col-md-6">
-                              <p className="mb-2">
-                                <i className="bi bi-person-badge me-2"></i>
-                                <strong>Mã học sinh:</strong> {student.studentNumber}
-                              </p>
-                              <p className="mb-2">
-                                <i className="bi bi-calendar-date me-2"></i>
-                                <strong>Ngày sinh:</strong> {new Date(student.dateOfBirth).toLocaleDateString()}
-                              </p>
-                            </div>
-                            <div className="col-md-6">
-                              <p className="mb-2">
-                                <i className="bi bi-gender-ambiguous me-2"></i>
-                                <strong>Giới tính:</strong> {student.gender}
-                              </p>
-                              <p className="mb-0">
-                                <i className="bi bi-mortarboard me-2"></i>
-                                <strong>Lớp:</strong> {student.className}
-                              </p>
-                            </div>
-                          </div>
-                          {healthProfiles[student.studentId] && (
-                            <div className="border-top pt-3">
-                              <div className="d-flex justify-content-between align-items-center mb-3">
-                                <h6 className="text-success mb-0">Thông tin sức khỏe</h6>
-                                <button
-                                  className="btn btn-outline-primary btn-sm"
-                                  onClick={() => handleUpdateClick(healthProfiles[student.studentId])}
-                                >
-                                  <i className="bi bi-pencil me-1"></i>
-                                  Cập nhật
-                                </button>
+                  {students.map((student) => {
+                    const profile = healthProfiles[student.studentId];
+                    const checkups = checkupHistories[student.studentId] || [];
+                    const vaccinations = vaccinationHistories[student.studentId] || [];
+                    // Thêm log kiểm tra dữ liệu enrich
+                    console.log('Vaccination results for', student.fullName, vaccinations);
+                    return (
+                      <div key={student.studentId} className="list-group-item list-group-item-action p-4 mb-3 shadow-sm rounded">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <div className="w-100">
+                            <h5 className="mb-3 text-primary fw-bold">{student.fullName}</h5>
+                            <div className="row mb-3">
+                              <div className="col-md-6">
+                                <p className="mb-2">
+                                  <i className="bi bi-person-badge me-2"></i>
+                                  <strong>Mã học sinh:</strong> {student.studentNumber}
+                                </p>
+                                <p className="mb-2">
+                                  <i className="bi bi-calendar-date me-2"></i>
+                                  <strong>Ngày sinh:</strong> {new Date(student.dateOfBirth).toLocaleDateString()}
+                                </p>
                               </div>
-                              <div className="row">
-                                <div className="col-md-6">
-                                  <p className="mb-2">
-                                    <i className="bi bi-droplet me-2"></i>
-                                    <strong>Nhóm máu:</strong> {healthProfiles[student.studentId].bloodType}
-                                  </p>
-                                </div>
-                                <div className="col-md-6">
-                                  <p className="mb-2">
-                                    <i className="bi bi-exclamation-triangle me-2"></i>
-                                    <strong>Dị ứng:</strong> {healthProfiles[student.studentId].allergies}
-                                  </p>
-                                </div>
+                              <div className="col-md-6">
+                                <p className="mb-2">
+                                  <i className="bi bi-gender-ambiguous me-2"></i>
+                                  <strong>Giới tính:</strong> {student.gender}
+                                </p>
+                                <p className="mb-0">
+                                  <i className="bi bi-mortarboard me-2"></i>
+                                  <strong>Lớp:</strong> {student.className}
+                                </p>
                               </div>
-
-                              <hr className="my-3"/>
-                              
-                              <div className='d-flex gap-2 flex-wrap mb-3'>
+                            </div>
+                            {profile && (
+                              <div className="border-top pt-3">
+                                <div className="d-flex justify-content-between align-items-center mb-3">
+                                  <h6 className="text-success mb-0">Thông tin sức khỏe</h6>
                                   <button
-                                    className="btn btn-outline-info btn-sm"
-                                    onClick={() => handleViewResultsClick(healthProfiles[student.studentId])}
+                                    className="btn btn-outline-primary btn-sm"
+                                    onClick={() => handleUpdateClick(profile)}
                                   >
-                                    <i className="bi bi-card-list me-1"></i>
-                                    Xem lịch sử khám
+                                    <i className="bi bi-pencil me-1"></i>
+                                    Cập nhật
                                   </button>
-                                  <button
-                                    className="btn btn-outline-warning btn-sm"
-                                    onClick={() => handleViewVaccinationResultsClick(healthProfiles[student.studentId])}
+                                </div>
+                                <div className="row">
+                                  <div className="col-md-6">
+                                    <p className="mb-2">
+                                      <i className="bi bi-droplet me-2"></i>
+                                      <strong>Nhóm máu:</strong> {profile.bloodType}
+                                    </p>
+                                  </div>
+                                  <div className="col-md-6">
+                                    <p className="mb-2">
+                                      <i className="bi bi-exclamation-triangle me-2"></i>
+                                      <strong>Dị ứng:</strong> {profile.allergies}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <hr className="my-3"/>
+                                
+                                <div className='d-flex gap-2 flex-wrap mb-3'>
+                                    <button
+                                      className="btn btn-outline-info btn-sm"
+                                      onClick={() => handleViewResultsClick(profile)}
                                     >
-                                    <i className="bi bi-shield-check me-1"></i>
-                                    Xem lịch sử tiêm chủng
+                                      <i className="bi bi-card-list me-1"></i>
+                                      Xem lịch sử khám
                                     </button>
-                                  <button
-                                    className="btn btn-outline-danger btn-sm"
-                                    onClick={() => handleViewMedicalEventsClick(student)}
-                                  >
-                                    <i className="bi bi-activity me-1"></i>
-                                    Xem sự kiện y tế
-                                  </button>
-                              </div>
+                                    <button
+                                      className="btn btn-outline-warning btn-sm"
+                                      onClick={() => handleViewVaccinationResultsClick(profile)}
+                                      >
+                                      <i className="bi bi-shield-check me-1"></i>
+                                      Xem lịch sử tiêm chủng
+                                      </button>
+                                    <button
+                                      className="btn btn-outline-danger btn-sm"
+                                      onClick={() => handleViewMedicalEventsClick(student)}
+                                    >
+                                      <i className="bi bi-activity me-1"></i>
+                                      Xem sự kiện y tế
+                                    </button>
+                                </div>
 
-                              {/* Health Check Results Section */}
-                              {selectedStudentForResults?.studentId === student.studentId && (
-                                <div className="mt-4 border-top pt-3">
-                                  <h6 className='text-info mb-3'>Lịch sử khám định kì</h6>
-                                  {loadingResults ? (
-                                    <div className="d-flex justify-content-center">
-                                      <div className="spinner-border spinner-border-sm" role="status">
-                                        <span className="visually-hidden">Loading...</span>
+                                {/* Health Check Results Section */}
+                                {selectedStudentForResults?.studentId === student.studentId && (
+                                  <div className="mt-4 border-top pt-3">
+                                    <h6 className='text-info mb-3'>Lịch sử khám định kì</h6>
+                                    {loadingResults ? (
+                                      <div className="d-flex justify-content-center">
+                                        <div className="spinner-border spinner-border-sm" role="status">
+                                          <span className="visually-hidden">Loading...</span>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ) : healthResults.length > 0 ? (
-                                    <ul className="list-group" style={{ maxHeight: '450px', overflowY: 'auto' }}>
-                                      {healthResults.map(result => (
-                                        <li key={result.healthCheckupRecordId} className="list-group-item">
-                                          {result.schedule && <h6 className='fw-bold text-primary'>{result.schedule.name}</h6>}
-                                          <p className='mb-1'><strong>Ngày khám:</strong> {result.schedule ? new Date(result.schedule.checkDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
-                                          <p className='mb-1'><strong>Địa điểm:</strong> {result.schedule?.location || 'Chưa cập nhật'}</p>
-                                          <p className='mb-1'><strong>Chiều cao:</strong> {result.height || 'N/A'} cm - <strong>Cân nặng:</strong> {result.weight || 'N/A'} kg</p>
-                                          <p className='mb-1'><strong>Thị lực:</strong> Mắt trái: {result.leftVision || 'N/A'} - Mắt phải: {result.rightVision || 'N/A'}</p>
-                                          <p className='mb-1'><strong>Kết luận:</strong> <span className='fw-bold'>{result.result || 'Chưa có'}</span></p>
-                                          {result.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {result.note}</p>}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  ) : (
-                                    <div className="alert alert-light text-center">Không có kết quả khám nào.</div>
-                                  )}
-                                </div>
-                              )}
-                              {/* Vaccination Results Section */}
-                              {selectedStudentForVaccination?.studentId === student.studentId && (
-                                <div className="mt-4 border-top pt-3">
-                                  <h6 className='text-warning mb-3'>Lịch sử tiêm chủng</h6>
-                                  {loadingVaccination ? (
-                                    <div className="d-flex justify-content-center">
-                                      <div className="spinner-border spinner-border-sm text-warning" role="status">
-                                        <span className="visually-hidden">Loading...</span>
+                                    ) : healthResults.length > 0 ? (
+                                      <ul className="list-group" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+                                        {healthResults.map(result => (
+                                          <li key={result.healthCheckupRecordId} className="list-group-item">
+                                            {result.schedule && <h6 className='fw-bold text-primary'>{result.schedule.name}</h6>}
+                                            <p className='mb-1'><strong>Ngày khám:</strong> {result.schedule ? new Date(result.schedule.checkDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
+                                            <p className='mb-1'><strong>Địa điểm:</strong> {result.schedule?.location || 'Chưa cập nhật'}</p>
+                                            <p className='mb-1'><strong>Chiều cao:</strong> {result.height || 'N/A'} cm - <strong>Cân nặng:</strong> {result.weight || 'N/A'} kg</p>
+                                            <p className='mb-1'><strong>Thị lực:</strong> Mắt trái: {result.leftVision || 'N/A'} - Mắt phải: {result.rightVision || 'N/A'}</p>
+                                            <p className='mb-1'><strong>Kết luận:</strong> <span className='fw-bold'>{result.result || 'Chưa có'}</span></p>
+                                            {result.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {result.note}</p>}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <div className="alert alert-light text-center">Không có kết quả khám nào.</div>
+                                    )}
+                                  </div>
+                                )}
+                                {/* Vaccination Results Section */}
+                                {selectedStudentForVaccination?.studentId === student.studentId && (
+                                  <div className="mt-4 border-top pt-3">
+                                    <h6 className='text-warning mb-3'>Lịch sử tiêm chủng</h6>
+                                    {loadingVaccination ? (
+                                      <div className="d-flex justify-content-center">
+                                        <div className="spinner-border spinner-border-sm text-warning" role="status">
+                                          <span className="visually-hidden">Loading...</span>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ) : vaccinationResults.length > 0 ? (
-                                    <ul className="list-group" style={{ maxHeight: '450px', overflowY: 'auto' }}>
-                                      {vaccinationResults.map(result => (
-                                        <li key={result.vaccinationResultId} className="list-group-item">
-                                          {result.schedule && (
-                                            <>
-                                              <p className='mb-1'><strong>Tên vắc xin:</strong> {result.schedule.name || 'Chưa cập nhật'}</p>
-                                              <p className='mb-1'><strong>Liều lượng:</strong> {result.doseNumber || 'Chưa cập nhật'}</p>
-                                            </>
-                                          )}
-                                          <p className='mb-1'><strong>Ngày tiêm:</strong> {result.schedule ? new Date(result.schedule.scheduleDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
-                                          <p className='mb-1'><strong>Địa điểm:</strong> {result.schedule?.location || 'Chưa cập nhật'}</p>
-                                          <p className='mb-1'>
-                                            <strong>Trạng thái:</strong>{' '}
-                                            <span className={`badge ${
-                                              result.status === 'Pending' ? 'bg-warning' :
-                                              result.status === 'Accepted' ? 'bg-success' :
-                                              'bg-danger'
-                                            }`}>
-                                              {result.status}
-                                            </span>
-                                          </p>
-                                          {result.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {result.note}</p>}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  ) : (
-                                    <div className="alert alert-light text-center">Không có lịch sử tiêm chủng nào.</div>
-                                  )}
-                                </div>
-                              )}
-                              {/* Medical Events Section */}
-                              {selectedStudentForMedicalEvents?.studentId === student.studentId && (
-                                <div className="mt-4 border-top pt-3">
-                                  <h6 className='text-danger mb-3'>Sự kiện y tế</h6>
-                                  {loadingMedicalEvents ? (
-                                    <div className="d-flex justify-content-center">
-                                      <div className="spinner-border spinner-border-sm text-danger" role="status">
-                                        <span className="visually-hidden">Loading...</span>
+                                    ) : vaccinations.length > 0 ? (
+                                      <ul className="list-group" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+                                        {vaccinations.map(result => (
+                                          <li key={result.vaccinationResultId} className="list-group-item">
+                                            {result.schedule && (
+                                              <>
+                                                <p className='mb-1'><strong>Tên vắc xin:</strong> {result.schedule.name || 'Chưa cập nhật'}</p>
+                                                <p className='mb-1'><strong>Liều lượng:</strong> {result.doseNumber || 'Chưa cập nhật'}</p>
+                                              </>
+                                            )}
+                                            <p className='mb-1'><strong>Ngày tiêm:</strong> {result.schedule ? new Date(result.schedule.scheduleDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
+                                            <p className='mb-1'><strong>Địa điểm:</strong> {result.schedule?.location || 'Chưa cập nhật'}</p>
+                                            <p className='mb-1'>
+                                              <strong>Trạng thái:</strong>{' '}
+                                              <span className={`badge ${result.status === 'Accepted' ? 'bg-success' : 'bg-warning'}`}>
+                                                {result.status === 'Accepted' ? 'Đã tiêm' : 'Chưa tiêm'}
+                                              </span>
+                                            </p>
+                                            {result.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {result.note}</p>}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <div className="alert alert-light text-center">Không có lịch sử tiêm chủng nào.</div>
+                                    )}
+                                  </div>
+                                )}
+                                {/* Medical Events Section */}
+                                {selectedStudentForMedicalEvents?.studentId === student.studentId && (
+                                  <div className="mt-4 border-top pt-3">
+                                    <h6 className='text-danger mb-3'>Sự kiện y tế</h6>
+                                    {loadingMedicalEvents ? (
+                                      <div className="d-flex justify-content-center">
+                                        <div className="spinner-border spinner-border-sm text-danger" role="status">
+                                          <span className="visually-hidden">Loading...</span>
+                                        </div>
                                       </div>
-                                    </div>
-                                  ) : medicalEvents.length > 0 ? (
-                                    <ul className="list-group" style={{ maxHeight: '450px', overflowY: 'auto' }}>
-                                      {medicalEvents.map(event => (
-                                        <li key={event.eventId} className="list-group-item">
-                                          <p className='mb-1'><strong>Tên sự kiện:</strong> {event.eventName || 'Chưa cập nhật'}</p>
-                                          <p className='mb-1'><strong>Ngày:</strong> {event.eventDate ? new Date(event.eventDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
-                                          <p className='mb-1'><strong>Triệu chứng:</strong> {event.symptoms || 'Không có'}</p>
-                                          <p className='mb-1'><strong>Xử lý:</strong> {event.actionTaken || 'Không có'}</p>
-                                          {event.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {event.note}</p>}
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  ) : (
-                                    <div className="alert alert-light text-center">Không có sự kiện y tế nào.</div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                    ) : medicalEvents.length > 0 ? (
+                                      <ul className="list-group" style={{ maxHeight: '450px', overflowY: 'auto' }}>
+                                        {medicalEvents.map(event => (
+                                          <li key={event.eventId} className="list-group-item">
+                                            <p className='mb-1'><strong>Tên sự kiện:</strong> {event.eventName || 'Chưa cập nhật'}</p>
+                                            <p className='mb-1'><strong>Ngày:</strong> {event.eventDate ? new Date(event.eventDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
+                                            <p className='mb-1'><strong>Triệu chứng:</strong> {event.symptoms || 'Không có'}</p>
+                                            <p className='mb-1'><strong>Xử lý:</strong> {event.actionTaken || 'Không có'}</p>
+                                            {event.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {event.note}</p>}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    ) : (
+                                      <div className="alert alert-light text-center">Không có sự kiện y tế nào.</div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
