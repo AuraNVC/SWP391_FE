@@ -45,6 +45,7 @@ import HealthResults from './pages/HealthResults'
 import VaxResults from './pages/VaxResults'
 import ConsultSchedules from './pages/ConsultSchedules'
 import Medications from './pages/Medications'
+import NurseProfile from './pages/NurseProfile'
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -152,6 +153,7 @@ function AppContent() {
           <Route path="/nurse/vaccination-results" element={<VaxResults />} />
           <Route path="/nurse/consultation-schedules" element={<ConsultSchedules />} />
           <Route path="/nurse/medications" element={<Medications />} />
+          <Route path="/nurse/profile" element={<NurseProfile />} />
         </Route>
 
         <Route element={<LoginLayout />}>
