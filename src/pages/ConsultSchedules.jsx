@@ -40,8 +40,8 @@ const ConsultSchedules = () => {
   const [editFormData, setEditFormData] = useState(null); // State mới cho dữ liệu form đang chỉnh sửa
   const [formHistory, setFormHistory] = useState([]); // State mới để lưu lịch sử chỉnh sửa form
   const [formData, setFormData] = useState({
-    consultationDate: new Date().toISOString().split('T')[0],
-    consultationTime: "08:00",
+    consultDate: new Date().toISOString().split('T')[0],
+    consultTime: "08:00",
     location: "Phòng y tế",
     studentId: "",
     studentSearchTerm: "",
@@ -239,6 +239,61 @@ const ConsultSchedules = () => {
       filteredData = filteredData.filter(schedule => 
         schedule.location && schedule.location.toLowerCase().includes(currentFilters.location.toLowerCase())
       );
+    }
+    
+    // Lọc theo trạng thái form
+    if (currentFilters.formStatus && currentFilters.formStatus !== "all") {
+      // Tạo một mảng Promise để kiểm tra trạng thái form của từng lịch
+      const checkFormStatusPromises = filteredData.map(async (schedule) => {
+        try {
+          // Tìm form tư vấn cho lịch này
+          const scheduleId = schedule.consultationScheduleId;
+          let form = null;
+          
+          // Thử lấy form trực tiếp theo ID lịch
+          try {
+            form = await API_SERVICE.consultationFormAPI.getById(scheduleId);
+          } catch (error) {
+            // Nếu không tìm thấy trực tiếp, thử tìm qua studentId
+            if (schedule.studentId) {
+              const studentForms = await API_SERVICE.consultationFormAPI.getByStudent(schedule.studentId);
+              if (Array.isArray(studentForms) && studentForms.length > 0) {
+                form = studentForms.find(f => f.consultationScheduleId === scheduleId);
+              }
+            }
+          }
+          
+          // Xác định trạng thái form
+          if (!form) {
+            // Không có form
+            return currentFilters.formStatus === "noform";
+          } else {
+            // Có form, kiểm tra trạng thái
+            const status = form.status;
+            return (
+              (currentFilters.formStatus === "pending" && (status === 0 || status === "Pending")) ||
+              (currentFilters.formStatus === "accepted" && (status === 1 || status === "Accepted")) ||
+              (currentFilters.formStatus === "rejected" && (status === 2 || status === "Rejected"))
+            );
+          }
+        } catch (error) {
+          console.error("Error checking form status:", error);
+          return false;
+        }
+      });
+      
+      // Đợi tất cả các Promise hoàn thành
+      console.log("Checking form statuses for filter...");
+      
+      // Lưu ý: Đây là cách đơn giản hóa vì async filter không thể sử dụng trực tiếp
+      // Trong thực tế, chúng ta nên sử dụng một cách tiếp cận khác để tránh chặn UI
+      Promise.all(checkFormStatusPromises).then(results => {
+        filteredData = filteredData.filter((_, index) => results[index]);
+        setFilteredSchedules(filteredData);
+      });
+      
+      // Trả về kết quả tạm thời, sẽ được cập nhật bởi Promise.all
+      return;
     }
     
     // Áp dụng sắp xếp
@@ -706,7 +761,7 @@ const ConsultSchedules = () => {
 
   const validateForm = () => {
     // Kiểm tra các trường chung
-    if (!formData.consultationDate || !formData.consultationTime || !formData.location) {
+    if (!formData.consultDate || !formData.consultTime || !formData.location) {
       setNotif({
         message: "Vui lòng điền đầy đủ thông tin lịch tư vấn",
         type: "error"
@@ -924,8 +979,8 @@ const ConsultSchedules = () => {
     
     try {
       // Xử lý ngày và giờ
-      const consultDate = formData.consultationDate;
-      const consultTime = formData.consultationTime;
+      const consultDate = formData.consultDate;
+      const consultTime = formData.consultTime;
       
       // Kết hợp ngày và giờ thành một chuỗi ISO
       const consultDateTime = new Date(`${consultDate}T${consultTime}`).toISOString();
@@ -1447,14 +1502,14 @@ const ConsultSchedules = () => {
       }
       
       // Chuyển đổi ngày và giờ từ consultDate
-      let consultationDate = new Date().toISOString().split('T')[0];
-      let consultationTime = "08:00";
+      let consultDate = new Date().toISOString().split('T')[0];
+      let consultTime = "08:00";
       
       if (schedule.consultDate) {
         const date = new Date(schedule.consultDate);
         if (!isNaN(date)) {
-          consultationDate = date.toISOString().split('T')[0];
-          consultationTime = date.toTimeString().substring(0, 5);
+          consultDate = date.toISOString().split('T')[0];
+          consultTime = date.toTimeString().substring(0, 5);
         }
       }
       
@@ -1535,8 +1590,8 @@ const ConsultSchedules = () => {
         parentId,
         parentName,
         hasParentInfo,
-        consultationDate,
-        consultationTime,
+        consultDate,
+        consultTime,
         location: schedule.location || "",
         formId,
         formTitle,
@@ -1959,13 +2014,13 @@ const ConsultSchedules = () => {
               </div>
               </div>
               <div className="mb-3">
-                <label htmlFor="consultationDate" className="form-label">Ngày tư vấn <span className="text-danger">*</span></label>
+                <label htmlFor="consultDate" className="form-label">Ngày tư vấn <span className="text-danger">*</span></label>
                 <input
                   type="date"
                   className="form-control"
-                  id="consultationDate"
-                  name="consultationDate"
-                  value={formData.consultationDate}
+                  id="consultDate"
+                  name="consultDate"
+                  value={formData.consultDate}
                   onChange={handleInputChange}
                   required
                   min={new Date().toISOString().split('T')[0]}
@@ -1973,13 +2028,13 @@ const ConsultSchedules = () => {
               </div>
               
               <div className="mb-3">
-                <label htmlFor="consultationTime" className="form-label">Giờ tư vấn <span className="text-danger">*</span></label>
+                <label htmlFor="consultTime" className="form-label">Giờ tư vấn <span className="text-danger">*</span></label>
                 <input
                   type="time"
                   className="form-control"
-                  id="consultationTime"
-                  name="consultationTime"
-                  value={formData.consultationTime}
+                  id="consultTime"
+                  name="consultTime"
+                  value={formData.consultTime}
                   onChange={handleInputChange}
                   required
                 />
@@ -2341,25 +2396,25 @@ const ConsultSchedules = () => {
                 </div>
               </div>
               <div className="mb-3">
-                <label htmlFor="edit-consultationDate" className="form-label">Ngày tư vấn <span className="text-danger">*</span></label>
+                <label htmlFor="edit-consultDate" className="form-label">Ngày tư vấn <span className="text-danger">*</span></label>
                 <input
                   type="date"
                   className="form-control"
-                  id="edit-consultationDate"
-                  name="consultationDate"
-                  value={formData.consultationDate}
+                  id="edit-consultDate"
+                  name="consultDate"
+                  value={formData.consultDate}
                   onChange={handleInputChange}
                   required
                 />
               </div>
               <div className="mb-3">
-                <label htmlFor="edit-consultationTime" className="form-label">Giờ tư vấn <span className="text-danger">*</span></label>
+                <label htmlFor="edit-consultTime" className="form-label">Giờ tư vấn <span className="text-danger">*</span></label>
                 <input
                   type="time"
                   className="form-control"
-                  id="edit-consultationTime"
-                  name="consultationTime"
-                  value={formData.consultationTime}
+                  id="edit-consultTime"
+                  name="consultTime"
+                  value={formData.consultTime}
                   onChange={handleInputChange}
                   required
                 />
