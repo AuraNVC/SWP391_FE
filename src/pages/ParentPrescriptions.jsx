@@ -103,7 +103,7 @@ export default function ParentPrescriptions() {
       const fetchStudents = async () => {
         const parentId = localStorage.getItem('userId');
         if (parentId) {
-          const data = await API_SERVICE.parentAPI.getParent(parentId);
+          const data = await API_SERVICE.studentAPI.getByParent(parentId);
           setStudents(data);
           if (data.length > 0) setSelectedStudentId(data[0].studentId);
         }

@@ -39,3 +39,24 @@ export const formatBlogCategory = (type) => {
 
     return map[type] || type;
 };
+
+export async function getAcceptedStudentsBySchedule(schedule, API_SERVICE) {
+  const formId = schedule.formId;
+  if (!formId) throw new Error("Lịch không có formId");
+  const formDetail = await API_SERVICE.formAPI.getById(formId);
+  const className = formDetail.className;
+  if (!className) throw new Error("Form không có className");
+  const allStudentsRaw = await API_SERVICE.studentAPI.getAll({ keyword: "" });
+  const allStudents = allStudentsRaw.filter(stu => stu.className === className);
+  const parentIds = allStudents.map(stu => stu.parent && stu.parent.parentId ? stu.parent.parentId : stu.parentId).filter(Boolean);
+  const consentFormResults = await Promise.all(
+    parentIds.map(parentId =>
+      API_SERVICE.consentFormAPI.getByParent(parentId).catch(() => [])
+    )
+  );
+  const allConsentForms = consentFormResults.flat();
+  const acceptedParentIds = allConsentForms
+    .filter(cf => String(cf.form?.formId || cf.formId) === String(formId) && cf.status === "Accepted")
+    .map(cf => cf.parentId);
+  return allStudents.filter(stu => acceptedParentIds.includes(stu.parent && stu.parent.parentId ? stu.parent.parentId : stu.parentId));
+}
