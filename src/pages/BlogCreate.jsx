@@ -16,7 +16,9 @@ const categoryMap = {
   1: "Dinh dưỡng",
   2: "Tâm lý",
   3: "Bệnh truyền nhiễm",
-  4: "Thể chất"
+  4: "Thể chất",
+  5: "Gia đình",
+  6: "Lợi ích sức khỏe"
 };
 const categories = Object.entries(categoryMap).map(([value, label]) => ({ value, label }));
 
