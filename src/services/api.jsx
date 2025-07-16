@@ -31,6 +31,7 @@ const API = {
     NURSE_UPDATE: (id) => `${API_BASE_URL}/nurse/${id}`,
     NURSE_DELETE: (id) => `${API_BASE_URL}/nurse/${id}`,
     NURSE_GET: (id) => `${API_BASE_URL}/nurse/${id}`,
+    FORM_DETAIL: (id) => `${API_BASE_URL}/form/${id}`,
     FORM_LIST: `${API_BASE_URL}/form/search`,
     FORM_CREATE: `${API_BASE_URL}/form/add`,
     FORM_DELETE: (id) => `${API_BASE_URL}/form/${id}`,
@@ -134,7 +135,7 @@ async function callApi(url, options = {}) {
     const contentType = res.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
             const data = await res.json();
-            console.log(`API Response: ${url}`, data);
+            // console.log(`API Response: ${url}`, data);
             return data;
     }
         

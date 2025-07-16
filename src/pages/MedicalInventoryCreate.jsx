@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import "../styles/MedicalInventoryCreateForm.css";
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 
 const initialState = {
   managerId: "",
@@ -24,6 +27,10 @@ const MedicalInventoryCreate = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDateChange = (name, value) => {
+    setForm((prev) => ({ ...prev, [name]: value ? value.toISOString().split('T')[0] : "" }));
   };
 
   const handleSubmit = async (e) => {
@@ -79,11 +86,27 @@ const MedicalInventoryCreate = () => {
           </div>
           <div className="form-group">
             <label>Ngày nhập<span className="required">*</span></label>
-            <input type="date" name="dateAdded" value={form.dateAdded} onChange={handleChange} required className="form-control" />
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="Chọn ngày nhập"
+                value={form.dateAdded ? new Date(form.dateAdded) : null}
+                onChange={value => handleDateChange('dateAdded', value)}
+                slotProps={{ textField: { required: true, className: "form-control", name: "dateAdded" } }}
+                format="dd/MM/yyyy"
+              />
+            </LocalizationProvider>
           </div>
           <div className="form-group">
             <label>Hạn sử dụng<span className="required">*</span></label>
-            <input type="date" name="expiryDate" value={form.expiryDate} onChange={handleChange} required className="form-control" />
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DatePicker
+                label="Chọn hạn sử dụng"
+                value={form.expiryDate ? new Date(form.expiryDate) : null}
+                onChange={value => handleDateChange('expiryDate', value)}
+                slotProps={{ textField: { required: true, className: "form-control", name: "expiryDate" } }}
+                format="dd/MM/yyyy"
+              />
+            </LocalizationProvider>
           </div>
           {successMsg && <div className="success-msg">{successMsg}</div>}
           {errorMsg && <div className="error-msg">{errorMsg}</div>}
