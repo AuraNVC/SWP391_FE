@@ -814,11 +814,17 @@ const MedEvents = () => {
   const handleUpdateEvent = async (e) => {
     e.preventDefault();
     
-    // Kiểm tra form trước khi hiển thị hộp thoại xác nhận
-    if (!validateForm()) {
-      return;
-    }
-    setShowConfirmUpdate(true);
+    // Hiển thị thông báo về giới hạn cập nhật
+    setNotif({
+      message: "Lưu ý: Học sinh và Tiêu đề sự kiện không thể thay đổi sau khi đã tạo. Chỉ cập nhật Y tá phụ trách, Ngày sự kiện, Triệu chứng và Ghi chú.",
+      type: "warning"
+    });
+    
+    // Đợi 1.5 giây để người dùng đọc thông báo
+    setTimeout(() => {
+      if (!validateForm()) return;
+      setShowConfirmUpdate(true);
+    }, 1500);
   };
 
   const confirmUpdateEvent = async () => {
@@ -868,7 +874,7 @@ const MedEvents = () => {
         formattedDate = formattedDate + 'Z';
       }
       
-      // Chuẩn bị dữ liệu để gửi - Sửa đổi theo đúng model backend
+      // Chuẩn bị dữ liệu để gửi - Sửa đổi theo đúng model của backend
       const eventData = {
         eventId: parseInt(formData.medicalEventId),
         nurseId: parseInt(nurseId),
@@ -942,6 +948,7 @@ const MedEvents = () => {
     setShowViewModal(true);
   };
 
+  // Cập nhật hàm handleEdit để hiển thị form chỉnh sửa
   const handleEdit = (event) => {
     setSelectedEvent(event);
     // Tìm thông tin học sinh và y tá từ ID
@@ -1416,19 +1423,23 @@ const MedEvents = () => {
         </div>
       )}
 
-      {/* Edit Event Modal */}
-      {showEditModal && selectedEvent && (
-        <div className="student-create-modal-overlay">
-          <div className="student-create-modal-content">
-            <div className="modal-header">
+      {/* Modal Edit Event */}
+      {showEditModal && (
+        <div className="modal show" style={{ display: 'block' }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
               <h3 className="modal-title">Chỉnh sửa sự kiện y tế</h3>
               <button type="button" className="btn-close" onClick={() => setShowEditModal(false)}></button>
+            </div>
+            <div className="alert alert-info mx-3 mt-2">
+              <strong>Lưu ý:</strong> Học sinh và Tiêu đề sự kiện không thể thay đổi sau khi đã tạo.
             </div>
             <form onSubmit={handleUpdateEvent}>
               <div className="modal-body">
                 <input type="hidden" name="medicalEventId" value={formData.medicalEventId} />
                 <div className="mb-3">
-                  <label htmlFor="title" className="form-label">Tiêu đề</label>
+                  <label htmlFor="title" className="form-label">Tiêu đề <span className="text-secondary">(Không thể chỉnh sửa)</span></label>
                 <input
                   type="text"
                     className="form-control bg-light"
@@ -1452,7 +1463,7 @@ const MedEvents = () => {
                 />
               </div>
                 <div className="mb-3">
-                  <label htmlFor="studentId" className="form-label">Học sinh</label>
+                  <label htmlFor="studentId" className="form-label">Học sinh <span className="text-secondary">(Không thể chỉnh sửa)</span></label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="text"
@@ -1624,6 +1635,6 @@ const MedEvents = () => {
       )}
     </div>
   );
-};
+}
 
 export default MedEvents;
