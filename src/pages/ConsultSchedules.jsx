@@ -769,6 +769,18 @@ const ConsultSchedules = () => {
       return false;
     }
     
+    // Kiểm tra thời gian lịch tư vấn phải sau thời gian hiện tại
+    const selectedDateTime = new Date(`${formData.consultDate}T${formData.consultTime}`);
+    const currentDateTime = new Date();
+    
+    if (selectedDateTime <= currentDateTime) {
+      setNotif({
+        message: "Thời gian tư vấn phải sau thời gian hiện tại",
+        type: "error"
+      });
+      return false;
+    }
+    
     // Kiểm tra trường học sinh
     if (!formData.studentId) {
       setNotif({
@@ -812,6 +824,40 @@ const ConsultSchedules = () => {
     // Hiển thị hộp thoại xác nhận thay vì gửi ngay
     setShowConfirmAdd(true);
   };
+
+  // Thêm hàm resetAddForm để khởi tạo lại form với giá trị trống
+  const resetAddForm = () => {
+    setFormData({
+      consultDate: "",
+      consultTime: "",
+      location: "",
+      studentId: "",
+      studentSearchTerm: "",
+      nurseId: localStorage.getItem("userId") || "",
+      nurseSearchTerm: "",
+      parentId: "",
+      parentName: "",
+      formTitle: "",
+      formContent: "",
+      sendNotification: true,
+      showFormSection: false
+    });
+    
+    // Reset danh sách học sinh đã lọc
+    setFilteredStudents([]);
+    setShowStudentDropdown(false);
+    setFilteredNurses([]);
+    setShowNurseDropdown(false);
+  };
+
+  // Cập nhật hàm mở modal thêm mới
+  const openAddModal = () => {
+    resetAddForm();
+    setShowAddModal(true);
+  };
+
+  // Thay đổi phần JSX nút thêm mới để sử dụng hàm openAddModal thay vì setShowAddModal(true)
+  // Tìm phần code có nút thêm mới và thay đổi onClick từ setShowAddModal(true) thành openAddModal
 
   // Thêm hàm xác nhận thêm lịch tư vấn
   const confirmAddSchedule = async () => {
@@ -938,18 +984,7 @@ const ConsultSchedules = () => {
       fetchConsultationSchedules();
       
       // Reset form data
-      setFormData({
-        consultDate: new Date().toISOString().split('T')[0],
-        consultTime: new Date().toTimeString().slice(0, 5),
-        studentId: "",
-        studentSearchTerm: "",
-        nurseId: localStorage.getItem("userId") || "",
-        nurseSearchTerm: "",
-        location: "",
-        createForm: true,
-        sendNotification: true,
-        parentId: ""
-      });
+      resetAddForm();
     } catch (error) {
       console.error("Error adding consultation schedule:", error);
       setNotif({
@@ -1744,7 +1779,7 @@ const ConsultSchedules = () => {
     <div className="admin-main">
       <h2 className="dashboard-title">Lịch tư vấn</h2>
       <div className="admin-header">
-        <button className="admin-btn" onClick={() => setShowAddModal(true)}>
+        <button className="admin-btn" onClick={openAddModal}>
           <FaPlus /> Thêm lịch tư vấn
         </button>
           <div className="search-container">
