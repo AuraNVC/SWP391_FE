@@ -1409,11 +1409,11 @@ const HealthResults = () => {
           studentName = student.fullName || `Học sinh ID: ${record.studentId}`;
         } else {
           try {
-            const studentResponse = await API_SERVICE.studentAPI.getById(record.studentId);
-            if (studentResponse) {
+        const studentResponse = await API_SERVICE.studentAPI.getById(record.studentId);
+                  if (studentResponse) {
               studentName = studentResponse.fullName || 
-                            `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
-                            `Học sinh ID: ${record.studentId}`;
+                                `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
+                    `Học sinh ID: ${record.studentId}`;
             } else {
               studentName = record.studentName || `Học sinh ID: ${record.studentId}`;
             }
@@ -1430,8 +1430,8 @@ const HealthResults = () => {
             const studentResponse = await API_SERVICE.studentAPI.getById(profileData.studentId);
             if (studentResponse) {
               studentName = studentResponse.fullName || 
-                            `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
-                            `Học sinh ID: ${profileData.studentId}`;
+                        `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
+                        `Học sinh ID: ${profileData.studentId}`;
               // Cập nhật studentId trong record
               record.studentId = profileData.studentId;
             } else {
@@ -1442,8 +1442,8 @@ const HealthResults = () => {
         } catch (error) {
           console.error("Error fetching student from health profile:", error);
           studentName = record.studentName || "Không xác định";
-        }
-      } else {
+            }
+          } else {
         studentName = record.studentName || "Không xác định";
       }
       
@@ -1470,25 +1470,25 @@ const HealthResults = () => {
       }
         
       // Cập nhật formData cho chỉnh sửa - chỉ bao gồm các trường BE cho phép cập nhật
-      setFormData({
+        setFormData({
         healthCheckupRecordId: record.healthCheckupRecordId,
         healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "", // Readonly, chỉ để hiển thị
         healthProfileId: record.healthProfileId || "", // Readonly, chỉ để hiển thị
         studentId: record.studentId || "", // Readonly, chỉ để hiển thị
         studentSearchTerm: studentName, // Readonly, chỉ để hiển thị
-        nurseId: record.nurseId || localStorage.getItem("userId") || "",
-        nurseName: record.nurseName || "",
+          nurseId: record.nurseId || localStorage.getItem("userId") || "",
+          nurseName: record.nurseName || "",
         nurseSearchTerm: nurseName,
-        height: record.height || "",
-        weight: record.weight || "",
-        leftVision: record.leftVision || "",
-        rightVision: record.rightVision || "",
-        result: record.result || "",
-        note: record.note === null || record.note === undefined ? "" : record.note
-      });
+          height: record.height || "",
+          weight: record.weight || "",
+          leftVision: record.leftVision || "",
+          rightVision: record.rightVision || "",
+          result: record.result || "",
+          note: record.note === null || record.note === undefined ? "" : record.note
+    });
     
       setSelectedResult(record);
-      setShowEditModal(true);
+    setShowEditModal(true);
     } catch (error) {
       console.error("Error preparing edit data:", error);
       setNotif({
@@ -2144,7 +2144,7 @@ const HealthResults = () => {
                       value={formData.studentSearchTerm || "Không xác định"}
                       readOnly
                     />
-                  </div>
+              </div>
                 </div>
                 <div className="mb-3">
                   <label htmlFor="edit-nurseId" className="form-label">Y tá phụ trách <span className="text-danger">*</span></label>
