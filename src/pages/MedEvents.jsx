@@ -202,6 +202,21 @@ const MedEvents = () => {
     applyFiltersAndSort(events, filters, sortConfig);
   }, [events, filters, sortConfig]);
 
+  // Thêm useEffect để tự động cập nhật tên y tá khi danh sách y tá thay đổi
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (userId && nurses.length > 0) {
+      const currentNurse = nurses.find(n => n.nurseId === parseInt(userId));
+      if (currentNurse) {
+        setFormData(prev => ({
+          ...prev,
+          nurseId: parseInt(userId),
+          nurseSearchTerm: currentNurse.fullName || `Y tá ID: ${userId}`
+        }));
+      }
+    }
+  }, [nurses]);
+
   // Hàm mới để áp dụng bộ lọc và sắp xếp
   const applyFiltersAndSort = (eventList = events, currentFilters = filters, currentSortConfig = sortConfig) => {
     let result = [...eventList];
@@ -963,11 +978,41 @@ const MedEvents = () => {
     setShowEditModal(true);
   };
 
+  // Thêm hàm để reset form data về giá trị mặc định
+  const resetFormData = () => {
+    // Lấy thông tin y tá hiện tại
+    const userId = localStorage.getItem("userId");
+    let nurseSearchTerm = "";
+    
+    if (userId && nurses.length > 0) {
+      const currentNurse = nurses.find(n => n.nurseId === parseInt(userId));
+      if (currentNurse) {
+        nurseSearchTerm = currentNurse.fullName || `Y tá ID: ${userId}`;
+      }
+    }
+    
+    // Reset form về giá trị mặc định
+    setFormData({
+      title: "",
+      eventDate: new Date().toISOString().split('T')[0] + "T" + new Date().toTimeString().split(' ')[0],
+      studentId: "",
+      studentSearchTerm: "",
+      nurseId: userId || "",
+      nurseSearchTerm: nurseSearchTerm,
+      symptoms: "",
+      actionTaken: "",
+      note: ""
+    });
+  };
+
   return (
     <div className="admin-main">
       <h2 className="dashboard-title">Quản lý sự kiện y tế</h2>
       <div className="admin-header">
-        <button className="admin-btn" onClick={() => setShowAddModal(true)}>
+        <button className="admin-btn" onClick={() => {
+          resetFormData();
+          setShowAddModal(true);
+        }}>
           <FaPlus /> Thêm sự kiện y tế
         </button>
         <div className="search-container">
@@ -1191,12 +1236,12 @@ const MedEvents = () => {
                 <label htmlFor="eventDate" className="form-label">Ngày sự kiện <span className="text-danger">*</span></label>
                 <input
                   type="datetime-local"
-                  className="form-control"
+                  className="form-control bg-light"
                   id="eventDate"
                   name="eventDate"
                   value={formData.eventDate}
                   onChange={handleInputChange}
-                  required
+                  readOnly
                 />
               </div>
               <div className="mb-3">
@@ -1261,56 +1306,12 @@ const MedEvents = () => {
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
-                    className="form-control"
-                  id="nurseId"
+                    className="form-control bg-light"
+                    id="nurseId"
                     name="nurseSearchTerm"
                     value={formData.nurseSearchTerm}
-                  onChange={handleInputChange}
-                    onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
-                    onClick={() => setShowNurseDropdown(true)}
-                    placeholder="Nhập tên hoặc ID y tá"
+                    readOnly
                   />
-                  {showNurseDropdown && filteredNurses.length > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      maxHeight: '200px',
-                      overflowY: 'auto',
-                      backgroundColor: 'white',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      zIndex: 1000,
-                      boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                    }}>
-                      {filteredNurses.map(nurse => (
-                        <div 
-                          key={nurse.nurseId} 
-                          className="dropdown-item" 
-                          style={{ padding: '8px 12px', cursor: 'pointer' }}
-                          onClick={() => handleSelectNurse(nurse)}
-                        >
-                          {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
-                        </div>
-                  ))}
-                    </div>
-                  )}
-                  {showNurseDropdown && filteredNurses.length === 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      padding: '8px 12px',
-                      backgroundColor: 'white',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      zIndex: 1000
-                    }}>
-                      Không tìm thấy y tá
-                    </div>
-                  )}
                 </div>
               </div>
               <div className="mb-3">
@@ -1429,98 +1430,54 @@ const MedEvents = () => {
                 <input type="hidden" name="medicalEventId" value={formData.medicalEventId} />
                 <div className="mb-3">
                   <label htmlFor="title" className="form-label">Tiêu đề</label>
-                <input
-                  type="text"
+                  <input
+                    type="text"
                     className="form-control bg-light"
                     id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  readOnly
-                />
-              </div>
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    readOnly
+                  />
+                </div>
                 <div className="mb-3">
                   <label htmlFor="eventDate" className="form-label">Ngày sự kiện <span className="text-danger">*</span></label>
                   <input
                     type="datetime-local"
-                  className="form-control"
+                    className="form-control bg-light"
                     id="eventDate"
-                  name="eventDate"
-                  value={formData.eventDate}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+                    name="eventDate"
+                    value={formData.eventDate}
+                    onChange={handleInputChange}
+                    readOnly
+                  />
+                </div>
                 <div className="mb-3">
                   <label htmlFor="studentId" className="form-label">Học sinh</label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="text"
                       className="form-control bg-light"
-                    id="studentId"
+                      id="studentId"
                       name="studentSearchTerm"
                       value={formData.studentSearchTerm}
                       readOnly
                     />
                   </div>
-              </div>
+                </div>
                 <div className="mb-3">
                   <label htmlFor="nurseId" className="form-label">Y tá <span className="text-danger">*</span></label>
-                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'relative' }}>
                     <input
                       type="text"
-                      className="form-control"
-                    id="nurseId"
+                      className="form-control bg-light"
+                      id="nurseId"
                       name="nurseSearchTerm"
                       value={formData.nurseSearchTerm}
-                  onChange={handleInputChange}
-                  onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
-                  onClick={() => setShowNurseDropdown(true)}
-                  placeholder="Nhập tên hoặc ID y tá"
-                />
-                {showNurseDropdown && filteredNurses.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    backgroundColor: 'white',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    zIndex: 1000,
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                  }}>
-                    {filteredNurses.map(nurse => (
-                      <div 
-                        key={nurse.nurseId} 
-                        className="dropdown-item" 
-                        style={{ padding: '8px 12px', cursor: 'pointer' }}
-                        onClick={() => handleSelectNurse(nurse)}
-                      >
-                        {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
-                      </div>
-                    ))}
+                      readOnly
+                    />
                   </div>
-                )}
-                {showNurseDropdown && filteredNurses.length === 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    padding: '8px 12px',
-                    backgroundColor: 'white',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    zIndex: 1000
-                  }}>
-                    Không tìm thấy y tá
-                  </div>
-                )}
-              </div>
-              </div>
+                </div>
                 <div className="mb-3">
                   <label htmlFor="symptoms" className="form-label">Triệu chứng <span className="text-danger">*</span></label>
                   <textarea
@@ -1535,12 +1492,12 @@ const MedEvents = () => {
                 </div>
                 <div className="mb-3">
                   <label htmlFor="actionTaken" className="form-label">Ghi chú <span className="text-danger">*</span></label>
-                <textarea
+                  <textarea
                     className="form-control"
                     id="actionTaken"
                     name="actionTaken"
                     value={formData.actionTaken}
-                  onChange={handleInputChange}
+                    onChange={handleInputChange}
                     rows={3}
                     required
                   ></textarea>
@@ -1548,7 +1505,7 @@ const MedEvents = () => {
                 <div className="mb-3">
                   <label htmlFor="note" className="form-label">Ghi chú bổ sung</label>
                   <textarea
-                  className="form-control"
+                    className="form-control"
                     id="note"
                     name="note"
                     value={formData.note}

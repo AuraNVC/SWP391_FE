@@ -966,10 +966,10 @@ const HealthResults = () => {
       // Kiểm tra nếu giá trị rỗng
       if (value === "") {
         // Cho phép trường rỗng
-        setFormData({
-          ...formData,
-          [name]: value
-        });
+    setFormData({
+      ...formData,
+      [name]: value
+    });
       } else {
         // Chỉ cho phép số nguyên từ 0-10
         const numValue = parseInt(value);
@@ -1062,13 +1062,13 @@ const HealthResults = () => {
     
     for (const { field, message } of requiredFields) {
       if (!formData[field]) {
-        setNotif({
+      setNotif({
           message,
           type: "error",
           autoDismiss: true,
           duration: 5000
-        });
-        return false;
+      });
+      return false;
       }
     }
     
@@ -1673,8 +1673,8 @@ const HealthResults = () => {
           nurseName = nurseInfo.fullName || `${nurseInfo.firstName || ''} ${nurseInfo.lastName || ''}`.trim();
         } else {
           nurseName = "Y tá hiện tại";
-        }
-      } catch (error) {
+          }
+        } catch (error) {
         console.error("Error fetching logged-in nurse info:", error);
         nurseName = "Y tá hiện tại";
       }
@@ -1823,7 +1823,7 @@ const HealthResults = () => {
             autoDismiss: true,
             duration: 3000
           });
-        } else {
+    } else {
           setNotif({
             message: `Đã tải xong! Có ${availableStudents.length} học sinh có thể thêm kết quả khám`,
             type: "success",
@@ -2612,8 +2612,8 @@ const HealthResults = () => {
                   <label htmlFor="edit-healthCheckScheduleId" className="form-label">Lịch khám</label>
                   <input
                     type="text"
-                    name="healthCheckScheduleId"
-                    id="edit-healthCheckScheduleId"
+                  name="healthCheckScheduleId"
+                        id="edit-healthCheckScheduleId"
                     value={(() => {
                       const schedule = schedules.find(s => String(s.healthCheckScheduleId) === String(formData.healthCheckScheduleId));
                       return schedule 
@@ -2623,7 +2623,7 @@ const HealthResults = () => {
                     className="form-control bg-light"
                     readOnly
                   />
-                </div>
+              </div>
                 <div className="mb-3">
                   <label htmlFor="edit-studentId" className="form-label">Học sinh</label>
                   <div style={{ position: 'relative' }}>
@@ -2635,7 +2635,7 @@ const HealthResults = () => {
                       value={formData.studentSearchTerm || "Không xác định"}
                       readOnly
                     />
-                  </div>
+              </div>
                 </div>
                 <div className="mb-3">
                   <label htmlFor="edit-nurseId" className="form-label">Y tá phụ trách <span className="text-danger">*</span></label>
@@ -2647,93 +2647,93 @@ const HealthResults = () => {
                       name="nurseSearchTerm"
                       value={formData.nurseSearchTerm}
                       readOnly
-                      required
+                  required
                     />
+              </div>
                   </div>
-                </div>
                 <div className="mb-3">
                   <label htmlFor="edit-height" className="form-label">Chiều cao (cm) <span className="text-danger">*</span></label>
-                  <input
-                    type="number"
+                <input
+                  type="number"
                     className="form-control"
-                    id="edit-height"
+                        id="edit-height"
                     name="height"
-                    value={formData.height}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+                  value={formData.height}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
                 <div className="mb-3">
                   <label htmlFor="edit-weight" className="form-label">Cân nặng (kg) <span className="text-danger">*</span></label>
-                  <input
-                    type="number"
+                <input
+                  type="number"
                     className="form-control"
-                    id="edit-weight"
+                        id="edit-weight"
                     name="weight"
-                    value={formData.weight}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  value={formData.weight}
+                  onChange={handleInputChange}
+                  required
+                />
                 </div>
                 <div className="mb-3">
                   <label htmlFor="edit-leftVision" className="form-label">Thị lực mắt trái</label>
                   <div className="input-group">
-                    <input
+                  <input
                       type="number"
                       className="form-control"
-                      id="edit-leftVision"
+                        id="edit-leftVision"
                       name="leftVision"
                       value={formData.leftVision ? formData.leftVision.split('/')[0] : ''}
-                      onChange={handleInputChange}
+                    onChange={handleInputChange}
                       placeholder="Nhập số từ 0-10"
                       min="0"
                       max="10"
                       step="1"
                     />
                     <span className="input-group-text">/10</span>
-                  </div>
+                </div>
                 </div>
                 <div className="mb-3">
                   <label htmlFor="edit-rightVision" className="form-label">Thị lực mắt phải</label>
                   <div className="input-group">
-                    <input
+                  <input
                       type="number"
                       className="form-control"
-                      id="edit-rightVision"
+                        id="edit-rightVision"
                       name="rightVision"
                       value={formData.rightVision ? formData.rightVision.split('/')[0] : ''}
-                      onChange={handleInputChange}
+                    onChange={handleInputChange}
                       placeholder="Nhập số từ 0-10"
                       min="0"
                       max="10"
                       step="1"
                     />
                     <span className="input-group-text">/10</span>
-                  </div>
+                </div>
                 </div>
                 <div className="mb-3">
                   <label htmlFor="edit-result" className="form-label">Kết quả <span className="text-danger">*</span></label>
-                  <textarea
+                <textarea
                     className="form-control"
-                    id="edit-result"
+                        id="edit-result"
                     name="result"
-                    value={formData.result}
-                    onChange={handleInputChange}
+                  value={formData.result}
+                  onChange={handleInputChange}
                     rows={3}
-                    required
-                  ></textarea>
-                </div>
+                        required
+                ></textarea>
+              </div>
                 <div className="mb-3">
                   <label htmlFor="edit-note" className="form-label">Ghi chú</label>
-                  <textarea
+                <textarea
                     className="form-control"
-                    id="edit-note"
+                        id="edit-note"
                     name="note"
-                    value={formData.note}
-                    onChange={handleInputChange}
+                  value={formData.note}
+                  onChange={handleInputChange}
                     rows={2}
-                  ></textarea>
-                </div>
+                ></textarea>
+              </div>
               </div>
               <div className="modal-footer">
                 <button type="submit" className="btn btn-primary">Lưu thay đổi</button>
@@ -2921,10 +2921,10 @@ const HealthResults = () => {
                       name="nurseSearchTerm"
                       value={formData.nurseSearchTerm}
                       readOnly
-                      required
+                  required
                     />
-                </div>
-                </div>
+              </div>
+                  </div>
                 <div className="mb-3">
                   <label htmlFor="height" className="form-label">Chiều cao (cm) <span className="text-danger">*</span></label>
                 <input
@@ -2952,38 +2952,38 @@ const HealthResults = () => {
                 <div className="mb-3">
                   <label htmlFor="leftVision" className="form-label">Thị lực mắt trái</label>
                   <div className="input-group">
-                    <input
+                  <input
                       type="number"
                       className="form-control"
-                      id="leftVision"
+                        id="leftVision"
                       name="leftVision"
                       value={formData.leftVision ? formData.leftVision.split('/')[0] : ''}
-                      onChange={handleInputChange}
+                    onChange={handleInputChange}
                       placeholder="Nhập số từ 0-10"
                       min="0"
                       max="10"
                       step="1"
                     />
                     <span className="input-group-text">/10</span>
-                  </div>
+                </div>
                 </div>
                 <div className="mb-3">
                   <label htmlFor="rightVision" className="form-label">Thị lực mắt phải</label>
                   <div className="input-group">
-                    <input
+                  <input
                       type="number"
                       className="form-control"
-                      id="rightVision"
+                        id="rightVision"
                       name="rightVision"
                       value={formData.rightVision ? formData.rightVision.split('/')[0] : ''}
-                      onChange={handleInputChange}
+                    onChange={handleInputChange}
                       placeholder="Nhập số từ 0-10"
                       min="0"
                       max="10"
                       step="1"
                     />
                     <span className="input-group-text">/10</span>
-                  </div>
+                </div>
                 </div>
                 </div>
                 <div className="mb-3">
