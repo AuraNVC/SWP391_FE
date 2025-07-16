@@ -381,6 +381,11 @@ export const API_SERVICE = {
         getByParent: (parentId) => callApi(API.PRESCRIPTION_BY_PARENT(parentId)),
     },
     healthProfileAPI: {
+        add: (data) => callApi(API_BASE_URL + "/healthProfile/add", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+        }),
         get: (studentId) => callApi(API.HEALTH_PROFILE(studentId)),
         getById: (id) => callApi(API.HEALTH_PROFILE(id)),
         getByStudent: (studentId) => callApi(API.HEALTH_PROFILE(studentId)),
