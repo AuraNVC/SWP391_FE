@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FaPlus, FaSearch, FaEye, FaEdit, FaTrash, FaFilter, FaSortAmountDown, FaSortAmountUp, FaSync } from "react-icons/fa";
+import { FaPlus, FaSearch, FaEye, FaEdit, FaTrash, FaFilter, FaSortAmountDown, FaSortAmountUp, FaSync, FaCheck } from "react-icons/fa";
 import { API_SERVICE } from "../services/api";
 import TableWithPaging from "../components/TableWithPaging";
 import { useNotification } from "../contexts/NotificationContext";
@@ -164,7 +164,7 @@ const VaxResults = () => {
     nurseSearchTerm: "",
     doseNumber: "1",
     reactionAfterInjection: "",
-    status: "1", // Default status: Completed
+    status: "1", // Default status: Pending (1 = Pending trong backend)
     note: "",
     vaccineName: "",
     injectionDate: "",
@@ -302,9 +302,8 @@ const VaxResults = () => {
 
   const getStatusText = (status) => {
     const statusMap = {
-      "0": "Chưa hoàn thành",
-      "1": "Đã hoàn thành",
-      "2": "Đã hủy"
+      "1": "Chưa hoàn thành", // Pending = 1 trong backend
+      "2": "Đã hoàn thành"    // Completed = 2 trong backend
     };
     return statusMap[status] || "Không xác định";
   };
@@ -812,25 +811,28 @@ const VaxResults = () => {
 
   // Cập nhật phần định nghĩa hàm validateForm
   const validateForm = () => {
-    // Chỉ kiểm tra các trường mà backend hỗ trợ cập nhật
-    const requiredFields = ["nurseId"];
-    const missingFields = requiredFields.filter(field => !formData[field]);
+    // Danh sách các trường bắt buộc
+    const requiredFields = {
+      vaccinationScheduleId: "Lịch tiêm chủng",
+      healthProfileId: "Hồ sơ sức khỏe",
+      nurseId: "Y tá phụ trách",
+      doseNumber: "Mũi số"
+    };
     
-    if (missingFields.length > 0) {
-      console.error("Missing required fields:", missingFields);
-      console.log("Current form data:", formData);
-      
-      const fieldNames = {
-        nurseId: "Y tá phụ trách"
-      };
-      
-      const missingFieldNames = missingFields.map(field => fieldNames[field] || field).join(", ");
-      
-      setNotif({
-        message: `Vui lòng điền đầy đủ thông tin: ${missingFieldNames}`,
-        type: "error"
-      });
-      
+    // Kiểm tra từng trường bắt buộc
+    for (const [field, label] of Object.entries(requiredFields)) {
+      if (!formData[field]) {
+        return false;
+      }
+    }
+    
+    // Kiểm tra đặc biệt cho healthProfileId
+    if (!formData.healthProfileId) {
+      return false;
+    }
+    
+    // Kiểm tra mũi số phải là số dương
+    if (parseInt(formData.doseNumber) <= 0) {
       return false;
     }
     
@@ -839,65 +841,33 @@ const VaxResults = () => {
 
   // Add a helper function to fetch health profile by student ID
   const fetchHealthProfileByStudentId = async (studentId) => {
-    if (!studentId) return null;
-    
     try {
       console.log("Fetching health profile for student ID:", studentId);
-      // First try to get it from the existing students data
-      const student = students.find(s => s.studentId.toString() === studentId.toString());
-      if (student && student.healthProfileId) {
-        console.log("Found health profile ID in students data:", student.healthProfileId);
-        return { healthProfileId: student.healthProfileId };
+      
+      if (!studentId) {
+        console.error("Cannot fetch health profile: Student ID is missing");
+        return null;
       }
       
-      // If not found in existing data, call the API
-      try {
-        const response = await API_SERVICE.healthProfileAPI.get(studentId);
-        console.log("Health profile API response:", response);
-        
-        if (response && response.healthProfileId) {
-          return response;
-        }
-      } catch (apiError) {
-        console.error("Error calling health profile API:", apiError);
-        
-        // Try an alternative approach using search API
-        try {
-          const searchResponse = await API_SERVICE.healthProfileAPI.getAll({
-            keyword: studentId.toString()
-          });
-          
-          console.log("Health profile search response:", searchResponse);
-          
-          if (Array.isArray(searchResponse) && searchResponse.length > 0) {
-            // Find the profile that matches the student ID
-            const matchingProfile = searchResponse.find(p => p.studentId.toString() === studentId.toString());
-            if (matchingProfile) {
-              return matchingProfile;
-            }
-          }
-        } catch (searchError) {
-          console.error("Error searching health profiles:", searchError);
-        }
+      const response = await API_SERVICE.healthProfileAPI.getByStudent(studentId);
+      console.log("Health profile response:", response);
+      
+      if (!response || !response.healthProfileId) {
+        console.error("Health profile not found for student ID:", studentId);
+        return null;
       }
+      
+      return response;
     } catch (error) {
-      console.error("Error in fetchHealthProfileByStudentId:", error);
+      console.error("Error fetching health profile:", error);
+      return null;
     }
-    
-    return null;
   };
 
   // Cập nhật hàm handleStudentChange để không mất dữ liệu
   const handleStudentChange = async (studentId) => {
-    console.log("Student changed to:", studentId);
-    
     if (!studentId) {
-      setFormData(prev => ({
-        ...prev,
-        studentId: "",
-        studentName: "",
-        healthProfileId: ""
-      }));
+      console.error("Invalid student ID");
       return;
     }
     
@@ -910,31 +880,32 @@ const VaxResults = () => {
       console.log("Found student in cache:", selectedStudent);
       console.log("Student name:", studentName);
       
-      try {
-        // Lấy hồ sơ sức khỏe của học sinh
-        const healthProfile = await fetchHealthProfileByStudentId(studentId);
-        const healthProfileId = healthProfile?.healthProfileId?.toString() || "";
-        
-        console.log("Found health profile:", healthProfile);
-        console.log("Health profile ID:", healthProfileId);
-        
-        // Cập nhật form data, giữ lại các giá trị khác
+      // Lấy hồ sơ sức khỏe của học sinh
+      const healthProfile = await fetchHealthProfileByStudentId(studentId);
+      
+      if (!healthProfile || !healthProfile.healthProfileId) {
+        // Đã có thông báo trong hàm fetchHealthProfileByStudentId
         setFormData(prev => ({
           ...prev,
           studentId: studentId.toString(),
           studentName: studentName,
-          healthProfileId: healthProfileId
+          studentSearchTerm: studentName,
+          healthProfileId: ""
         }));
-      } catch (error) {
-        console.error("Error fetching health profile:", error);
-        
-        // Vẫn cập nhật thông tin học sinh ngay cả khi không lấy được hồ sơ sức khỏe
-        setFormData(prev => ({
-          ...prev,
-          studentId: studentId.toString(),
-          studentName: studentName
-        }));
+        return;
       }
+      
+      const healthProfileId = healthProfile.healthProfileId.toString();
+      console.log("Found health profile ID:", healthProfileId);
+      
+      // Cập nhật form data, giữ lại các giá trị khác
+      setFormData(prev => ({
+        ...prev,
+        studentId: studentId.toString(),
+        studentName: studentName,
+        studentSearchTerm: studentName,
+        healthProfileId: healthProfileId
+      }));
     } else {
       // Nếu không tìm thấy trong cache, thử lấy từ API
       try {
@@ -945,22 +916,38 @@ const VaxResults = () => {
           
           // Lấy hồ sơ sức khỏe của học sinh
           const healthProfile = await fetchHealthProfileByStudentId(studentId);
-          const healthProfileId = healthProfile?.healthProfileId?.toString() || "";
+          
+          if (!healthProfile || !healthProfile.healthProfileId) {
+            // Đã có thông báo trong hàm fetchHealthProfileByStudentId
+            setFormData(prev => ({
+              ...prev,
+              studentId: studentId.toString(),
+              studentName: studentName,
+              studentSearchTerm: studentName,
+              healthProfileId: ""
+            }));
+            return;
+          }
+          
+          const healthProfileId = healthProfile.healthProfileId.toString();
           
           // Cập nhật form data, giữ lại các giá trị khác
           setFormData(prev => ({
             ...prev,
             studentId: studentId.toString(),
             studentName: studentName,
+            studentSearchTerm: studentName,
             healthProfileId: healthProfileId
           }));
         }
-      } catch (error) {
-        console.error("Error fetching student details:", error);
-        setFormData(prev => ({
-          ...prev,
-          studentId: studentId.toString()
-        }));
+              } catch (error) {
+          console.error("Error fetching student details:", error);
+          
+          setFormData(prev => ({
+            ...prev,
+            studentId: studentId.toString(),
+            healthProfileId: ""
+          }));
       }
     }
   };
@@ -970,7 +957,7 @@ const VaxResults = () => {
     e.preventDefault();
     console.log("Add form data before validation:", formData);
     
-    // Nếu có studentId nhưng không có healthProfileId, thử lấy nó
+    // Kiểm tra studentId và healthProfileId
     if (formData.studentId && !formData.healthProfileId) {
       console.log("Attempting to fetch health profile for student ID:", formData.studentId);
       const healthProfile = await fetchHealthProfileByStudentId(formData.studentId);
@@ -981,6 +968,8 @@ const VaxResults = () => {
           healthProfileId: healthProfile.healthProfileId.toString()
         }));
         console.log("Found and set health profile ID:", healthProfile.healthProfileId);
+      } else {
+        return;
       }
     }
     
@@ -999,25 +988,25 @@ const VaxResults = () => {
     try {
       console.log("Original form data for add:", formData);
       
-      // Tạo object dữ liệu đã làm sạch để gửi đến API
+      // Kiểm tra lại healthProfileId
+      if (!formData.healthProfileId) {
+        throw new Error("Không tìm thấy hồ sơ sức khỏe của học sinh này. Vui lòng chọn học sinh khác.");
+      }
+      
+      // Tạo object dữ liệu đã làm sạch để gửi đến API, chỉ bao gồm các trường BE hỗ trợ
       const cleanedData = {
-        vaccinationScheduleId: parseInt(formData.vaccinationScheduleId) || 0,
-        healthProfileId: parseInt(formData.healthProfileId) || 0,
-        studentId: parseInt(formData.studentId) || 0,
-        nurseId: parseInt(formData.nurseId || localStorage.getItem("userId")) || 0,
-        doseNumber: parseInt(formData.doseNumber) || 1,
-        reactionAfterInjection: formData.reactionAfterInjection || "",
-        status: parseInt(formData.status) || 1,
+        vaccinationScheduleId: parseInt(formData.vaccinationScheduleId),
+        healthProfileId: parseInt(formData.healthProfileId),
+        nurseId: parseInt(formData.nurseId || localStorage.getItem("userId")),
+        doseNumber: parseInt(formData.doseNumber),
         note: formData.note || ""
       };
       
-      // Chỉ thêm các trường có giá trị
-      if (formData.injectionDate) {
-        cleanedData.injectionDate = formData.injectionDate;
-      }
-      
-      if (formData.injectionTime) {
-        cleanedData.injectionTime = formData.injectionTime;
+      // Kiểm tra lại các giá trị
+      for (const [key, value] of Object.entries(cleanedData)) {
+        if (key !== 'note' && (value === null || value === undefined || isNaN(value))) {
+          throw new Error(`Trường ${key} không hợp lệ. Vui lòng kiểm tra lại.`);
+        }
       }
       
       console.log("Sending cleaned data to API for new vaccination result:", cleanedData);
@@ -1027,13 +1016,8 @@ const VaxResults = () => {
       console.log("API response after adding vaccination result:", response);
       
       if (response) {
-      setNotif({
-        message: "Thêm kết quả tiêm chủng thành công",
-        type: "success"
-      });
-        
         // Đóng modal và reset form
-      setShowAddModal(false);
+        setShowAddModal(false);
         resetForm();
         
         // Làm mới dữ liệu bảng
@@ -1044,37 +1028,20 @@ const VaxResults = () => {
       // Log thêm chi tiết lỗi
       if (error.message) console.error("Error message:", error.message);
       if (error.response) console.error("Error response:", error.response);
-      
-      setNotif({
-        message: "Không thể thêm kết quả tiêm chủng: " + (error.message || "Lỗi không xác định"),
-        type: "error"
-      });
     } finally {
       setLoading(false);
     }
   };
 
-  // Cập nhật hàm handleUpdateResult để thông báo giới hạn
+  // Cập nhật hàm handleUpdateResult
   const handleUpdateResult = async (e) => {
     e.preventDefault();
     console.log("Update form data before validation:", formData);
     
-    // Hiển thị thông báo về giới hạn cập nhật
-    const warningMessage = "Lưu ý: Chỉ có thể cập nhật Y tá phụ trách, Mũi số và Ghi chú. Các trường khác sẽ không được lưu.";
-    
-    // Hiển thị thông báo cảnh báo
-    setNotif({
-      message: warningMessage,
-      type: "warning"
-    });
-    
-    // Đợi 1.5 giây để người dùng đọc thông báo
-    setTimeout(() => {
     if (!validateForm()) return;
     
-      // Show confirmation dialog instead of immediately submitting
-      setShowConfirmUpdate(true);
-    }, 1500);
+    // Show confirmation dialog instead of immediately submitting
+    setShowConfirmUpdate(true);
   };
 
   // Cập nhật hàm confirmUpdateResult để gửi chỉ những trường mà BE hỗ trợ
@@ -1085,55 +1052,48 @@ const VaxResults = () => {
     try {
       console.log("Original form data for update:", formData);
       
+      if (!selectedResult || !selectedResult.vaccinationResultId) {
+        throw new Error("Không tìm thấy thông tin kết quả tiêm chủng cần cập nhật");
+      }
+      
       // Tạo đối tượng dữ liệu chỉ với các trường mà backend hỗ trợ
       const cleanedData = {
         vaccinationResultId: parseInt(selectedResult.vaccinationResultId),
-        nurseId: parseInt(formData.nurseId) || null,
-        doseNumber: parseInt(formData.doseNumber) || null,
+        nurseId: parseInt(formData.nurseId),
+        doseNumber: parseInt(formData.doseNumber),
         note: formData.note || ""
       };
+      
+      // Kiểm tra lại các giá trị
+      if (!cleanedData.vaccinationResultId || isNaN(cleanedData.vaccinationResultId)) {
+        throw new Error("ID kết quả tiêm chủng không hợp lệ");
+      }
+      
+      if (!cleanedData.nurseId || isNaN(cleanedData.nurseId)) {
+        throw new Error("ID y tá không hợp lệ");
+      }
+      
+      if (!cleanedData.doseNumber || isNaN(cleanedData.doseNumber) || cleanedData.doseNumber <= 0) {
+        throw new Error("Mũi số không hợp lệ. Vui lòng nhập số lớn hơn 0");
+      }
       
       console.log("Sending update request with only supported fields:", cleanedData);
       
       // Gọi API cập nhật
       const response = await API_SERVICE.vaccinationResultAPI.update(
-        parseInt(selectedResult.vaccinationResultId), 
+        selectedResult.vaccinationResultId,
         cleanedData
       );
       
       console.log("API response after updating vaccination result:", response);
       
       if (response) {
-        // Cập nhật lại selectedResult với dữ liệu mới để hiển thị chính xác
-        const updatedResult = {
-          ...selectedResult,
-          nurseId: cleanedData.nurseId,
-          nurseName: formData.nurseName,
-          doseNumber: cleanedData.doseNumber,
-          note: cleanedData.note
-        };
-        setSelectedResult(updatedResult);
-        
-      setNotif({
-          message: "Cập nhật kết quả tiêm chủng thành công (chỉ y tá phụ trách, mũi số, ghi chú được cập nhật)",
-        type: "success"
-      });
-        
-      setShowEditModal(false);
-        
-        // Làm mới dữ liệu bảng
+        // Đóng modal và làm mới dữ liệu
+        setShowEditModal(false);
         await fetchVaccinationResults("");
       }
     } catch (error) {
       console.error("Error updating vaccination result:", error);
-      // Log more details about the error
-      if (error.message) console.error("Error message:", error.message);
-      if (error.response) console.error("Error response:", error.response);
-      
-      setNotif({
-        message: "Không thể cập nhật kết quả tiêm chủng: " + (error.message || "Lỗi không xác định"),
-        type: "error"
-      });
     } finally {
       setLoading(false);
     }
@@ -1143,20 +1103,23 @@ const VaxResults = () => {
     setLoading(true);
     try {
       await API_SERVICE.vaccinationResultAPI.delete(selectedResult.vaccinationResultId);
-      setNotif({
-        message: "Xóa kết quả tiêm chủng thành công",
-        type: "success"
-      });
       setShowDeleteModal(false);
-      // Reset to page 1 and refetch data
-      setPage(1);
       await fetchVaccinationResults("");
     } catch (error) {
       console.error("Error deleting vaccination result:", error);
-      setNotif({
-        message: "Không thể xóa kết quả tiêm chủng: " + (error.message || "Lỗi không xác định"),
-        type: "error"
-      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Hàm mới để đánh dấu hoàn thành kết quả tiêm chủng
+  const handleCompleteResult = async (id) => {
+    setLoading(true);
+    try {
+      await API_SERVICE.vaccinationResultAPI.complete(id);
+      await fetchVaccinationResults("");
+    } catch (error) {
+      console.error("Error completing vaccination result:", error);
     } finally {
       setLoading(false);
     }
@@ -1187,7 +1150,7 @@ const VaxResults = () => {
       nurseSearchTerm: nurseName,
       doseNumber: "1",
       reactionAfterInjection: "",
-      status: "1", // Default status: Completed
+      status: "1", // Default status: Pending (1 = Pending trong backend)
       note: "",
       vaccineName: "",
       injectionDate: "",
@@ -1241,47 +1204,73 @@ const VaxResults = () => {
 
   // Cập nhật hàm handleEdit để đảm bảo tất cả các trường dữ liệu được điền đầy đủ
   const handleEdit = (result) => {
-    console.log("Editing result:", result);
+    console.log("Editing vaccination result:", result);
+    setSelectedResult(result);
     
-    // Lấy thông tin y tá từ ID
-    let nurseName = result.nurseName || "";
-    if (result.nurseId && !nurseName) {
-      const nurse = nurses.find(n => n.nurseId.toString() === result.nurseId.toString());
-      if (nurse) {
-        nurseName = nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim();
-      }
-    }
+    // Lấy tên học sinh và y tá từ ID
+    let studentName = "";
+    let nurseName = "";
     
-    // Lấy thông tin học sinh từ ID
-    let studentName = result.studentName || "";
-    if (result.studentId && !studentName) {
-      const student = students.find(s => s.studentId.toString() === result.studentId.toString());
+    // Tìm thông tin học sinh
+    if (result.studentId) {
+      const student = students.find(s => s.studentId === result.studentId);
       if (student) {
-        studentName = student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim();
+        studentName = student.fullName || `Học sinh ID: ${result.studentId}`;
       }
     }
     
-    // Cập nhật form data
+    // Tìm thông tin y tá
+    if (result.nurseId) {
+      const nurse = nurses.find(n => n.nurseId === result.nurseId);
+      if (nurse) {
+        nurseName = nurse.fullName || `Y tá ID: ${result.nurseId}`;
+      }
+    }
+    
+    // Tìm thông tin lịch tiêm chủng
+    let scheduleName = "";
+    let injectionDate = "";
+    let injectionTime = "";
+    
+    if (result.vaccinationScheduleId) {
+      const schedule = schedules.find(s => s.vaccinationScheduleId === result.vaccinationScheduleId);
+      if (schedule) {
+        scheduleName = schedule.vaccineName || schedule.name || `Lịch #${result.vaccinationScheduleId}`;
+        
+        // Lấy ngày và giờ tiêm từ lịch tiêm chủng
+        if (schedule.scheduleDate) {
+          const dateObj = new Date(schedule.scheduleDate);
+          if (!isNaN(dateObj.getTime())) {
+            injectionDate = dateObj.toISOString().split('T')[0];
+            
+            // Định dạng thời gian thành HH:MM
+            const hours = dateObj.getHours().toString().padStart(2, '0');
+            const minutes = dateObj.getMinutes().toString().padStart(2, '0');
+            injectionTime = `${hours}:${minutes}`;
+          }
+        }
+      }
+    }
+    
+    // Khởi tạo form data với dữ liệu từ kết quả đã chọn
     setFormData({
       vaccinationResultId: result.vaccinationResultId,
-      vaccinationScheduleId: result.vaccinationScheduleId || "",
-      healthProfileId: result.healthProfileId || "",
-      studentId: result.studentId || "",
-      studentName: studentName || result.studentName || "",
-      studentSearchTerm: studentName || result.studentName || "",
-      nurseId: result.nurseId || "",
-      nurseName: nurseName || result.nurseName || "",
-      nurseSearchTerm: nurseName || result.nurseName || "",
-      doseNumber: result.doseNumber || "1",
-      reactionAfterInjection: result.reactionAfterInjection || "",
+      vaccinationScheduleId: result.vaccinationScheduleId?.toString() || "",
+      vaccinationScheduleName: scheduleName,
+      healthProfileId: result.healthProfileId?.toString() || "",
+      studentId: result.studentId?.toString() || "",
+      studentName: studentName,
+      studentSearchTerm: result.studentName || studentName,
+      nurseId: result.nurseId?.toString() || "",
+      nurseName: result.nurseName || nurseName,
+      nurseSearchTerm: result.nurseName || nurseName,
+      doseNumber: result.doseNumber?.toString() || "",
+      note: result.note || "",
       status: result.status?.toString() || "1",
-          note: result.note || "",
-          vaccineName: result.vaccineName || "",
-      injectionDate: result.injectionDate ? new Date(result.injectionDate).toISOString().split('T')[0] : "",
-          injectionTime: result.injectionTime || ""
+      injectionDate: injectionDate || "",
+      injectionTime: injectionTime || ""
     });
-        
-        setSelectedResult(result);
+    
     setShowEditModal(true);
   };
 
@@ -1801,9 +1790,8 @@ const VaxResults = () => {
                 style={{ width: '100%', padding: '8px' }}
               >
                 <option value="all">Tất cả</option>
-                <option value="1">Hoàn thành</option>
-                <option value="2">Đang chờ</option>
-                <option value="3">Đã hủy</option>
+                <option value="1">Chưa hoàn thành</option>
+                <option value="2">Đã hoàn thành</option>
               </select>
             </div>
           </div>
@@ -1882,8 +1870,17 @@ const VaxResults = () => {
                     title="Xóa"
                     onClick={() => handleDelete(row)}
                   >
-                  <FaTrash style={{ color: "#dc3545" }} size={18} />
-                </button>
+                    <FaTrash style={{ color: "#dc3545" }} size={18} />
+                  </button>
+                  {row.status === "1" && (
+                    <button
+                      className="admin-action-btn admin-action-btn-reset"
+                      title="Đánh dấu hoàn thành"
+                      onClick={() => handleCompleteResult(row.vaccinationResultId)}
+                    >
+                      <FaCheck style={{ color: "#28a745" }} size={18} />
+                    </button>
+                  )}
               </div>
             )}
             loading={loading}
@@ -1893,224 +1890,226 @@ const VaxResults = () => {
 
       {/* Modal thêm kết quả tiêm */}
       {showAddModal && (
-        <div className="vax-results-modal-overlay">
-          <div className="vax-results-modal">
-            <div className="vax-results-modal-header">
-              <h3>Thêm kết quả tiêm chủng</h3>
-              <button className="vax-results-modal-close" onClick={() => setShowAddModal(false)}>×</button>
+        <div className="student-create-modal-overlay">
+          <div className="student-create-modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">Thêm kết quả tiêm chủng</h3>
+              <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
             </div>
-            <div className="vax-results-modal-body">
             <form onSubmit={handleAddResult}>
-                <div className="info-section">
-                  <h4 className="section-title">Thông tin cơ bản</h4>
-                  <div className="vax-results-form-group">
-                    <label>Lịch tiêm chủng <span className="required">*</span></label>
-                <select
-                  name="vaccinationScheduleId"
-                      value={formData.vaccinationScheduleId || ""}
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label htmlFor="vaccinationScheduleId" className="form-label">Lịch tiêm chủng <span className="text-danger">*</span></label>
+                  <select
+                    className="form-control"
+                    id="vaccinationScheduleId"
+                    name="vaccinationScheduleId"
+                    value={formData.vaccinationScheduleId || ""}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">-- Chọn lịch tiêm chủng --</option>
+                    {schedules.map((schedule) => (
+                      <option key={schedule.vaccinationScheduleId} value={schedule.vaccinationScheduleId}>
+                        {schedule.vaccineName || schedule.name || `Lịch #${schedule.vaccinationScheduleId}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="mb-3">
+                  <label htmlFor="studentId" className="form-label">Học sinh <span className="text-danger">*</span></label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="studentId"
+                      name="studentSearchTerm"
+                      value={formData.studentSearchTerm}
                       onChange={handleInputChange}
-                  required
-                >
-                      <option value="">-- Chọn lịch tiêm chủng --</option>
-                  {schedules.map((schedule) => (
-                    <option key={schedule.vaccinationScheduleId} value={schedule.vaccinationScheduleId}>
-                          {schedule.vaccineName || schedule.name || `Lịch #${schedule.vaccinationScheduleId}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-                  
-                  <div className="vax-results-form-group">
-                    <label>Học sinh <span className="required">*</span></label>
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        type="text"
-                        name="studentSearchTerm"
-                        value={formData.studentSearchTerm}
-                      onChange={handleInputChange}
-                        onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
-                        onClick={() => setShowStudentDropdown(true)}
-                        placeholder="Nhập tên hoặc ID học sinh"
+                      onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
+                      onClick={() => setShowStudentDropdown(true)}
+                      placeholder="Nhập tên hoặc ID học sinh"
                       required
-                      />
-                      {showStudentDropdown && filteredStudents.length > 0 && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          right: 0,
-                          maxHeight: '200px',
-                          overflowY: 'auto',
-                          backgroundColor: 'white',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          zIndex: 1000,
-                          boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                        }}>
-                          {filteredStudents.map(student => (
-                            <div 
-                              key={student.studentId} 
-                              className="dropdown-item" 
-                              style={{ padding: '8px 12px', cursor: 'pointer' }}
-                              onClick={() => handleSelectStudent(student)}
-                            >
-                              {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || `Học sinh ID: ${student.studentId}`}
-                            </div>
-                      ))}
-                        </div>
-                      )}
-                      {showStudentDropdown && filteredStudents.length === 0 && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          right: 0,
-                          padding: '8px 12px',
-                          backgroundColor: 'white',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          zIndex: 1000
-                        }}>
-                          Không tìm thấy học sinh
-                        </div>
+                    />
+                    {showStudentDropdown && filteredStudents.length > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000,
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                      }}>
+                        {filteredStudents.map(student => (
+                          <div 
+                            key={student.studentId} 
+                            className="dropdown-item" 
+                            style={{ padding: '8px 12px', cursor: 'pointer' }}
+                            onClick={() => handleSelectStudent(student)}
+                          >
+                            {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || `Học sinh ID: ${student.studentId}`}
+                          </div>
+                        ))}
+                      </div>
                     )}
-                    </div>
+                    {showStudentDropdown && filteredStudents.length === 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        padding: '8px 12px',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000
+                      }}>
+                        Không tìm thấy học sinh
+                      </div>
+                    )}
                   </div>
-                  
-                  <div className="vax-results-form-group">
-                    <label>Y tá phụ trách <span className="required">*</span></label>
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        type="text"
-                        name="nurseSearchTerm"
-                        value={formData.nurseSearchTerm || ""}
+                </div>
+                
+                <div className="mb-3">
+                  <label htmlFor="nurseId" className="form-label">Y tá phụ trách <span className="text-danger">*</span></label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="nurseId"
+                      name="nurseSearchTerm"
+                      value={formData.nurseSearchTerm}
                       onChange={handleInputChange}
-                        onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
-                        onClick={() => setShowNurseDropdown(true)}
-                        placeholder="Nhập tên hoặc ID y tá"
+                      onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
+                      onClick={() => setShowNurseDropdown(true)}
+                      placeholder="Nhập tên hoặc ID y tá"
                       required
-                        style={{ backgroundColor: '#ffffff', borderColor: '#28a745' }}
-                      />
-                      {showNurseDropdown && filteredNurses.length > 0 && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          right: 0,
-                          maxHeight: '200px',
-                          overflowY: 'auto',
-                          backgroundColor: 'white',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          zIndex: 1000,
-                          boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                        }}>
-                          {filteredNurses.map(nurse => (
-                            <div 
-                              key={nurse.nurseId} 
-                              className="dropdown-item" 
-                              style={{ padding: '8px 12px', cursor: 'pointer' }}
-                              onClick={() => handleSelectNurse(nurse)}
-                            >
-                              {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      {showNurseDropdown && filteredNurses.length === 0 && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          right: 0,
-                          padding: '8px 12px',
-                          backgroundColor: 'white',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          zIndex: 1000
-                        }}>
-                          Không tìm thấy y tá
-                        </div>
-                      )}
-                    </div>
-                    <small style={{ color: '#28a745' }}>Có thể thay đổi y tá phụ trách</small>
+                    />
+                    {showNurseDropdown && filteredNurses.length > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000,
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                      }}>
+                        {filteredNurses.map(nurse => (
+                          <div 
+                            key={nurse.nurseId} 
+                            className="dropdown-item" 
+                            style={{ padding: '8px 12px', cursor: 'pointer' }}
+                            onClick={() => handleSelectNurse(nurse)}
+                          >
+                            {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {showNurseDropdown && filteredNurses.length === 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        padding: '8px 12px',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000
+                      }}>
+                        Không tìm thấy y tá
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="info-section">
-                  <h4 className="section-title">Kết quả tiêm</h4>
-                  <div className="vax-results-form-group">
-                <label>Mũi số <span className="required">*</span></label>
-                <input
-                  type="number"
-                  name="doseNumber"
-                  value={formData.doseNumber}
-                  onChange={handleInputChange}
-                  required
-                  min="1"
-                  placeholder="Nhập số mũi tiêm"
-                />
-              </div>
-                  <div className="vax-results-form-row">
-                    <div className="vax-results-form-group">
-                      <label>Ngày tiêm</label>
-                      <input
-                        type="date"
-                        name="injectionDate"
-                        value={formData.injectionDate ? new Date(formData.injectionDate).toISOString().split('T')[0] : ""}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="vax-results-form-group">
-                      <label>Giờ tiêm</label>
-                      <input
-                        type="time"
-                        name="injectionTime"
-                        value={formData.injectionTime || ""}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-                  <div className="vax-results-form-group">
-                <label>Phản ứng sau tiêm</label>
-                <textarea
-                  name="reactionAfterInjection"
-                  value={formData.reactionAfterInjection}
-                  onChange={handleInputChange}
-                  placeholder="Nhập phản ứng sau tiêm (nếu có)"
-                  rows="3"
-                ></textarea>
-              </div>
-                  <div className="vax-results-form-group">
-                <label>Trạng thái</label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                >
-                  <option value="0">Chưa hoàn thành</option>
-                  <option value="1">Đã hoàn thành</option>
-                  <option value="2">Đã hủy</option>
-                </select>
-              </div>
-                  <div className="vax-results-form-group">
-                <label>Ghi chú</label>
-                <textarea
-                  name="note"
-                  value={formData.note}
-                  onChange={handleInputChange}
-                  placeholder="Nhập ghi chú"
-                  rows="3"
-                ></textarea>
-              </div>
+                <div className="mb-3">
+                  <label htmlFor="doseNumber" className="form-label">Mũi số <span className="text-danger">*</span></label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="doseNumber"
+                    name="doseNumber"
+                    value={formData.doseNumber}
+                    onChange={handleInputChange}
+                    required
+                    min="1"
+                    placeholder="Nhập số mũi tiêm"
+                  />
                 </div>
-                <div className="vax-results-form-actions">
-                  <button type="submit" className="vax-results-btn" disabled={loading}>
-                  {loading ? "Đang thêm..." : "Thêm mới"}
+
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label htmlFor="injectionDate" className="form-label">Ngày tiêm</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      id="injectionDate"
+                      name="injectionDate"
+                      value={formData.injectionDate ? new Date(formData.injectionDate).toISOString().split('T')[0] : ""}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label htmlFor="injectionTime" className="form-label">Giờ tiêm</label>
+                    <input
+                      type="time"
+                      className="form-control"
+                      id="injectionTime"
+                      name="injectionTime"
+                      value={formData.injectionTime || ""}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="reactionAfterInjection" className="form-label">Phản ứng sau tiêm</label>
+                  <textarea
+                    className="form-control"
+                    id="reactionAfterInjection"
+                    name="reactionAfterInjection"
+                    value={formData.reactionAfterInjection}
+                    onChange={handleInputChange}
+                    placeholder="Nhập phản ứng sau tiêm (nếu có)"
+                    rows={3}
+                  ></textarea>
+                </div>
+
+
+
+                <div className="mb-3">
+                  <label htmlFor="note" className="form-label">Ghi chú</label>
+                  <textarea
+                    className="form-control"
+                    id="note"
+                    name="note"
+                    value={formData.note}
+                    onChange={handleInputChange}
+                    placeholder="Nhập ghi chú"
+                    rows={3}
+                  ></textarea>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="submit" className="btn btn-primary" disabled={loading}>
+                  {loading ? "Đang thêm..." : "Lưu"}
                 </button>
                 <button
                   type="button"
-                    className="vax-results-btn cancel-btn"
+                  className="btn btn-secondary"
                   onClick={() => setShowAddModal(false)}
                   disabled={loading}
                 >
@@ -2118,75 +2117,92 @@ const VaxResults = () => {
                 </button>
               </div>
             </form>
-            </div>
           </div>
         </div>
       )}
 
       {/* Modal xem chi tiết kết quả tiêm */}
       {showViewModal && selectedResult && (
-        <div className="vax-results-modal-overlay">
-          <div className="vax-results-modal">
-            <div className="vax-results-modal-header">
-              <h3>Chi tiết kết quả tiêm chủng</h3>
-              <button className="vax-results-modal-close" onClick={() => setShowViewModal(false)}>×</button>
+        <div className="student-dialog-overlay">
+          <div className="student-dialog-content" style={{ width: '700px', maxWidth: '90%' }}>
+            <div className="student-dialog-header">
+              <h2>Chi tiết kết quả tiêm chủng</h2>
+              <button className="student-dialog-close" onClick={() => setShowViewModal(false)}>×</button>
             </div>
-            <div className="vax-results-modal-body">
-              <div className="info-section">
-                <h4 className="section-title">Thông tin chung</h4>
-              <div className="info-grid">
-                <div className="info-item">
-                  <strong>ID:</strong> {selectedResult.vaccinationResultId}
-                </div>
-                <div className="info-item">
-                    <strong>Lịch khám:</strong> {selectedResult.vaccineName || "Không có"}
-                </div>
-                <div className="info-item">
-                    <strong>Học sinh:</strong> 
-                    <StudentNameCell 
-                      studentId={selectedResult.studentId} 
-                      initialName={selectedResult.studentName} 
-                      healthProfileId={selectedResult.healthProfileId} 
-                    />
-                </div>
-                <div className="info-item">
-                    <strong>Y tá phụ trách:</strong> 
-                    <NurseNameCell 
-                      nurseId={selectedResult.nurseId} 
-                      initialName={selectedResult.nurseName} 
-                    />
-                </div>
-                </div>
-              </div>
-
-              <div className="info-section">
-                <h4 className="section-title">Kết quả tiêm</h4>
+            <div className="student-dialog-body">
+              <div className="student-info-section">
+                <h3 className="section-heading-blue">Thông tin chung</h3>
                 <div className="info-grid">
-                <div className="info-item">
-                  <strong>Mũi số:</strong> {selectedResult.doseNumber || "Không có"}
+                  <div className="info-item">
+                    <label>ID:</label>
+                    <span>{selectedResult.vaccinationResultId}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Lịch khám:</label>
+                    <span>{selectedResult.vaccineName || "Không có"}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Học sinh:</label>
+                    <span>
+                      <StudentNameCell 
+                        studentId={selectedResult.studentId} 
+                        initialName={selectedResult.studentName} 
+                        healthProfileId={selectedResult.healthProfileId} 
+                      />
+                    </span>
+                  </div>
+                  <div className="info-item">
+                    <label>Y tá phụ trách:</label>
+                    <span>
+                      <NurseNameCell 
+                        nurseId={selectedResult.nurseId} 
+                        initialName={selectedResult.nurseName} 
+                      />
+                    </span>
+                  </div>
                 </div>
-                <div className="info-item">
-                  <strong>Ngày tiêm:</strong> {selectedResult.injectionDate ? new Date(selectedResult.injectionDate).toLocaleDateString('vi-VN') : "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Giờ tiêm:</strong> {selectedResult.injectionTime || "Không có"}
-                </div>
-                <div className="info-item">
-                  <strong>Trạng thái:</strong> {getStatusText(selectedResult.status)}
-                </div>
-                <div className="info-item full-width">
-                  <strong>Phản ứng sau tiêm:</strong> {selectedResult.reactionAfterInjection || "Không có"}
-                </div>
-                <div className="info-item full-width">
-                  <strong>Ghi chú:</strong> {selectedResult.note || "Không có"}
+              </div>
+              <div className="student-info-section">
+                <h3 className="section-heading-blue">Kết quả tiêm</h3>
+                <div className="info-grid">
+                  <div className="info-item">
+                    <label>Mũi số:</label>
+                    <span>{selectedResult.doseNumber || "Không có"}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Ngày tiêm:</label>
+                    <span>{selectedResult.injectionDate ? new Date(selectedResult.injectionDate).toLocaleDateString('vi-VN') : "Không có"}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Giờ tiêm:</label>
+                    <span>{selectedResult.injectionTime || "Không có"}</span>
+                  </div>
+                  <div className="info-item">
+                    <label>Trạng thái:</label>
+                    <span>{getStatusText(selectedResult.status)}</span>
+                  </div>
+                  <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+                    <label>Phản ứng sau tiêm:</label>
+                    <span>{selectedResult.reactionAfterInjection || "Không có"}</span>
+                  </div>
+                  <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+                    <label>Ghi chú:</label>
+                    <span>{selectedResult.note || "Không có"}</span>
+                  </div>
                 </div>
               </div>
             </div>
-            </div>
-            <div className="vax-results-modal-footer">
-              <button className="vax-results-btn" onClick={() => setShowViewModal(false)}>
-                Đóng
-              </button>
+            <div className="student-dialog-footer">
+              <button className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowViewModal(false)}>Đóng</button>
+              {selectedResult && selectedResult.status === "1" && (
+                <button 
+                  className="admin-btn" 
+                  style={{ background: '#28a745', marginRight: '10px' }} 
+                  onClick={() => handleCompleteResult(selectedResult.vaccinationResultId)}
+                >
+                  Đánh dấu hoàn thành
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -2194,217 +2210,168 @@ const VaxResults = () => {
 
       {/* Modal chỉnh sửa kết quả tiêm */}
       {showEditModal && (
-        <div className="vax-results-modal-overlay">
-          <div className="vax-results-modal">
-            <div className="vax-results-modal-header">
-              <h3>Chỉnh sửa kết quả tiêm chủng</h3>
-              <button className="vax-results-modal-close" onClick={() => setShowEditModal(false)}>×</button>
+        <div className="student-create-modal-overlay">
+          <div className="student-create-modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">Chỉnh sửa kết quả tiêm chủng</h3>
+              <button type="button" className="btn-close" onClick={() => setShowEditModal(false)}></button>
             </div>
-            <div className="vax-results-modal-body">
             <form onSubmit={handleUpdateResult}>
-                <div className="info-section">
-                  <h4 className="section-title">Thông tin cơ bản</h4>
-                  <div className="vax-results-form-group">
-                    <label>Lịch tiêm chủng <span className="required">*</span></label>
-                <select
-                  name="vaccinationScheduleId"
-                      value={formData.vaccinationScheduleId || ""}
-                      onChange={handleInputChange}
-                  required
-                      disabled={true} // Disable vì không thể cập nhật
-                      style={{ backgroundColor: '#f0f0f0' }} // Thêm style để chỉ ra trường bị disable
-                >
-                      <option value="">-- Chọn lịch tiêm chủng --</option>
-                  {schedules.map((schedule) => (
-                    <option key={schedule.vaccinationScheduleId} value={schedule.vaccinationScheduleId}>
-                          {schedule.vaccineName || schedule.name || `Lịch #${schedule.vaccinationScheduleId}`}
-                    </option>
-                  ))}
-                </select>
-                    <small style={{ color: '#856404' }}>Không thể thay đổi lịch tiêm chủng</small>
-              </div>
+              <div className="modal-body">
+                <input type="hidden" name="vaccinationResultId" value={formData.vaccinationResultId} />
+                <div className="mb-3">
+                  <label htmlFor="vaccinationScheduleId" className="form-label">Lịch tiêm chủng <span className="text-danger">*</span></label>
+                  <select
+                    className="form-control"
+                    id="vaccinationScheduleId"
+                    name="vaccinationScheduleId"
+                    value={formData.vaccinationScheduleId || ""}
+                    onChange={handleInputChange}
+                    required
+                    disabled={true}
+                  >
+                    <option value="">-- Chọn lịch tiêm chủng --</option>
+                    {schedules.map((schedule) => (
+                      <option key={schedule.vaccinationScheduleId} value={schedule.vaccinationScheduleId}>
+                        {schedule.vaccineName || schedule.name || `Lịch #${schedule.vaccinationScheduleId}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-                  <div className="vax-results-form-group">
-                    <label>Học sinh <span className="required">*</span></label>
-                    <select
-                      name="studentId"
-                      value={formData.studentId || ""}
+                <div className="mb-3">
+                  <label htmlFor="studentId" className="form-label">Học sinh <span className="text-danger">*</span></label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="studentId"
+                    name="studentSearchTerm"
+                    value={formData.studentSearchTerm}
+                    readOnly
+                  />
+                </div>
+                
+                <div className="mb-3">
+                  <label htmlFor="nurseId" className="form-label">Y tá phụ trách <span className="text-danger">*</span></label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="nurseId"
+                      name="nurseSearchTerm"
+                      value={formData.nurseSearchTerm}
                       onChange={handleInputChange}
+                      onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
+                      onClick={() => setShowNurseDropdown(true)}
+                      placeholder="Nhập tên hoặc ID y tá"
                       required
-                      disabled={true} // Disable vì không thể cập nhật
-                      style={{ backgroundColor: '#f0f0f0' }} // Thêm style để chỉ ra trường bị disable
-                    >
-                      <option value="">-- Chọn học sinh --</option>
-                      {students.map((student) => (
-                        <option key={student.studentId} value={student.studentId}>
-                          {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || `Học sinh #${student.studentId}`}
-                        </option>
-                      ))}
-                    </select>
-                    {formData.studentName && (
-                      <div className="selected-info">Đã chọn: {formData.studentName}</div>
+                    />
+                    {showNurseDropdown && filteredNurses.length > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000,
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                      }}>
+                        {filteredNurses.map(nurse => (
+                          <div 
+                            key={nurse.nurseId} 
+                            className="dropdown-item" 
+                            style={{ padding: '8px 12px', cursor: 'pointer' }}
+                            onClick={() => handleSelectNurse(nurse)}
+                          >
+                            {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
+                          </div>
+                        ))}
+                      </div>
                     )}
-                    <small style={{ color: '#856404' }}>Không thể thay đổi học sinh</small>
-                  </div>
-                  
-                  <div className="vax-results-form-group">
-                    <label>Y tá phụ trách <span className="required">*</span></label>
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        type="text"
-                        name="nurseSearchTerm"
-                        value={formData.nurseSearchTerm || ""}
-                      onChange={handleInputChange}
-                        onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
-                        onClick={() => setShowNurseDropdown(true)}
-                        placeholder="Nhập tên hoặc ID y tá"
-                      required
-                        style={{ backgroundColor: '#ffffff', borderColor: '#28a745' }}
-                      />
-                      {showNurseDropdown && filteredNurses.length > 0 && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          right: 0,
-                          maxHeight: '200px',
-                          overflowY: 'auto',
-                          backgroundColor: 'white',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          zIndex: 1000,
-                          boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                        }}>
-                          {filteredNurses.map(nurse => (
-                            <div 
-                              key={nurse.nurseId} 
-                              className="dropdown-item" 
-                              style={{ padding: '8px 12px', cursor: 'pointer' }}
-                              onClick={() => handleSelectNurse(nurse)}
-                            >
-                              {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
-                            </div>
-                      ))}
-                        </div>
-                      )}
-                      {showNurseDropdown && filteredNurses.length === 0 && (
-                        <div style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          right: 0,
-                          padding: '8px 12px',
-                          backgroundColor: 'white',
-                          border: '1px solid #ddd',
-                          borderRadius: '4px',
-                          zIndex: 1000
-                        }}>
-                          Không tìm thấy y tá
-                        </div>
-                      )}
-                    </div>
-                    <small style={{ color: '#28a745' }}>Trường này có thể được cập nhật</small>
+                    {showNurseDropdown && filteredNurses.length === 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        padding: '8px 12px',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000
+                      }}>
+                        Không tìm thấy y tá
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="info-section">
-                  <h4 className="section-title">Kết quả tiêm</h4>
-                  <div className="vax-results-form-group">
-                <label>Mũi số <span className="required">*</span></label>
-                <input
-                  type="number"
-                  name="doseNumber"
-                  value={formData.doseNumber}
-                  onChange={handleInputChange}
-                  required
-                  min="1"
-                  placeholder="Nhập số mũi tiêm"
-                      style={{ backgroundColor: '#ffffff', borderColor: '#28a745' }} // Highlight trường có thể cập nhật
-                />
-                    <small style={{ color: '#28a745' }}>Trường này có thể được cập nhật</small>
-              </div>
-                  <div className="vax-results-form-row">
-                    <div className="vax-results-form-group">
-                      <label>Ngày tiêm</label>
-                      <input
-                        type="date"
-                        name="injectionDate"
-                        value={formData.injectionDate ? new Date(formData.injectionDate).toISOString().split('T')[0] : ""}
-                        onChange={handleInputChange}
-                        disabled={true} // Disable vì không thể cập nhật
-                        style={{ backgroundColor: '#f0f0f0' }} // Style cho trường bị disable
-                      />
-                      <small style={{ color: '#856404' }}>Không thể thay đổi ngày tiêm</small>
-                    </div>
-                    <div className="vax-results-form-group">
-                      <label>Giờ tiêm</label>
-                      <input
-                        type="time"
-                        name="injectionTime"
-                        value={formData.injectionTime || ""}
-                        onChange={handleInputChange}
-                        disabled={true} // Disable vì không thể cập nhật
-                        style={{ backgroundColor: '#f0f0f0' }} // Style cho trường bị disable
-                      />
-                      <small style={{ color: '#856404' }}>Không thể thay đổi giờ tiêm</small>
-                    </div>
-                  </div>
-                  <div className="vax-results-form-group">
-                <label>Phản ứng sau tiêm</label>
-                <textarea
-                  name="reactionAfterInjection"
-                  value={formData.reactionAfterInjection}
-                  onChange={handleInputChange}
-                  placeholder="Nhập phản ứng sau tiêm (nếu có)"
-                  rows="3"
-                      disabled={true} // Disable vì không thể cập nhật
-                      style={{ backgroundColor: '#f0f0f0' }} // Style cho trường bị disable
-                ></textarea>
-                    <small style={{ color: '#856404' }}>Không thể thay đổi phản ứng sau tiêm</small>
-              </div>
-                  <div className="vax-results-form-group">
-                <label>Trạng thái</label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                      disabled={true} // Disable vì không thể cập nhật
-                      style={{ backgroundColor: '#f0f0f0' }} // Style cho trường bị disable
-                >
-                  <option value="0">Chưa hoàn thành</option>
-                  <option value="1">Đã hoàn thành</option>
-                  <option value="2">Đã hủy</option>
-                </select>
-                    <small style={{ color: '#856404' }}>Không thể thay đổi trạng thái</small>
-              </div>
-                  <div className="vax-results-form-group">
-                <label>Ghi chú</label>
-                <textarea
-                  name="note"
-                  value={formData.note}
-                  onChange={handleInputChange}
-                  placeholder="Nhập ghi chú"
-                  rows="3"
-                      style={{ backgroundColor: '#ffffff', borderColor: '#28a745' }} // Highlight trường có thể cập nhật
-                ></textarea>
-                    <small style={{ color: '#28a745' }}>Trường này có thể được cập nhật</small>
-              </div>
+                <div className="mb-3">
+                  <label htmlFor="doseNumber" className="form-label">Mũi số <span className="text-danger">*</span></label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="doseNumber"
+                    name="doseNumber"
+                    value={formData.doseNumber}
+                    onChange={handleInputChange}
+                    required
+                    min="1"
+                  />
                 </div>
-                <div className="vax-results-form-actions">
-                  <button type="submit" className="vax-results-btn" disabled={loading}>
-                  {loading ? "Đang cập nhật..." : "Cập nhật"}
+
+                <div className="row">
+                  <div className="col-md-6 mb-3">
+                    <label htmlFor="injectionDate" className="form-label">Ngày tiêm</label>
+                    <input
+                      type="date"
+                      className="form-control"
+                      id="injectionDate"
+                      name="injectionDate"
+                      value={formData.injectionDate ? new Date(formData.injectionDate).toISOString().split('T')[0] : ""}
+                      onChange={handleInputChange}
+                      disabled={true}
+                    />
+                  </div>
+                  <div className="col-md-6 mb-3">
+                    <label htmlFor="injectionTime" className="form-label">Giờ tiêm</label>
+                    <input
+                      type="time"
+                      className="form-control"
+                      id="injectionTime"
+                      name="injectionTime"
+                      value={formData.injectionTime || ""}
+                      onChange={handleInputChange}
+                      disabled={true}
+                    />
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label htmlFor="note" className="form-label">Ghi chú</label>
+                  <textarea
+                    className="form-control"
+                    id="note"
+                    name="note"
+                    value={formData.note}
+                    onChange={handleInputChange}
+                    rows={3}
+                  ></textarea>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="submit" className="btn btn-primary" disabled={loading}>
+                  {loading ? "Đang cập nhật..." : "Lưu thay đổi"}
                 </button>
-                <button
-                  type="button"
-                    className="vax-results-btn cancel-btn"
-                  onClick={() => setShowEditModal(false)}
-                  disabled={loading}
-                >
+                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>
                   Hủy
                 </button>
               </div>
             </form>
-            </div>
           </div>
         </div>
       )}
