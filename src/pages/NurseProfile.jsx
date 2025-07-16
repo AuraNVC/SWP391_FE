@@ -103,7 +103,7 @@ const NurseProfile = () => {
           <h5 className="card-title">Thông tin bổ sung</h5>
           <p className="card-text">
             Tài khoản y tá có quyền truy cập vào các chức năng quản lý sự kiện y tế, kết quả khám sức khỏe, 
-            kết quả tiêm chủng, lịch tư vấn và Quản lý thuốc từ phụ huynh.
+            kết quả tiêm chủng, lịch tư vấn và quản lý thuốc từ phụ huynh.
           </p>
         </div>
       </div>

@@ -46,6 +46,9 @@ import VaxResults from './pages/VaxResults'
 import ConsultSchedules from './pages/ConsultSchedules'
 import Medications from './pages/Medications'
 import NurseProfile from './pages/NurseProfile'
+import MedicalInventoryDashboard from './pages/MedicalInventoryDashboard';
+import MedicalInventoryCreate from './pages/MedicalInventoryCreate';
+import ManagerHealthCheckStudents from './pages/ManagerHealthCheckStudents';
 
 function AdminDashboard() {
   return <Dashborad/>
@@ -183,6 +186,9 @@ function AppContent() {
           <Route path="/manager/health-check-schedule/create" element={<HealthCheckScheduleCreate />} />
           <Route path="/manager/vaccination-schedule" element={<VaccinationScheduleDashboard />} />
           <Route path="/manager/vaccination-schedule/create" element={<VaccinationScheduleCreate />} />
+          <Route path="/manager/medical-inventory" element={<MedicalInventoryDashboard />} />
+          <Route path="/manager/medical-inventory/add" element={<MedicalInventoryCreate />} />
+          <Route path="/manager/students-list-schedule" element={<ManagerHealthCheckStudents />} />
         </Route>
         <Route element={
           <ProtectedRoute roles={["student"]}>

@@ -372,7 +372,7 @@ export default function ParentNotifications() {
                   className={`btn ${confirmAction?.isAccept ? 'btn-success' : 'btn-danger'}`}
                   onClick={handleConfirmAction}
                 >
-                  {confirmAction?.actionText}
+                  {confirmAction?.isAccept ? 'Đồng ý' : 'Từ chối'}
                 </button>
               </div>
             </div>

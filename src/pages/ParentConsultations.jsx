@@ -221,18 +221,16 @@ export default function ParentConsultations() {
 
                     let isTooLateToChange = false;
                     if (form.consultationSchedule) {
-                      const scheduleDate = form.consultationSchedule.consultDate.substring(0, 10); // YYYY-MM-DD
-                      
-                      const today = new Date();
-                      const year = today.getFullYear();
-                      const month = (today.getMonth() + 1).toString().padStart(2, '0');
-                      const day = today.getDate().toString().padStart(2, '0');
-                      const todayString = `${year}-${month}-${day}`;
-                      
-                      if (scheduleDate <= todayString) {
+                      const consultDateTime = new Date(form.consultationSchedule.consultDate);
+                      const now = new Date();
+                      // subtract 24 hours (in ms)
+                      const deadline = new Date(consultDateTime.getTime() - 24 * 60 * 60 * 1000);
+                      if (now >= deadline && form.status === 'Pending') {
                         isTooLateToChange = true;
                       }
                     }
+
+                    const hasChangedStatus = form.status !== 'Pending';
 
                     return (
                       <div key={form.consultationFormId} className="list-group-item list-group-item-action p-4 mb-3 shadow-sm rounded">
@@ -270,21 +268,21 @@ export default function ParentConsultations() {
                               <button
                                   className={`btn btn-sm ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
                                   onClick={() => handleStatusChange(form.consultationFormId, true, form.status)}
-                                  disabled={isUpdating || form.status !== 'Pending'}
+                                  disabled={isUpdating || isTooLateToChange || hasChangedStatus}
                               >
                                   {isUpdating ? 'Đang xử lý...' : 'Chấp nhận'}
                               </button>
                               <button
                                   className={`btn btn-sm ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
                                   onClick={() => handleStatusChange(form.consultationFormId, false, form.status)}
-                                  disabled={isUpdating || form.status !== 'Pending'}
+                                  disabled={isUpdating || isTooLateToChange || hasChangedStatus}
                               >
                                   {isUpdating ? 'Đang xử lý...' : 'Từ chối'}
                               </button>
                           </div>
                           {isTooLateToChange && (
                             <p className="text-muted fst-italic mb-0">
-                              <small>Đã hết hạn thay đổi.</small>
+                              <small>Đã quá hạn thay đổi.</small>
                             </p>
                           )}
                         </div>

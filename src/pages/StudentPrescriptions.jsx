@@ -189,6 +189,18 @@ export default function StudentPrescriptions() {
                         <div className="row align-items-center">
                           <div className="col-md-8">
                             <p className="mb-2"><strong>Ngày tạo:</strong> {p.submittedDate ? new Date(p.submittedDate).toLocaleDateString('vi-VN') : 'N/A'}</p>
+                            <p className="mb-2">
+                              <strong>Trạng thái:</strong>{' '}
+                              <span className={`badge ${
+                                p.status === 'Pending' ? 'bg-warning' :
+                                p.status === 'Accepted' ? 'bg-success' :
+                                'bg-danger'
+                              }`}>
+                                {p.status === 'Pending' ? 'Chờ xác nhận' :
+                                 p.status === 'Accepted' ? 'Đã chấp nhận' :
+                                 'Đã từ chối'}
+                              </span>
+                            </p>
                             <p className="mb-2"><strong>Lịch uống:</strong> {p.schedule || 'Chưa có'}</p>
                             <p className="mb-3"><strong>Ghi chú:</strong> {p.parentNote || 'Không có'}</p>
                             <button
