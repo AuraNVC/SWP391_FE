@@ -3,6 +3,7 @@ import { FaPlus, FaSearch, FaEye, FaEdit, FaTrash, FaFilter, FaSortAmountDown, F
 import { API_SERVICE } from "../services/api";
 import TableWithPaging from "../components/TableWithPaging";
 import { useNotification } from "../contexts/NotificationContext";
+import { formatDate } from "../services/utils";
 import "../styles/Dashboard.css";
 import "../styles/VaxResults.css";
 
@@ -284,7 +285,7 @@ const VaxResults = () => {
       key: "injectionDate",
       render: (date) => (
         <span style={{ cursor: 'pointer' }} onClick={() => handleSort("injectionDate")}>
-          {date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}
+          {date ? formatDate(date) : "N/A"}
           {sortConfig.key === "injectionDate" && (
             <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
               {sortConfig.direction === 'asc' ? '▲' : '▼'}
@@ -889,11 +890,11 @@ const VaxResults = () => {
       
       const response = await API_SERVICE.healthProfileAPI.getByStudent(studentId);
       console.log("Health profile response:", response);
-      
+        
       if (!response || !response.healthProfileId) {
         console.error("Health profile not found for student ID:", studentId);
         return null;
-      }
+            }
       
       return response;
     } catch (error) {
@@ -1248,7 +1249,7 @@ const VaxResults = () => {
     // Lấy tên học sinh và y tá từ ID
     let studentName = "";
     let nurseName = "";
-    
+        
     // Tìm thông tin học sinh
     if (result.studentId) {
       const student = students.find(s => s.studentId === result.studentId);
@@ -1280,7 +1281,7 @@ const VaxResults = () => {
           const dateObj = new Date(schedule.scheduleDate);
           if (!isNaN(dateObj.getTime())) {
             injectionDate = dateObj.toISOString().split('T')[0];
-            
+        
             // Định dạng thời gian thành HH:MM
             const hours = dateObj.getHours().toString().padStart(2, '0');
             const minutes = dateObj.getMinutes().toString().padStart(2, '0');
@@ -2070,7 +2071,7 @@ const VaxResults = () => {
                           >
                             {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || `Học sinh ID: ${student.studentId}`}
                           </div>
-                        ))}
+                      ))}
                       </div>
                     )}
                     {showStudentDropdown && filteredStudents.length === 0 && (
@@ -2129,7 +2130,7 @@ const VaxResults = () => {
                           >
                             {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
                           </div>
-                        ))}
+                      ))}
                       </div>
                     )}
                     {showNurseDropdown && filteredNurses.length === 0 && (
@@ -2286,7 +2287,7 @@ const VaxResults = () => {
                 </div>
                 <div className="info-item">
                     <label>Ngày tiêm:</label>
-                    <span>{selectedResult.injectionDate ? new Date(selectedResult.injectionDate).toLocaleDateString('vi-VN') : "Không có"}</span>
+                    <span>{selectedResult.injectionDate ? formatDate(selectedResult.injectionDate) : "Không có"}</span>
                 </div>
                 <div className="info-item">
                     <label>Giờ tiêm:</label>
@@ -2406,7 +2407,7 @@ const VaxResults = () => {
                           >
                             {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
                           </div>
-                        ))}
+                      ))}
                       </div>
                     )}
                     {showNurseDropdown && filteredNurses.length === 0 && (
