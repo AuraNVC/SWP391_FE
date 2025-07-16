@@ -156,11 +156,9 @@ const HealthResults = () => {
   const [filters, setFilters] = useState({
     date: "",
     studentName: "",
-    nurseName: "",
     height: "",
     weight: "",
-    vision: "",
-    result: ""
+    schedule: ""
   });
   
   // State mới cho tính năng sắp xếp
@@ -465,6 +463,7 @@ const HealthResults = () => {
     }
   };
 
+  // Hàm tìm kiếm cập nhật để tập trung vào lịch khám
   const fetchHealthCheckResults = async (keyword = "") => {
     setLoading(true);
     try {
@@ -496,10 +495,21 @@ const HealthResults = () => {
           setColumns(prevColumns => prevColumns.filter(col => col.dataIndex !== 'status'));
         
         if (keyword && keyword.trim() !== "") {
-          // Lọc kết quả dựa trên từ khóa tìm kiếm
+          // Lọc kết quả dựa trên từ khóa tìm kiếm, ưu tiên tìm kiếm theo lịch khám
           const filteredResults = processedResults.filter(result => {
             const searchStr = keyword.toLowerCase();
             
+            // Tìm kiếm theo tên lịch khám (ưu tiên)
+            if (result.scheduleName && result.scheduleName.toLowerCase().includes(searchStr)) {
+              return true;
+            }
+            
+            // Tìm kiếm theo ID lịch khám
+            if (result.healthCheckScheduleId && String(result.healthCheckScheduleId).includes(searchStr)) {
+              return true;
+            }
+            
+            // Các điều kiện tìm kiếm khác giữ nguyên
             // Tìm kiếm theo ID
             if (result.healthCheckupRecordId && String(result.healthCheckupRecordId).includes(searchStr)) {
               return true;
@@ -642,31 +652,61 @@ const HealthResults = () => {
     }
   };
 
+  // Cập nhật hàm handleSearch để tìm kiếm ưu tiên theo ID
   const handleSearch = async () => {
     setSearchLoading(true);
     try {
-      console.log("Tìm kiếm với từ khóa:", searchKeyword);
+      console.log("Tìm kiếm kết quả khám với từ khóa:", searchKeyword);
+      
+      // Nếu từ khóa trống, hiển thị tất cả kết quả
+      if (!searchKeyword.trim()) {
+        await fetchHealthCheckResults("");
+        setSearchLoading(false);
+        return;
+      }
       
       // Kiểm tra xem searchKeyword có phải là ID không
       const isNumeric = /^\d+$/.test(searchKeyword);
       
       if (isNumeric) {
-        // Nếu là ID, tìm kiếm trong danh sách results hiện có
+        // Nếu là ID, ưu tiên tìm kiếm theo ID kết quả khám
         const foundResults = results.filter(result => 
-          result.healthCheckupRecordId?.toString() === searchKeyword ||
-          result.studentId?.toString() === searchKeyword ||
-          result.nurseId?.toString() === searchKeyword
+          result.healthCheckupRecordId?.toString() === searchKeyword
         );
         
         if (foundResults.length > 0) {
           // Nếu tìm thấy, cập nhật filteredResults
           setFilteredResults(foundResults);
+          setNotif({
+            message: `Tìm thấy kết quả khám có ID: ${searchKeyword}`,
+            type: "success",
+            autoDismiss: true,
+            duration: 3000
+          });
+          setSearchLoading(false);
+          return;
+        }
+        
+        // Nếu không tìm thấy ID kết quả khám, thử tìm theo ID học sinh hoặc ID lịch khám
+        const otherResults = results.filter(result => 
+          result.healthCheckScheduleId?.toString() === searchKeyword ||
+          result.studentId?.toString() === searchKeyword
+        );
+        
+        if (otherResults.length > 0) {
+          setFilteredResults(otherResults);
+          setNotif({
+            message: `Tìm thấy ${otherResults.length} kết quả khám liên quan đến ID: ${searchKeyword}`,
+            type: "success",
+            autoDismiss: true,
+            duration: 3000
+          });
           setSearchLoading(false);
           return;
         }
       }
       
-      // Nếu không phải ID hoặc không tìm thấy, gọi API
+      // Nếu không phải ID hoặc không tìm thấy, gọi API với từ khóa
       setPage(1);
       await fetchHealthCheckResults(searchKeyword);
     } catch (error) {
@@ -1635,88 +1675,94 @@ const HealthResults = () => {
     applyFiltersAndSort(results, filters, sortConfig);
   }, [results, filters, sortConfig]);
 
-  // Hàm mới để áp dụng bộ lọc và sắp xếp
+  // Cập nhật hàm applyFiltersAndSort để xử lý tìm kiếm lịch khám bằng văn bản
   const applyFiltersAndSort = (resultsList = results, currentFilters = filters, currentSortConfig = sortConfig) => {
+    if (!resultsList || resultsList.length === 0) {
+      setFilteredResults([]);
+      return;
+    }
+
+    // Clone mảng kết quả để không thay đổi mảng gốc
     let filteredData = [...resultsList];
-    
-    // Lọc theo ngày
-    if (currentFilters.date) {
-      const selectedDate = new Date(currentFilters.date);
-      selectedDate.setHours(0, 0, 0, 0); // Đặt thời gian là đầu ngày
+
+    // Lọc kết quả dựa trên bộ lọc
+    if (currentFilters) {
+      // Lọc theo lịch khám - tìm kiếm văn bản thay vì chọn từ danh sách
+      if (currentFilters.schedule && currentFilters.schedule.trim() !== "") {
+        const scheduleSearch = currentFilters.schedule.toLowerCase().trim();
+        
+        filteredData = filteredData.filter(result => {
+          // Tìm kiếm theo ID lịch khám
+          if (result.healthCheckScheduleId && 
+              String(result.healthCheckScheduleId).includes(scheduleSearch)) {
+            return true;
+          }
+          
+          // Tìm kiếm theo tên lịch khám
+          if (result.scheduleName && 
+              result.scheduleName.toLowerCase().includes(scheduleSearch)) {
+            return true;
+          }
+          
+          // Tìm trong danh sách lịch khám đã biết
+          const matchedSchedule = schedules.find(s => 
+            (String(s.healthCheckScheduleId).includes(scheduleSearch)) || 
+            (s.name && s.name.toLowerCase().includes(scheduleSearch))
+          );
+          
+          if (matchedSchedule && 
+              String(result.healthCheckScheduleId) === String(matchedSchedule.healthCheckScheduleId)) {
+            return true;
+          }
+          
+          return false;
+        });
+      }
       
-      // Tạo ngày kết thúc (cuối ngày)
-      const endDate = new Date(selectedDate);
-      endDate.setHours(23, 59, 59, 999);
+      // Lọc theo ngày
+      if (currentFilters.date && currentFilters.date.trim() !== "") {
+        const filterDate = new Date(currentFilters.date);
+        filterDate.setHours(0, 0, 0, 0);
+        
+        filteredData = filteredData.filter(result => {
+          if (!result.date && !result.eventDate) return false;
+          
+          const resultDate = new Date(result.date || result.eventDate);
+          resultDate.setHours(0, 0, 0, 0);
+          
+          return resultDate.getTime() === filterDate.getTime();
+        });
+      }
       
-      filteredData = filteredData.filter(result => {
-        if (!result.checkupDate) return false;
-        const checkupDate = new Date(result.checkupDate);
-        return checkupDate >= selectedDate && checkupDate <= endDate;
-      });
+      // Lọc theo tên học sinh
+      if (currentFilters.studentName && currentFilters.studentName.trim() !== "") {
+        const searchStudentName = currentFilters.studentName.toLowerCase();
+        filteredData = filteredData.filter(result => {
+          return (result.studentName && result.studentName.toLowerCase().includes(searchStudentName)) || 
+                 (result.studentId && String(result.studentId).includes(searchStudentName));
+        });
+      }
+      
+      // Lọc theo chiều cao
+      if (currentFilters.height && currentFilters.height.trim() !== "") {
+        const searchHeight = currentFilters.height.toLowerCase();
+        filteredData = filteredData.filter(result => {
+          if (!result.height) return false;
+          return String(result.height).includes(searchHeight);
+        });
+      }
+      
+      // Lọc theo cân nặng
+      if (currentFilters.weight && currentFilters.weight.trim() !== "") {
+        const searchWeight = currentFilters.weight.toLowerCase();
+        filteredData = filteredData.filter(result => {
+          if (!result.weight) return false;
+          return String(result.weight).includes(searchWeight);
+        });
+      }
     }
-    
-    // Lọc theo tên hoặc ID học sinh
-    if (currentFilters.studentName) {
-      filteredData = filteredData.filter(result => {
-        // Tìm theo tên học sinh
-        const studentName = result.studentName || getStudentName(result.studentId) || "";
-        
-        // Tìm theo ID học sinh
-        const studentId = result.studentId ? result.studentId.toString() : "";
-        
-        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
-        return studentName.toLowerCase().includes(currentFilters.studentName.toLowerCase()) || 
-               studentId.includes(currentFilters.studentName);
-      });
-    }
-    
-    // Lọc theo tên hoặc ID y tá
-    if (currentFilters.nurseName) {
-      filteredData = filteredData.filter(result => {
-        // Tìm theo tên y tá
-        const nurseName = result.nurseName || getNurseName(result.nurseId) || "";
-        
-        // Tìm theo ID y tá
-        const nurseId = result.nurseId ? result.nurseId.toString() : "";
-        
-        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
-        return nurseName.toLowerCase().includes(currentFilters.nurseName.toLowerCase()) || 
-               nurseId.includes(currentFilters.nurseName);
-      });
-    }
-    
-    // Lọc theo chiều cao
-    if (currentFilters.height) {
-      filteredData = filteredData.filter(result => 
-        result.height && result.height.toString().includes(currentFilters.height)
-      );
-    }
-    
-    // Lọc theo cân nặng
-    if (currentFilters.weight) {
-      filteredData = filteredData.filter(result => 
-        result.weight && result.weight.toString().includes(currentFilters.weight)
-      );
-    }
-    
-    // Lọc theo thị lực
-    if (currentFilters.vision) {
-      filteredData = filteredData.filter(result => {
-        const leftVision = result.leftVision || "";
-        const rightVision = result.rightVision || "";
-        return leftVision.includes(currentFilters.vision) || 
-               rightVision.includes(currentFilters.vision);
-      });
-    }
-    
-    // Lọc theo kết quả
-    if (currentFilters.result) {
-      filteredData = filteredData.filter(result => 
-        result.result && result.result.toLowerCase().includes(currentFilters.result.toLowerCase())
-      );
-    }
-    
-    // Áp dụng sắp xếp
+
+    // Áp dụng sắp xếp - giữ nguyên logic hiện có
     if (currentSortConfig.key) {
       filteredData.sort((a, b) => {
         if (currentSortConfig.key === "healthCheckupRecordId") {
@@ -1786,11 +1832,9 @@ const HealthResults = () => {
     const resetFilterValues = {
       date: "",
       studentName: "",
-      nurseName: "",
       height: "",
       weight: "",
-      vision: "",
-      result: ""
+      schedule: ""
     };
     setFilters(resetFilterValues);
     // Áp dụng ngay lập tức các bộ lọc đã reset
@@ -1806,21 +1850,22 @@ const HealthResults = () => {
         </button>
           <div className="search-container">
             <input
-            className="admin-search"
+              className="admin-search"
               type="text"
-            placeholder="Tìm kiếm..."
+              placeholder="Tìm kiếm..."
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               onKeyDown={handleSearchKeyDown}
+              title="Nhập ID kết quả khám để tìm kiếm"
             />
-          <button
-            className="admin-btn"
-            style={{ marginLeft: '8px', padding: '8px' }}
-            onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
-            title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
-          >
-            <FaFilter />
-          </button>
+            <button
+              className="admin-btn"
+              style={{ marginLeft: '8px', padding: '8px' }}
+              onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+              title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
+            >
+              <FaFilter />
+            </button>
           </div>
         </div>
 
@@ -1845,6 +1890,21 @@ const HealthResults = () => {
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            {/* Lọc theo lịch khám */}
+            <div>
+              <label htmlFor="schedule" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Lịch khám</label>
+              <input
+                type="text"
+                id="schedule"
+                name="schedule"
+                value={filters.schedule || ''}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên hoặc ID lịch khám..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
             {/* Lọc theo ngày */}
             <div>
               <label htmlFor="date" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Ngày khám</label>
@@ -1870,21 +1930,6 @@ const HealthResults = () => {
                 onChange={handleFilterChange}
                 className="form-control"
                 placeholder="Nhập tên học sinh hoặc ID"
-                style={{ width: '100%', padding: '8px' }}
-              />
-            </div>
-            
-            {/* Lọc theo y tá */}
-            <div>
-              <label htmlFor="nurseName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Y tá</label>
-              <input
-                type="text"
-                id="nurseName"
-                name="nurseName"
-                value={filters.nurseName}
-                onChange={handleFilterChange}
-                className="form-control"
-                placeholder="Nhập tên y tá hoặc ID"
                 style={{ width: '100%', padding: '8px' }}
               />
             </div>
@@ -1915,36 +1960,6 @@ const HealthResults = () => {
                 onChange={handleFilterChange}
                 className="form-control"
                 placeholder="Nhập cân nặng..."
-                style={{ width: '100%', padding: '8px' }}
-              />
-            </div>
-            
-            {/* Lọc theo thị lực */}
-            <div>
-              <label htmlFor="vision" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Thị lực</label>
-              <input
-                type="text"
-                id="vision"
-                name="vision"
-                value={filters.vision}
-                onChange={handleFilterChange}
-                className="form-control"
-                placeholder="Nhập thị lực..."
-                style={{ width: '100%', padding: '8px' }}
-              />
-            </div>
-            
-            {/* Lọc theo kết quả */}
-            <div>
-              <label htmlFor="result" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Kết quả</label>
-              <input
-                type="text"
-                id="result"
-                name="result"
-                value={filters.result}
-                onChange={handleFilterChange}
-                className="form-control"
-                placeholder="Nhập kết quả khám..."
                 style={{ width: '100%', padding: '8px' }}
               />
             </div>
