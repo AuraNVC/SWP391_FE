@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
-import { FaEye, FaEdit, FaPlus, FaSearch, FaSync, FaTrash } from "react-icons/fa";
+import { FaEye, FaEdit, FaPlus, FaSearch, FaSync, FaTrash, FaFilter, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
 import "../styles/Dashboard.css";
 
 // Component riêng để hiển thị tên học sinh
@@ -101,6 +101,7 @@ const StudentNameCell = ({ studentId, initialName, healthProfileId, showIdInTabl
 const HealthResults = () => {
   // State variables for data
   const [results, setResults] = useState([]);
+  const [filteredResults, setFilteredResults] = useState([]);
   const [students, setStudents] = useState([]);
   const [nurses, setNurses] = useState([]);
   const [schedules, setSchedules] = useState([]);
@@ -131,8 +132,10 @@ const HealthResults = () => {
     healthCheckScheduleId: "",
     healthProfileId: "",
     studentId: "",
+    studentSearchTerm: "", // Thêm state mới để lưu từ khóa tìm kiếm học sinh
     nurseId: localStorage.getItem("userId") || "",
     nurseName: "",
+    nurseSearchTerm: "", // Thêm state mới để lưu từ khóa tìm kiếm y tá
     height: "",
     weight: "",
     leftVision: "",
@@ -141,28 +144,137 @@ const HealthResults = () => {
     status: "1", // Default status: Completed
     note: ""
   });
+  
+  // State mới để lưu danh sách học sinh và y tá đã lọc
+  const [filteredStudents, setFilteredStudents] = useState([]);
+  const [filteredNurses, setFilteredNurses] = useState([]);
+  const [showStudentDropdown, setShowStudentDropdown] = useState(false);
+  const [showNurseDropdown, setShowNurseDropdown] = useState(false);
+  
+  // State mới cho tính năng lọc nâng cao
+  const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
+  const [filters, setFilters] = useState({
+    date: "",
+    studentName: "",
+    nurseName: "",
+    height: "",
+    weight: "",
+    vision: "",
+    result: ""
+  });
+  
+  // State mới cho tính năng sắp xếp
+  const [sortConfig, setSortConfig] = useState({
+    key: "healthCheckupRecordId",
+    direction: "desc"
+  });
+  
   const [statusCounts, setStatusCounts] = useState({});
 
   const { setNotif } = useNotification();
 
   const [columns, setColumns] = useState([
-    { title: "ID", dataIndex: "healthCheckupRecordId", key: "recordId" },
-    { title: "Học sinh", dataIndex: "studentName", key: "studentName", render: (name, record) => {
+    { 
+      title: "ID", 
+      dataIndex: "healthCheckupRecordId", 
+      key: "recordId",
+      render: (id) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("healthCheckupRecordId")}>
+          {id}
+          {sortConfig.key === "healthCheckupRecordId" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
+    { 
+      title: "Học sinh", 
+      dataIndex: "studentName", 
+      key: "studentName", 
+      render: (name, record) => {
       // Luôn sử dụng StudentNameCell để hiển thị tên học sinh
-      return <StudentNameCell 
+        return (
+          <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
+            <StudentNameCell 
                studentId={record.studentId} 
                initialName={record.studentName} 
                healthProfileId={record.healthProfileId} 
-             />;
-    }},
-    { title: "Chiều cao", dataIndex: "height", key: "heightValue", render: (height) => height ? `${height} cm` : "N/A" },
-    { title: "Cân nặng", dataIndex: "weight", key: "weightValue", render: (weight) => weight ? `${weight} kg` : "N/A" },
-    { title: "Thị lực", dataIndex: "vision", key: "visionValue", render: (_, record) => {
+            />
+            {sortConfig.key === "studentName" && (
+              <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+                {sortConfig.direction === 'asc' ? '▲' : '▼'}
+              </span>
+            )}
+          </span>
+        );
+      }
+    },
+    { 
+      title: "Chiều cao", 
+      dataIndex: "height", 
+      key: "heightValue", 
+      render: (height) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("height")}>
+          {height ? `${height} cm` : "N/A"}
+          {sortConfig.key === "height" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
+    { 
+      title: "Cân nặng", 
+      dataIndex: "weight", 
+      key: "weightValue", 
+      render: (weight) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("weight")}>
+          {weight ? `${weight} kg` : "N/A"}
+          {sortConfig.key === "weight" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    },
+    { 
+      title: "Thị lực", 
+      dataIndex: "vision", 
+      key: "visionValue", 
+      render: (_, record) => {
       const leftVision = record.leftVision || "N/A";
       const rightVision = record.rightVision || "N/A";
-      return `Trái: ${leftVision} - Phải: ${rightVision}`;
-    }},
-    { title: "Kết quả", dataIndex: "result", key: "resultValue" }
+        return (
+          <span style={{ cursor: 'pointer' }} onClick={() => handleSort("leftVision")}>
+            {`Trái: ${leftVision} - Phải: ${rightVision}`}
+            {sortConfig.key === "leftVision" && (
+              <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+                {sortConfig.direction === 'asc' ? '▲' : '▼'}
+              </span>
+            )}
+          </span>
+        );
+      }
+    },
+    { 
+      title: "Kết quả", 
+      dataIndex: "result", 
+      key: "resultValue",
+      render: (result) => (
+        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("result")}>
+          {result}
+          {sortConfig.key === "result" && (
+            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
+              {sortConfig.direction === 'asc' ? '▲' : '▼'}
+            </span>
+          )}
+        </span>
+      )
+    }
   ]);
 
   const iconStyle = {
@@ -534,17 +646,34 @@ const HealthResults = () => {
     setSearchLoading(true);
     try {
       console.log("Tìm kiếm với từ khóa:", searchKeyword);
-      setPage(1);
       
-      // Gọi hàm fetchHealthCheckResults với từ khóa tìm kiếm
+      // Kiểm tra xem searchKeyword có phải là ID không
+      const isNumeric = /^\d+$/.test(searchKeyword);
+      
+      if (isNumeric) {
+        // Nếu là ID, tìm kiếm trong danh sách results hiện có
+        const foundResults = results.filter(result => 
+          result.healthCheckupRecordId?.toString() === searchKeyword ||
+          result.studentId?.toString() === searchKeyword ||
+          result.nurseId?.toString() === searchKeyword
+        );
+        
+        if (foundResults.length > 0) {
+          // Nếu tìm thấy, cập nhật filteredResults
+          setFilteredResults(foundResults);
+          setSearchLoading(false);
+          return;
+        }
+      }
+      
+      // Nếu không phải ID hoặc không tìm thấy, gọi API
+      setPage(1);
       await fetchHealthCheckResults(searchKeyword);
     } catch (error) {
       console.error("Error during search:", error);
       setNotif({
         message: "Lỗi khi tìm kiếm: " + (error.message || "Không xác định"),
-        type: "error",
-        autoDismiss: true,
-        duration: 5000
+        type: "error"
       });
     } finally {
       setSearchLoading(false);
@@ -797,6 +926,26 @@ const HealthResults = () => {
       ...formData,
       [name]: value
     });
+
+    // Xử lý tìm kiếm học sinh khi người dùng nhập vào ô tìm kiếm học sinh
+    if (name === "studentSearchTerm") {
+      const filtered = students.filter(student => 
+        student.fullName?.toLowerCase().includes(value.toLowerCase()) ||
+        `${student.studentId}`.includes(value)
+      );
+      setFilteredStudents(filtered);
+      setShowStudentDropdown(true);
+    }
+    
+    // Xử lý tìm kiếm y tá khi người dùng nhập vào ô tìm kiếm y tá
+    if (name === "nurseSearchTerm") {
+      const filtered = nurses.filter(nurse => 
+        nurse.fullName?.toLowerCase().includes(value.toLowerCase()) ||
+        `${nurse.nurseId}`.includes(value)
+      );
+      setFilteredNurses(filtered);
+      setShowNurseDropdown(true);
+    }
   };
 
   const validateForm = () => {
@@ -841,92 +990,70 @@ const HealthResults = () => {
     setShowConfirmAdd(false);
     setLoading(true);
     try {
-      // Đảm bảo dữ liệu đầy đủ và đúng định dạng
-      const dataToSubmit = {
-        // Đảm bảo các trường bắt buộc
-        healthCheckScheduleId: parseInt(formData.healthCheckScheduleId) || null,
-        healthProfileId: parseInt(formData.studentId) || null, // Sử dụng studentId làm healthProfileId
-        nurseId: parseInt(formData.nurseId) || parseInt(localStorage.getItem("userId")) || null,
-        
-        // Chuyển đổi các trường số thành số
-        height: formData.height ? parseFloat(formData.height) : null,
-        weight: formData.weight ? parseFloat(formData.weight) : null,
-        
-        // Đảm bảo các trường thị lực (bắt buộc)
+      // Tìm studentId từ tên học sinh đã nhập
+      let studentId = formData.studentId;
+      if (!studentId && formData.studentSearchTerm) {
+        const foundStudent = students.find(s => 
+          s.fullName === formData.studentSearchTerm || 
+          formData.studentSearchTerm.includes(`ID: ${s.studentId}`)
+        );
+        if (foundStudent) {
+          studentId = foundStudent.studentId;
+        } else {
+          throw new Error("Không tìm thấy học sinh. Vui lòng chọn học sinh từ danh sách.");
+        }
+      }
+      
+      // Tìm nurseId từ tên y tá đã nhập
+      let nurseId = formData.nurseId;
+      if (!nurseId && formData.nurseSearchTerm) {
+        const foundNurse = nurses.find(n => 
+          n.fullName === formData.nurseSearchTerm || 
+          formData.nurseSearchTerm.includes(`ID: ${n.nurseId}`)
+        );
+        if (foundNurse) {
+          nurseId = foundNurse.nurseId;
+        } else {
+          throw new Error("Không tìm thấy y tá. Vui lòng chọn y tá từ danh sách.");
+        }
+      }
+      
+      // Chuẩn bị dữ liệu để gửi
+      const resultData = {
+        healthCheckScheduleId: parseInt(formData.healthCheckScheduleId),
+        healthProfileId: parseInt(studentId), // Sử dụng studentId làm healthProfileId
+        nurseId: parseInt(nurseId),
+        height: parseFloat(formData.height),
+        weight: parseFloat(formData.weight),
         leftVision: formData.leftVision,
         rightVision: formData.rightVision,
-        
-        // Đảm bảo các trường khác
-        result: formData.result || "",
-        status: parseInt(formData.status) || 1, // Default to completed (1)
-        note: formData.note || ""
+        result: formData.result,
+        status: parseInt(formData.status),
+        note: formData.note
       };
       
-      console.log("Thêm kết quả khám với dữ liệu:", dataToSubmit);
+      // Gọi API để thêm kết quả khám
+      await API_SERVICE.healthCheckResultAPI.create(resultData);
       
-      try {
-        // Thêm kết quả khám
-        const response = await API_SERVICE.healthCheckResultAPI.create(dataToSubmit);
-        console.log("API response for adding health check result:", response);
-        
-        if (response) {
+      // Nếu API thành công, cập nhật UI
           setNotif({
-            message: "Thêm kết quả khám sức khỏe thành công",
-            type: "success",
-            autoDismiss: true,
-            duration: 5000
-          });
-          
-          // Reset form và đóng modal
-          setShowAddModal(false);
-          setFormData({
-            healthCheckScheduleId: "",
-            healthProfileId: "",
-            studentId: "",
-            nurseId: localStorage.getItem("userId") || "",
-            nurseName: "",
-            height: "",
-            weight: "",
-            leftVision: "",
-            rightVision: "",
-            result: "",
-            status: "1", // Default status: Completed
-            note: ""
-          });
-          
-          // Refresh data
-          await fetchHealthCheckResults();
-        } else {
-          throw new Error("API did not return a valid response");
-        }
-      } catch (apiError) {
-        console.error("API error when adding health check result:", apiError);
-        
-        // Try alternative method if API returns specific errors
-        if (apiError.message && (apiError.message.includes("400") || apiError.message.includes("body stream already read"))) {
-          console.log("Trying alternative add method...");
-          
-          // Try with different field names if needed
-          const alternativeData = { 
-            ...dataToSubmit,
-            scheduleId: dataToSubmit.healthCheckScheduleId,
-            profileId: dataToSubmit.healthProfileId
-          };
-          
-          await API_SERVICE.healthCheckResultAPI.create(alternativeData);
-      setNotif({
-        message: "Thêm kết quả khám sức khỏe thành công",
-            type: "success",
-            autoDismiss: true,
-            duration: 5000
+        message: "Thêm kết quả khám sức khỏe thành công!",
+        type: "success"
       });
-      setShowAddModal(false);
+      
+      // Đóng modal và tải lại dữ liệu
+          setShowAddModal(false);
+      fetchHealthCheckResults();
+      
+      // Reset form data
       setFormData({
         healthCheckScheduleId: "",
         healthProfileId: "",
         studentId: "",
+        studentSearchTerm: "",
         nurseId: localStorage.getItem("userId") || "",
         nurseName: "",
+        nurseSearchTerm: "",
         height: "",
         weight: "",
         leftVision: "",
@@ -935,18 +1062,11 @@ const HealthResults = () => {
         status: "1",
         note: ""
       });
-          await fetchHealthCheckResults();
-        } else {
-          throw apiError; // Re-throw for the outer catch
-        }
-      }
     } catch (error) {
       console.error("Error adding health check result:", error);
       setNotif({
-        message: `Không thể thêm kết quả khám sức khỏe: ${error.message || "Lỗi không xác định"}`,
-        type: "error",
-        autoDismiss: true,
-        duration: 5000
+        message: error.message || "Không thể thêm kết quả khám sức khỏe. Vui lòng thử lại.",
+        type: "error"
       });
     } finally {
       setLoading(false);
@@ -974,77 +1094,66 @@ const HealthResults = () => {
     setShowConfirmUpdate(false);
     setLoading(true);
     try {
-      console.log("Cập nhật kết quả khám với ID:", selectedResult.healthCheckupRecordId);
-      
-      // Đảm bảo dữ liệu đầy đủ và đúng định dạng
-      const dataToSubmit = {
-        // Thêm ID của kết quả khám cần cập nhật
-        healthCheckupRecordId: selectedResult.healthCheckupRecordId,
-        
-        // Đảm bảo các trường bắt buộc
-        healthCheckScheduleId: parseInt(formData.healthCheckScheduleId) || null,
-        healthProfileId: parseInt(formData.studentId) || null, // Sử dụng studentId làm healthProfileId
-        nurseId: parseInt(formData.nurseId) || parseInt(localStorage.getItem("userId")) || null,
-        
-        // Chuyển đổi các trường số thành số
-        height: formData.height ? parseFloat(formData.height) : null,
-        weight: formData.weight ? parseFloat(formData.weight) : null,
-        
-        // Đảm bảo các trường thị lực (bắt buộc)
-        leftVision: formData.leftVision,
-        rightVision: formData.rightVision,
-        
-        // Đảm bảo các trường khác
-        result: formData.result || "",
-        status: parseInt(formData.status) || 1, // Default to completed (1)
-        note: formData.note || ""
-      };
-      
-      console.log("Dữ liệu cập nhật:", dataToSubmit);
-      
-      // Gọi API để cập nhật kết quả khám
-      try {
-        // API.healthCheckResultAPI.update chỉ nhận một tham số là data
-        await API_SERVICE.healthCheckResultAPI.update(dataToSubmit);
-      setNotif({
-        message: "Cập nhật kết quả khám sức khỏe thành công",
-          type: "success",
-          autoDismiss: true,
-          duration: 5000
-      });
-      setShowEditModal(false);
-        // Làm mới dữ liệu sau khi cập nhật thành công
-        fetchHealthCheckResults(searchKeyword);
-      } catch (apiError) {
-        console.error("API error when updating health check result:", apiError);
-        
-        // Thử cách khác nếu API gặp lỗi
-        if (apiError.message && (apiError.message.includes("400") || apiError.message.includes("body stream already read"))) {
-          console.log("Trying alternative update method...");
-          // Loại bỏ healthCheckupRecordId khỏi body nếu API báo lỗi 400
-          const alternativeData = { ...dataToSubmit };
-          delete alternativeData.healthCheckupRecordId;
-          
-          await API_SERVICE.healthCheckResultAPI.update(alternativeData);
-          setNotif({
-            message: "Cập nhật kết quả khám sức khỏe thành công",
-            type: "success",
-            autoDismiss: true,
-            duration: 5000
-          });
-          setShowEditModal(false);
-          fetchHealthCheckResults(searchKeyword);
+      // Tìm studentId từ tên học sinh đã nhập
+      let studentId = formData.studentId;
+      if (!studentId && formData.studentSearchTerm) {
+        const foundStudent = students.find(s => 
+          s.fullName === formData.studentSearchTerm || 
+          formData.studentSearchTerm.includes(`ID: ${s.studentId}`)
+        );
+        if (foundStudent) {
+          studentId = foundStudent.studentId;
         } else {
-          throw apiError; // Ném lỗi để xử lý ở catch bên ngoài
+          throw new Error("Không tìm thấy học sinh. Vui lòng chọn học sinh từ danh sách.");
         }
       }
+      
+      // Tìm nurseId từ tên y tá đã nhập
+      let nurseId = formData.nurseId;
+      if (!nurseId && formData.nurseSearchTerm) {
+        const foundNurse = nurses.find(n => 
+          n.fullName === formData.nurseSearchTerm || 
+          formData.nurseSearchTerm.includes(`ID: ${n.nurseId}`)
+        );
+        if (foundNurse) {
+          nurseId = foundNurse.nurseId;
+        } else {
+          throw new Error("Không tìm thấy y tá. Vui lòng chọn y tá từ danh sách.");
+        }
+      }
+      
+      // Chuẩn bị dữ liệu để gửi
+      const resultData = {
+        healthCheckupRecordId: formData.healthCheckupRecordId,
+        healthCheckScheduleId: parseInt(formData.healthCheckScheduleId),
+        healthProfileId: parseInt(studentId), // Sử dụng studentId làm healthProfileId
+        nurseId: parseInt(nurseId),
+        height: parseFloat(formData.height),
+        weight: parseFloat(formData.weight),
+        leftVision: formData.leftVision,
+        rightVision: formData.rightVision,
+        result: formData.result,
+        status: parseInt(formData.status),
+        note: formData.note
+      };
+      
+      // Gọi API để cập nhật kết quả khám
+      await API_SERVICE.healthCheckResultAPI.update(resultData);
+      
+      // Nếu API thành công, cập nhật UI
+          setNotif({
+        message: "Cập nhật kết quả khám sức khỏe thành công!",
+        type: "success"
+      });
+      
+      // Đóng modal và tải lại dữ liệu
+          setShowEditModal(false);
+          fetchHealthCheckResults(searchKeyword);
     } catch (error) {
       console.error("Error updating health check result:", error);
       setNotif({
-        message: "Không thể cập nhật kết quả khám sức khỏe",
-        type: "error",
-        autoDismiss: true,
-        duration: 5000
+        message: error.message || "Không thể cập nhật kết quả khám sức khỏe. Vui lòng thử lại.",
+        type: "error"
       });
     } finally {
       setLoading(false);
@@ -1184,7 +1293,7 @@ const HealthResults = () => {
       // Nếu record có chứa studentName và studentId, sử dụng trực tiếp
       if (record.studentName && record.studentId) {
         // Đảm bảo studentName luôn có ID
-        const studentNameWithId = record.studentName.includes("(ID:") 
+        const studentNameWithId = record.studentName.includes("ID:") 
           ? record.studentName 
           : `${record.studentName} (ID: ${record.studentId})`;
         
@@ -1293,193 +1402,64 @@ const HealthResults = () => {
   // Xử lý khi nhấn nút chỉnh sửa
   const handleEdit = async (record) => {
     try {
-      // Nếu record có chứa studentName và studentId, sử dụng trực tiếp
-      if (record.studentName && record.studentId) {
-        // Đảm bảo studentName luôn có ID
-        const studentNameWithId = record.studentName.includes("(ID:") 
-          ? record.studentName 
-          : `${record.studentName} (ID: ${record.studentId})`;
-        
-        setSelectedResult({
-          ...record,
-          studentName: studentNameWithId
-        });
-        
-        // Cập nhật formData cho chỉnh sửa
-        setFormData({
-          healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "",
-          healthProfileId: record.healthProfileId || "",
-          studentId: record.studentId || "",
-          nurseId: record.nurseId || localStorage.getItem("userId") || "",
-          nurseName: record.nurseName || "",
-          height: record.height || "",
-          weight: record.weight || "",
-          leftVision: record.leftVision || "",
-          rightVision: record.rightVision || "",
-          result: record.result || "",
-          status: String(record.status) || "1",
-          note: record.note === null || record.note === undefined ? "" : record.note
-        });
-        
-        setShowEditModal(true);
-        return;
-      }
-
-      // Nếu không có studentName hoặc studentId, thử lấy thông tin từ API
+      // Tìm thông tin học sinh và y tá từ ID
+      let studentName = "";
+      let nurseName = "";
+      
+      // Tìm thông tin học sinh
       if (record.studentId) {
+        const student = students.find(s => s.studentId === record.studentId);
+        if (student) {
+          studentName = student.fullName || `Học sinh ID: ${record.studentId}`;
+        } else {
+          try {
         const studentResponse = await API_SERVICE.studentAPI.getById(record.studentId);
                   if (studentResponse) {
-          const name = studentResponse.fullName || 
+              studentName = studentResponse.fullName || 
                                 `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
-                                studentResponse.name || 
                     `Học sinh ID: ${record.studentId}`;
-          
-          const updatedRecord = {
-            ...record,
-            studentName: `${name} (ID: ${record.studentId})`
-          };
-          
-          setSelectedResult(updatedRecord);
-          
-          // Cập nhật formData cho chỉnh sửa
-          setFormData({
-            healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "",
-            healthProfileId: record.healthProfileId || "",
-            studentId: record.studentId || "",
-            nurseId: record.nurseId || localStorage.getItem("userId") || "",
-            nurseName: record.nurseName || "",
-            height: record.height || "",
-            weight: record.weight || "",
-            leftVision: record.leftVision || "",
-            rightVision: record.rightVision || "",
-            result: record.result || "",
-            status: String(record.status) || "1",
-            note: record.note === null || record.note === undefined ? "" : record.note
-          });
-          
-          setShowEditModal(true);
-          return;
+            } else {
+              studentName = record.studentName || `Học sinh ID: ${record.studentId}`;
+            }
+          } catch (error) {
+            console.error("Error fetching student:", error);
+            studentName = record.studentName || `Học sinh ID: ${record.studentId}`;
+          }
         }
       }
-
-      // Nếu không có studentId hoặc không tìm được thông tin học sinh, thử dùng healthProfileId
-      if (record.healthProfileId) {
-        try {
-          const profileData = await API_SERVICE.healthProfileAPI.get(record.healthProfileId);
-          
-          if (profileData && profileData.studentId) {
-            // Đã có studentId từ health profile, gọi API để lấy thông tin học sinh
-            const studentResponse = await API_SERVICE.studentAPI.getById(profileData.studentId);
-            if (studentResponse) {
-              const name = studentResponse.fullName || 
-                        `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
-                        studentResponse.name || 
-                        `Học sinh ID: ${profileData.studentId}`;
-              
-              const updatedRecord = {
-                ...record,
-                studentName: `${name} (ID: ${profileData.studentId})`,
-                studentId: profileData.studentId
-              };
-              
-              setSelectedResult(updatedRecord);
-              
-              // Cập nhật formData cho chỉnh sửa
-              setFormData({
-                healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "",
-                healthProfileId: record.healthProfileId || "",
-                studentId: profileData.studentId || "",
-                nurseId: record.nurseId || localStorage.getItem("userId") || "",
-                nurseName: record.nurseName || "",
-                height: record.height || "",
-                weight: record.weight || "",
-                leftVision: record.leftVision || "",
-                rightVision: record.rightVision || "",
-                result: record.result || "",
-                status: String(record.status) || "1",
-                note: record.note === null || record.note === undefined ? "" : record.note
-              });
+      
+      // Tìm thông tin y tá
+      if (record.nurseId) {
+        const nurse = nurses.find(n => n.nurseId === record.nurseId);
+        if (nurse) {
+          nurseName = nurse.fullName || `Y tá ID: ${record.nurseId}`;
+        } else {
+          try {
+            const nurseResponse = await API_SERVICE.nurseAPI.getById(record.nurseId);
+            if (nurseResponse) {
+              nurseName = nurseResponse.fullName || 
+                        `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim() || 
+                        `Y tá ID: ${record.nurseId}`;
             } else {
-              const updatedRecord = {
-                ...record,
-                studentName: `Học sinh ID: ${profileData.studentId}`,
-                studentId: profileData.studentId
-              };
-    
-              setSelectedResult(updatedRecord);
-              
-              // Cập nhật formData cho chỉnh sửa
-    setFormData({
-                healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "",
-                healthProfileId: record.healthProfileId || "",
-                studentId: profileData.studentId || "",
-                nurseId: record.nurseId || localStorage.getItem("userId") || "",
-                nurseName: record.nurseName || "",
-                height: record.height || "",
-                weight: record.weight || "",
-                leftVision: record.leftVision || "",
-                rightVision: record.rightVision || "",
-                result: record.result || "",
-                status: String(record.status) || "1",
-                note: record.note === null || record.note === undefined ? "" : record.note
-              });
-            }
-          } else {
-            setSelectedResult({
-              ...record,
-              studentName: `Học sinh ID: ${record.healthProfileId}`
-            });
-            
-            // Cập nhật formData cho chỉnh sửa
-            setFormData({
-              healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "",
-              healthProfileId: record.healthProfileId || "",
-              studentId: record.studentId || "",
-              nurseId: record.nurseId || localStorage.getItem("userId") || "",
-              nurseName: record.nurseName || "",
-              height: record.height || "",
-              weight: record.weight || "",
-              leftVision: record.leftVision || "",
-              rightVision: record.rightVision || "",
-              result: record.result || "",
-              status: String(record.status) || "1",
-              note: record.note === null || record.note === undefined ? "" : record.note
-            });
+              nurseName = record.nurseName || `Y tá ID: ${record.nurseId}`;
           }
         } catch (error) {
-          console.error("Error fetching health profile:", error);
-          setSelectedResult({
-            ...record,
-            studentName: record.studentName || `Học sinh ID: ${record.healthProfileId || "N/A"}`
-          });
-          
-          // Cập nhật formData cho chỉnh sửa
-          setFormData({
-            healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "",
-            healthProfileId: record.healthProfileId || "",
-            studentId: record.studentId || "",
-            nurseId: record.nurseId || localStorage.getItem("userId") || "",
-            nurseName: record.nurseName || "",
-            height: record.height || "",
-            weight: record.weight || "",
-            leftVision: record.leftVision || "",
-            rightVision: record.rightVision || "",
-            result: record.result || "",
-            status: String(record.status) || "1",
-            note: record.note === null || record.note === undefined ? "" : record.note
-          });
+            console.error("Error fetching nurse:", error);
+            nurseName = record.nurseName || `Y tá ID: ${record.nurseId}`;
+          }
         }
-      } else {
-        // Nếu không có thông tin gì, hiển thị dữ liệu hiện có
-        setSelectedResult(record);
+      }
         
         // Cập nhật formData cho chỉnh sửa
         setFormData({
+        healthCheckupRecordId: record.healthCheckupRecordId,
           healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "",
           healthProfileId: record.healthProfileId || "",
           studentId: record.studentId || "",
+        studentSearchTerm: studentName,
           nurseId: record.nurseId || localStorage.getItem("userId") || "",
           nurseName: record.nurseName || "",
+        nurseSearchTerm: nurseName,
           height: record.height || "",
           weight: record.weight || "",
           leftVision: record.leftVision || "",
@@ -1488,14 +1468,14 @@ const HealthResults = () => {
           status: String(record.status) || "1",
           note: record.note === null || record.note === undefined ? "" : record.note
     });
-      }
     
+      setSelectedResult(record);
     setShowEditModal(true);
     } catch (error) {
       console.error("Error preparing edit data:", error);
       setNotif({
-        message: "Lỗi",
-        description: "Không thể chỉnh sửa thông tin. Vui lòng thử lại sau."
+        message: "Lỗi khi chuẩn bị dữ liệu chỉnh sửa",
+        type: "error"
       });
     }
   };
@@ -1621,12 +1601,208 @@ const HealthResults = () => {
     }
   }, [results]);
 
+  // Hàm mới để xử lý khi người dùng chọn một học sinh từ dropdown
+  const handleSelectStudent = (student) => {
+    setFormData({
+      ...formData,
+      studentId: student.studentId,
+      healthProfileId: student.studentId, // Sử dụng studentId làm healthProfileId
+      studentSearchTerm: student.fullName || `Học sinh ID: ${student.studentId}`
+    });
+    setShowStudentDropdown(false);
+  };
+
+  // Hàm mới để xử lý khi người dùng chọn một y tá từ dropdown
+  const handleSelectNurse = (nurse) => {
+    setFormData({
+      ...formData,
+      nurseId: nurse.nurseId,
+      nurseSearchTerm: nurse.fullName || `Y tá ID: ${nurse.nurseId}`
+    });
+    setShowNurseDropdown(false);
+  };
+
+  // Hàm xử lý sắp xếp
+  const handleSort = (key) => {
+    // Nếu key giống với key hiện tại, đảo ngược hướng sắp xếp
+    // Nếu khác, đặt key mới và hướng mặc định là tăng dần
+    const direction = sortConfig.key === key && sortConfig.direction === "asc" ? "desc" : "asc";
+    setSortConfig({ key, direction });
+  };
+
+  // Thêm useEffect mới để áp dụng bộ lọc khi results hoặc filters thay đổi
+  useEffect(() => {
+    applyFiltersAndSort(results, filters, sortConfig);
+  }, [results, filters, sortConfig]);
+
+  // Hàm mới để áp dụng bộ lọc và sắp xếp
+  const applyFiltersAndSort = (resultsList = results, currentFilters = filters, currentSortConfig = sortConfig) => {
+    let filteredData = [...resultsList];
+    
+    // Lọc theo ngày
+    if (currentFilters.date) {
+      const selectedDate = new Date(currentFilters.date);
+      selectedDate.setHours(0, 0, 0, 0); // Đặt thời gian là đầu ngày
+      
+      // Tạo ngày kết thúc (cuối ngày)
+      const endDate = new Date(selectedDate);
+      endDate.setHours(23, 59, 59, 999);
+      
+      filteredData = filteredData.filter(result => {
+        if (!result.checkupDate) return false;
+        const checkupDate = new Date(result.checkupDate);
+        return checkupDate >= selectedDate && checkupDate <= endDate;
+      });
+    }
+    
+    // Lọc theo tên hoặc ID học sinh
+    if (currentFilters.studentName) {
+      filteredData = filteredData.filter(result => {
+        // Tìm theo tên học sinh
+        const studentName = result.studentName || getStudentName(result.studentId) || "";
+        
+        // Tìm theo ID học sinh
+        const studentId = result.studentId ? result.studentId.toString() : "";
+        
+        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
+        return studentName.toLowerCase().includes(currentFilters.studentName.toLowerCase()) || 
+               studentId.includes(currentFilters.studentName);
+      });
+    }
+    
+    // Lọc theo tên hoặc ID y tá
+    if (currentFilters.nurseName) {
+      filteredData = filteredData.filter(result => {
+        // Tìm theo tên y tá
+        const nurseName = result.nurseName || getNurseName(result.nurseId) || "";
+        
+        // Tìm theo ID y tá
+        const nurseId = result.nurseId ? result.nurseId.toString() : "";
+        
+        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
+        return nurseName.toLowerCase().includes(currentFilters.nurseName.toLowerCase()) || 
+               nurseId.includes(currentFilters.nurseName);
+      });
+    }
+    
+    // Lọc theo chiều cao
+    if (currentFilters.height) {
+      filteredData = filteredData.filter(result => 
+        result.height && result.height.toString().includes(currentFilters.height)
+      );
+    }
+    
+    // Lọc theo cân nặng
+    if (currentFilters.weight) {
+      filteredData = filteredData.filter(result => 
+        result.weight && result.weight.toString().includes(currentFilters.weight)
+      );
+    }
+    
+    // Lọc theo thị lực
+    if (currentFilters.vision) {
+      filteredData = filteredData.filter(result => {
+        const leftVision = result.leftVision || "";
+        const rightVision = result.rightVision || "";
+        return leftVision.includes(currentFilters.vision) || 
+               rightVision.includes(currentFilters.vision);
+      });
+    }
+    
+    // Lọc theo kết quả
+    if (currentFilters.result) {
+      filteredData = filteredData.filter(result => 
+        result.result && result.result.toLowerCase().includes(currentFilters.result.toLowerCase())
+      );
+    }
+    
+    // Áp dụng sắp xếp
+    if (currentSortConfig.key) {
+      filteredData.sort((a, b) => {
+        if (currentSortConfig.key === "healthCheckupRecordId") {
+          // So sánh ID (số)
+          const idA = a.healthCheckupRecordId || 0;
+          const idB = b.healthCheckupRecordId || 0;
+          
+          if (currentSortConfig.direction === "asc") {
+            return idA - idB;
+          } else {
+            return idB - idA;
+          }
+        }
+        else if (currentSortConfig.key === "studentName") {
+          // So sánh tên học sinh
+          const nameA = a.studentName || getStudentName(a.studentId) || "";
+          const nameB = b.studentName || getStudentName(b.studentId) || "";
+          
+          if (currentSortConfig.direction === "asc") {
+            return nameA.localeCompare(nameB);
+          } else {
+            return nameB.localeCompare(nameA);
+          }
+        }
+        else if (currentSortConfig.key === "height" || currentSortConfig.key === "weight") {
+          // So sánh chiều cao hoặc cân nặng (số)
+          const valueA = parseFloat(a[currentSortConfig.key]) || 0;
+          const valueB = parseFloat(b[currentSortConfig.key]) || 0;
+          
+          if (currentSortConfig.direction === "asc") {
+            return valueA - valueB;
+          } else {
+            return valueB - valueA;
+          }
+        }
+        else {
+          // Xử lý các trường thông thường
+          const valueA = a[currentSortConfig.key] || "";
+          const valueB = b[currentSortConfig.key] || "";
+          
+          if (currentSortConfig.direction === "asc") {
+            return valueA.toString().localeCompare(valueB.toString());
+          } else {
+            return valueB.toString().localeCompare(valueA.toString());
+          }
+        }
+      });
+    }
+    
+    setFilteredResults(filteredData);
+  };
+
+  // Hàm xử lý thay đổi bộ lọc
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+    
+    // Áp dụng bộ lọc ngay lập tức khi người dùng nhập
+    applyFiltersAndSort(results, { ...filters, [name]: value }, sortConfig);
+  };
+
+  // Hàm reset bộ lọc
+  const resetFilters = () => {
+    const resetFilterValues = {
+      date: "",
+      studentName: "",
+      nurseName: "",
+      height: "",
+      weight: "",
+      vision: "",
+      result: ""
+    };
+    setFilters(resetFilterValues);
+    // Áp dụng ngay lập tức các bộ lọc đã reset
+    applyFiltersAndSort(results, resetFilterValues, sortConfig);
+  };
+
   return (
     <div className="admin-main">
-      <h2 className="dashboard-title">Quản lý kết quả khám sức khỏe</h2>
+      <h2 className="dashboard-title">Kết quả khám sức khỏe</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={() => setShowAddModal(true)}>
-          <FaPlus style={{ marginRight: '5px' }} /> Thêm kết quả khám sức khỏe
+          <FaPlus /> Thêm kết quả khám
         </button>
           <div className="search-container">
             <input
@@ -1637,11 +1813,180 @@ const HealthResults = () => {
               onChange={(e) => setSearchKeyword(e.target.value)}
               onKeyDown={handleSearchKeyDown}
             />
-          <button className="admin-btn" onClick={handleSearch} disabled={searchLoading}>
-              {searchLoading ? "Đang tìm..." : <FaSearch />}
-            </button>
+          <button
+            className="admin-btn"
+            style={{ marginLeft: '8px', padding: '8px' }}
+            onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+            title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
+          >
+            <FaFilter />
+          </button>
           </div>
         </div>
+
+      {/* Phần bộ lọc nâng cao */}
+      {showAdvancedFilter && (
+        <div className="admin-advanced-filter" style={{ 
+          backgroundColor: '#f8f9fa', 
+          padding: '15px', 
+          borderRadius: '5px', 
+          marginBottom: '20px',
+          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
+            <h3 style={{ margin: '0', fontSize: '1.1rem', color: '#333' }}>Tìm kiếm nâng cao</h3>
+            <button
+              className="admin-btn"
+              style={{ backgroundColor: '#6c757d', padding: '4px 8px', fontSize: '0.8rem' }}
+              onClick={resetFilters}
+            >
+              Đặt lại bộ lọc
+            </button>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            {/* Lọc theo ngày */}
+            <div>
+              <label htmlFor="date" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Ngày khám</label>
+              <input
+                type="date"
+                id="date"
+                name="date"
+                value={filters.date}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo học sinh */}
+            <div>
+              <label htmlFor="studentName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Học sinh</label>
+              <input
+                type="text"
+                id="studentName"
+                name="studentName"
+                value={filters.studentName}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên học sinh hoặc ID"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo y tá */}
+            <div>
+              <label htmlFor="nurseName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Y tá</label>
+              <input
+                type="text"
+                id="nurseName"
+                name="nurseName"
+                value={filters.nurseName}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên y tá hoặc ID"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo chiều cao */}
+            <div>
+              <label htmlFor="height" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Chiều cao</label>
+              <input
+                type="text"
+                id="height"
+                name="height"
+                value={filters.height}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập chiều cao..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo cân nặng */}
+            <div>
+              <label htmlFor="weight" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Cân nặng</label>
+              <input
+                type="text"
+                id="weight"
+                name="weight"
+                value={filters.weight}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập cân nặng..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo thị lực */}
+            <div>
+              <label htmlFor="vision" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Thị lực</label>
+              <input
+                type="text"
+                id="vision"
+                name="vision"
+                value={filters.vision}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập thị lực..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
+            {/* Lọc theo kết quả */}
+            <div>
+              <label htmlFor="result" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Kết quả</label>
+              <input
+                type="text"
+                id="result"
+                name="result"
+                value={filters.result}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập kết quả khám..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+          </div>
+          
+          {/* Thêm phần sắp xếp vào trong bộ lọc */}
+          <div style={{ marginTop: '15px', display: 'flex', alignItems: 'center' }}>
+            <div style={{ marginRight: '15px' }}>
+              <span style={{ fontSize: '0.9rem', marginRight: '8px' }}>Sắp xếp theo:</span>
+              <select
+                value={sortConfig.key}
+                onChange={(e) => setSortConfig({...sortConfig, key: e.target.value})}
+                className="form-control"
+                style={{ display: 'inline-block', width: 'auto', padding: '6px' }}
+              >
+                <option value="healthCheckupRecordId">ID</option>
+                <option value="studentName">Học sinh</option>
+                <option value="height">Chiều cao</option>
+                <option value="weight">Cân nặng</option>
+                <option value="leftVision">Thị lực</option>
+                <option value="result">Kết quả</option>
+              </select>
+            </div>
+            
+            <div>
+              <button
+                className="admin-btn"
+                style={{ padding: '6px' }}
+                onClick={() => setSortConfig({...sortConfig, direction: sortConfig.direction === 'asc' ? 'desc' : 'asc'})}
+                title={sortConfig.direction === 'asc' ? 'Sắp xếp giảm dần' : 'Sắp xếp tăng dần'}
+              >
+                {sortConfig.direction === 'asc' ? <FaSortAmountUp /> : <FaSortAmountDown />}
+              </button>
+            </div>
+          </div>
+          
+          <div style={{ marginTop: '10px', fontSize: '0.9rem', color: '#6c757d' }}>
+            <span>Đang hiển thị: <strong>{filteredResults.length}</strong> / {results.length} kết quả</span>
+          </div>
+        </div>
+      )}
+
       <div className="admin-table-container">
         {loading ? (
           <div className="loading-container">
@@ -1653,8 +1998,8 @@ const HealthResults = () => {
         ) : (
           <TableWithPaging
             columns={columns}
-            data={results}
-            pageSize={10}
+            data={filteredResults.length > 0 || Object.values(filters).some(val => val !== "") ? filteredResults : results}
+            pageSize={pageSize}
             page={page}
             onPageChange={setPage}
             renderActions={(row) => (
@@ -1668,7 +2013,7 @@ const HealthResults = () => {
                 </button>
                 <button
                   className="admin-action-btn admin-action-btn-reset"
-                  title="Sửa"
+                  title="Chỉnh sửa"
                   onClick={() => handleEdit(row)}
                 >
                   <FaEdit style={iconStyle.edit} size={18} />
@@ -1682,6 +2027,7 @@ const HealthResults = () => {
                 </button>
               </div>
             )}
+            loading={loading}
           />
         )}
       </div>
@@ -1773,10 +2119,6 @@ const HealthResults = () => {
               </div>
             </div>
             <div className="student-dialog-footer">
-              <button className="admin-btn" onClick={() => {
-                setShowViewModal(false);
-                handleEdit(selectedResult);
-              }}>Chỉnh sửa</button>
               <button className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowViewModal(false)}>Đóng</button>
             </div>
           </div>
@@ -1824,54 +2166,122 @@ const HealthResults = () => {
               </div>
                     <div className="info-item">
                       <label htmlFor="edit-studentId">Học sinh <span className="text-danger">*</span></label>
-                <select
-                  name="studentId"
-                        id="edit-studentId"
-                  value={formData.studentId}
-                  onChange={(e) => {
-                    handleInputChange(e);
-                    // Tự động tạo healthProfileId từ studentId nếu cần
-                    if (e.target.value) {
-                      setFormData(prev => ({
-                        ...prev,
-                        studentId: e.target.value,
-                        healthProfileId: e.target.value // Sử dụng studentId làm healthProfileId
-                      }));
-                    }
-                  }}
-                  required
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="text"
                   className="form-control"
+                          id="edit-studentSearchTerm"
+                          name="studentSearchTerm"
+                          value={formData.studentSearchTerm}
+                          onChange={handleInputChange}
+                          onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
+                          onClick={() => setShowStudentDropdown(true)}
+                          placeholder="Nhập tên hoặc ID học sinh"
+                          required
                         style={{ backgroundColor: '#f8f9fa' }}
-                >
-                  <option value="">-- Chọn học sinh --</option>
-                  {students.map((student) => (
-                    <option key={student.studentId} value={student.studentId}>
-                      {student.fullName || `Học sinh`} (ID: {student.studentId})
-                    </option>
-                  ))}
-                </select>
+                        />
+                        {showStudentDropdown && filteredStudents.length > 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            maxHeight: '200px',
+                            overflowY: 'auto',
+                            backgroundColor: 'white',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            zIndex: 1000,
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                          }}>
+                            {filteredStudents.map(student => (
+                              <div 
+                                key={student.studentId} 
+                                className="dropdown-item" 
+                                style={{ padding: '8px 12px', cursor: 'pointer' }}
+                                onClick={() => handleSelectStudent(student)}
+                              >
+                                {student.fullName || `Học sinh ID: ${student.studentId}`}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {showStudentDropdown && filteredStudents.length === 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            padding: '8px 12px',
+                            backgroundColor: 'white',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            zIndex: 1000
+                          }}>
+                            Không tìm thấy học sinh
+                          </div>
+                        )}
+                      </div>
               </div>
                     <div className="info-item">
                       <label htmlFor="edit-nurseId">Y tá phụ trách <span className="text-danger">*</span></label>
-                      <select
-                        name="nurseId"
-                        id="edit-nurseId"
-                        value={formData.nurseId}
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="edit-nurseSearchTerm"
+                          name="nurseSearchTerm"
+                          value={formData.nurseSearchTerm}
                   onChange={handleInputChange}
+                          onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
+                          onClick={() => setShowNurseDropdown(true)}
+                          placeholder="Nhập tên hoặc ID y tá"
                   required
-                  className="form-control"
                         style={{ backgroundColor: '#f8f9fa' }}
-                      >
-                        <option value={localStorage.getItem("userId") || ""}>
-                          {getNurseName(localStorage.getItem("userId"))} (ID: {localStorage.getItem("userId")})
-                    </option>
-                        {nurses.filter(n => n.nurseId !== parseInt(localStorage.getItem("userId"))).map((nurse) => (
-                          <option key={nurse.nurseId} value={nurse.nurseId}>
-                            {nurse.fullName || `Y tá`} (ID: {nurse.nurseId})
-                          </option>
-                        ))}
-                </select>
+                        />
+                        {showNurseDropdown && filteredNurses.length > 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            maxHeight: '200px',
+                            overflowY: 'auto',
+                            backgroundColor: 'white',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            zIndex: 1000,
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                          }}>
+                            {filteredNurses.map(nurse => (
+                              <div 
+                                key={nurse.nurseId} 
+                                className="dropdown-item" 
+                                style={{ padding: '8px 12px', cursor: 'pointer' }}
+                                onClick={() => handleSelectNurse(nurse)}
+                              >
+                                {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
+                              </div>
+                            ))}
               </div>
+                        )}
+                        {showNurseDropdown && filteredNurses.length === 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            padding: '8px 12px',
+                            backgroundColor: 'white',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            zIndex: 1000
+                          }}>
+                            Không tìm thấy y tá
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="student-info-section">
@@ -2018,57 +2428,122 @@ const HealthResults = () => {
               </div>
                     <div className="info-item">
                       <label htmlFor="studentId">Học sinh <span className="text-danger">*</span></label>
-                <select
-                  name="studentId"
-                        id="studentId"
-                  value={formData.studentId}
-                  onChange={(e) => {
-                    handleInputChange(e);
-                    // Tự động tạo healthProfileId từ studentId nếu cần
-                    if (e.target.value) {
-                      setFormData(prev => ({
-                        ...prev,
-                        studentId: e.target.value,
-                        healthProfileId: e.target.value // Sử dụng studentId làm healthProfileId
-                      }));
-                    }
-                  }}
-                  required
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="text"
                   className="form-control"
+                          id="studentSearchTerm"
+                          name="studentSearchTerm"
+                          value={formData.studentSearchTerm}
+                          onChange={handleInputChange}
+                          onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
+                          onClick={() => setShowStudentDropdown(true)}
+                          placeholder="Nhập tên hoặc ID học sinh"
+                          required
                         style={{ backgroundColor: '#f8f9fa' }}
-                >
-                  <option value="">-- Chọn học sinh --</option>
-                  {students.map((student) => (
-                    <option key={student.studentId} value={student.studentId}>
-                      {student.fullName || `Học sinh`} (ID: {student.studentId})
-                    </option>
-                  ))}
-                </select>
-                      <small className="form-text text-muted">
-                        Chọn học sinh để tạo kết quả khám sức khỏe
-                      </small>
+                        />
+                        {showStudentDropdown && filteredStudents.length > 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            maxHeight: '200px',
+                            overflowY: 'auto',
+                            backgroundColor: 'white',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            zIndex: 1000,
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                          }}>
+                            {filteredStudents.map(student => (
+                              <div 
+                                key={student.studentId} 
+                                className="dropdown-item" 
+                                style={{ padding: '8px 12px', cursor: 'pointer' }}
+                                onClick={() => handleSelectStudent(student)}
+                              >
+                                {student.fullName || `Học sinh ID: ${student.studentId}`}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {showStudentDropdown && filteredStudents.length === 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            padding: '8px 12px',
+                            backgroundColor: 'white',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            zIndex: 1000
+                          }}>
+                            Không tìm thấy học sinh
+                          </div>
+                        )}
+                      </div>
               </div>
                     <div className="info-item">
                       <label htmlFor="nurseId">Y tá phụ trách <span className="text-danger">*</span></label>
-                      <select
-                        name="nurseId"
-                        id="nurseId"
-                        value={formData.nurseId}
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="text"
+                          className="form-control"
+                          id="nurseSearchTerm"
+                          name="nurseSearchTerm"
+                          value={formData.nurseSearchTerm}
                   onChange={handleInputChange}
+                          onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
+                          onClick={() => setShowNurseDropdown(true)}
+                          placeholder="Nhập tên hoặc ID y tá"
                   required
-                  className="form-control"
                         style={{ backgroundColor: '#f8f9fa' }}
-                >
-                        <option value={localStorage.getItem("userId") || ""}>
-                          {getNurseName(localStorage.getItem("userId"))} (ID: {localStorage.getItem("userId")})
-                    </option>
-                        {nurses.filter(n => n.nurseId !== parseInt(localStorage.getItem("userId"))).map((nurse) => (
-                          <option key={nurse.nurseId} value={nurse.nurseId}>
-                            {nurse.fullName || `Y tá`} (ID: {nurse.nurseId})
-                          </option>
-                        ))}
-                </select>
+                        />
+                        {showNurseDropdown && filteredNurses.length > 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            maxHeight: '200px',
+                            overflowY: 'auto',
+                            backgroundColor: 'white',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            zIndex: 1000,
+                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                          }}>
+                            {filteredNurses.map(nurse => (
+                              <div 
+                                key={nurse.nurseId} 
+                                className="dropdown-item" 
+                                style={{ padding: '8px 12px', cursor: 'pointer' }}
+                                onClick={() => handleSelectNurse(nurse)}
+                              >
+                                {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
+                              </div>
+                            ))}
               </div>
+                        )}
+                        {showNurseDropdown && filteredNurses.length === 0 && (
+                          <div style={{
+                            position: 'absolute',
+                            top: '100%',
+                            left: 0,
+                            right: 0,
+                            padding: '8px 12px',
+                            backgroundColor: 'white',
+                            border: '1px solid #ddd',
+                            borderRadius: '4px',
+                            zIndex: 1000
+                          }}>
+                            Không tìm thấy y tá
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="student-info-section">

@@ -562,6 +562,16 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({...data, prescriptionId: id})
         }),
+        accept: (id) => callApi(`${API_BASE_URL}/parentPrescription/accept/${id}`, { method: 'POST' }),
+        reject: (id) => callApi(`${API_BASE_URL}/parentPrescription/reject/${id}`, { method: 'POST' }),
+        updateStatus: (data) => {
+            if (data.status === "Accepted" || data.status === 2) {
+                return callApi(`${API_BASE_URL}/parentPrescription/accept/${data.prescriptionId}`, { method: 'POST' });
+            } else if (data.status === "Rejected" || data.status === 3) {
+                return callApi(`${API_BASE_URL}/parentPrescription/reject/${data.prescriptionId}`, { method: 'POST' });
+            }
+            return Promise.reject(new Error("Trạng thái không hợp lệ"));
+        },
         // ... các hàm khác nếu cần
     },
     notificationAPI: {
@@ -600,8 +610,7 @@ export const API_SERVICE = {
             method: "DELETE"
         })
     },
-    // Thêm các nhóm API khác nếu cần
-    medicalInventoryAPI: {
+      medicalInventoryAPI: {
         getById: (id) => callApi(`${API_BASE_URL}/medicalInventory/${id}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" }
@@ -625,5 +634,27 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         })
-    }
+    },
+    // Thêm các nhóm API khác nếu cần
+};
+
+const getPrescriptionFileUrl = (filePathOrName) => {
+  if (!filePathOrName) return null;
+  
+  // Nếu đã là URL đầy đủ, trả về nguyên dạng
+  if (filePathOrName.startsWith('http')) {
+    return filePathOrName;
+  }
+  
+  // Xử lý tên file để đảm bảo định dạng đúng
+  const fileName = filePathOrName.includes('/') 
+    ? filePathOrName.split('/').pop() 
+    : filePathOrName;
+  
+  console.log("Processing prescription file:", filePathOrName);
+  console.log("Extracted filename:", fileName);
+  
+  // Sử dụng API_BASE_URL từ biến môi trường hoặc cấu hình
+  // Đảm bảo sử dụng đúng port API (5273) và đường dẫn đúng
+  return `${window.location.protocol}//${window.location.hostname}:5273/api/files/parentPrecriptions/${fileName}`;
 };
