@@ -1956,7 +1956,7 @@ const VaxResults = () => {
                             >
                               {student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || `Học sinh ID: ${student.studentId}`}
                             </div>
-                          ))}
+                      ))}
                         </div>
                       )}
                       {showStudentDropdown && filteredStudents.length === 0 && (
@@ -1973,7 +1973,7 @@ const VaxResults = () => {
                         }}>
                           Không tìm thấy học sinh
                         </div>
-                      )}
+                    )}
                     </div>
                   </div>
                   
@@ -2284,7 +2284,7 @@ const VaxResults = () => {
                             >
                               {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
                             </div>
-                          ))}
+                      ))}
                         </div>
                       )}
                       {showNurseDropdown && filteredNurses.length === 0 && (

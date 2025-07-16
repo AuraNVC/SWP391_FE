@@ -399,7 +399,7 @@ const Medications = () => {
             return dateA - dateB;
           } else {
             return dateB - dateA;
-          }
+        }
         }
         else {
           // Xử lý các trường thông thường
@@ -413,8 +413,8 @@ const Medications = () => {
           }
         }
       });
-    }
-    
+        }
+        
     // Ưu tiên hiển thị các đơn thuốc chưa duyệt lên đầu
     if (currentSortConfig.key !== "status") {
       result.sort((a, b) => {
@@ -1016,7 +1016,7 @@ const Medications = () => {
                 </div>
                 <div className="info-item">
                     <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}
-                </div>
+                  </div>
                 <div className="info-item">
                   <strong>Trạng thái:</strong> {" "}
                   {(() => {
@@ -1082,12 +1082,12 @@ const Medications = () => {
                               display: 'inline-block',
                               cursor: 'pointer'
                             }}
-                          >
-                            Xem đơn thuốc
-                          </a>
+                        >
+                          Xem đơn thuốc
+                        </a>
                         </div>
-                      </div>
-                    </div>
+                </div>
+                </div>
                   )}
                 </div>
               </div>

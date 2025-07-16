@@ -98,7 +98,7 @@ const ConsultSchedules = () => {
       dataIndex: "studentName", 
       render: (name, record) => (
         <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
-          {name || "Không có"}
+          {name || "Không có"} 
           {sortConfig.key === "studentName" && (
             <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
               {sortConfig.direction === 'asc' ? '▲' : '▼'}
@@ -112,7 +112,7 @@ const ConsultSchedules = () => {
       dataIndex: "nurseName", 
       render: (name, record) => (
         <span style={{ cursor: 'pointer' }} onClick={() => handleSort("nurseName")}>
-          {name || "Chưa phân công"}
+          {name || "Chưa phân công"} 
           {sortConfig.key === "nurseName" && (
             <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
               {sortConfig.direction === 'asc' ? '▲' : '▼'}
@@ -782,7 +782,7 @@ const ConsultSchedules = () => {
           studentId = foundStudent.studentId;
         } else {
           throw new Error("Không tìm thấy học sinh. Vui lòng chọn học sinh từ danh sách.");
-        }
+      }
       }
       
       // Tìm nurseId từ tên y tá đã nhập
@@ -842,10 +842,10 @@ const ConsultSchedules = () => {
             studentId: parseInt(studentId),
             parentId: parseInt(parentId)
           };
-          
-          // Gọi API để tạo form tư vấn
+        
+        // Gọi API để tạo form tư vấn
           const formResponse = await API_SERVICE.consultationFormAPI.create(formData);
-          console.log("Form API response:", formResponse);
+        console.log("Form API response:", formResponse);
         } catch (formError) {
           console.error("Error creating consultation form:", formError);
           // Không throw lỗi ở đây vì lịch tư vấn đã được tạo thành công
@@ -873,10 +873,10 @@ const ConsultSchedules = () => {
       }
       
       // Hiển thị thông báo thành công
-      setNotif({
+        setNotif({
         message: "Thêm lịch tư vấn thành công",
-        type: "success"
-      });
+          type: "success"
+        });
       
       // Đóng modal và tải lại dữ liệu
       setShowAddModal(false);
@@ -1692,13 +1692,13 @@ const ConsultSchedules = () => {
         <button className="admin-btn" onClick={() => setShowAddModal(true)}>
           <FaPlus /> Thêm lịch tư vấn
         </button>
-        <div className="search-container">
-          <input
+          <div className="search-container">
+            <input
             className="admin-search"
-            type="text"
+              type="text"
             placeholder="Tìm kiếm..."
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           <button

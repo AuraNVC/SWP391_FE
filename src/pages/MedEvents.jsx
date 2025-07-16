@@ -760,7 +760,7 @@ const MedEvents = () => {
         // Thêm 'Z' để đảm bảo UTC nếu chưa có thông tin múi giờ
         formattedDate = formattedDate + 'Z';
       }
-      
+
       // Chuẩn bị dữ liệu để gửi
       const eventData = {
         eventName: formData.title, // Đổi title thành eventName để phù hợp với model backend
@@ -869,28 +869,28 @@ const MedEvents = () => {
       }
       
       // Chuẩn bị dữ liệu để gửi - Sửa đổi theo đúng model backend
-      const eventData = {
+        const eventData = {
         eventId: parseInt(formData.medicalEventId),
         nurseId: parseInt(nurseId),
         eventDate: formattedDate,
         symptoms: formData.symptoms,
         actionTaken: formData.actionTaken,
-        note: formData.note || ""
-      };
-      
+          note: formData.note || ""
+        };
+        
       console.log("Sending data to API for update:", eventData);
-      
+        
       // Gọi API để cập nhật sự kiện y tế
       const response = await API_SERVICE.medicalEventAPI.update(eventData);
         
-      // Nếu API thành công, cập nhật UI
-      setNotif({
-        message: "Cập nhật sự kiện y tế thành công!",
-        type: "success"
-      });
+        // Nếu API thành công, cập nhật UI
+        setNotif({
+          message: "Cập nhật sự kiện y tế thành công!",
+          type: "success"
+        });
         
       // Đóng modal và tải lại dữ liệu
-      setShowEditModal(false);
+        setShowEditModal(false);
       fetchMedicalEvents(searchKeyword);
     } catch (error) {
       console.error("Error updating medical event:", error);
@@ -1236,7 +1236,7 @@ const MedEvents = () => {
                         >
                           {student.fullName || `Học sinh ID: ${student.studentId}`}
                         </div>
-                      ))}
+                  ))}
                     </div>
                   )}
                   {showStudentDropdown && filteredStudents.length === 0 && (
@@ -1293,7 +1293,7 @@ const MedEvents = () => {
                         >
                           {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
                         </div>
-                      ))}
+                  ))}
                     </div>
                   )}
                   {showNurseDropdown && filteredNurses.length === 0 && (
