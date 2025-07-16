@@ -170,7 +170,7 @@ const StudentHealthProfile = () => {
                     <p className='mb-1'><strong>Liều lượng:</strong> {result.doseNumber || 'Chưa cập nhật'}</p>
                     <p><strong>Ngày tiêm:</strong> {result.schedule ? new Date(result.schedule.scheduleDate).toLocaleDateString() : 'Chưa cập nhật'}</p>
                     <p><strong>Địa điểm:</strong> {result.schedule?.location || 'Chưa cập nhật'}</p>
-                    <p><strong>Trạng thái:</strong> <span className={`badge ${result.status === 'Pending' ? 'bg-warning' : result.status === 'Accepted' ? 'bg-success' : 'bg-danger'}`}>{result.status}</span></p>
+                    <p><strong>Trạng thái:</strong> <span className={`badge ${result.status === 'Pending' ? 'bg-warning' : result.status === 'Accepted' ? 'bg-success' : 'bg-danger'}`}>{result.status === 'Accepted' ? 'Đã tiêm' : 'Chưa tiêm'}</span></p>
                     {result.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {result.note}</p>}
                   </li>
                 ))}

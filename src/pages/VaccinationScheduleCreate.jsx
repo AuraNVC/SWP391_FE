@@ -3,6 +3,9 @@ import "../styles/StudentDashboard.css";
 import { API_SERVICE } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "../contexts/UserRoleContext";
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 
 const initialState = {
   formId: "",
@@ -23,6 +26,10 @@ const VaccinationScheduleCreate = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDateChange = (value) => {
+    setForm((prev) => ({ ...prev, scheduleDate: value ? value.toISOString() : "" }));
   };
 
   const handleSubmit = async (e) => {
@@ -83,14 +90,18 @@ const VaccinationScheduleCreate = () => {
           </div>
           <div className="form-group">
             <label>Ngày tiêm<span className="required">*</span></label>
-            <input
-              type="datetime-local"
-              name="scheduleDate"
-              value={form.scheduleDate}
-              onChange={handleChange}
-              required
-              className="form-control"
-            />
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DateTimePicker
+                label="Chọn ngày giờ tiêm"
+                value={form.scheduleDate ? new Date(form.scheduleDate) : null}
+                onChange={handleDateChange}
+                slotProps={{
+                  textField: { required: true, className: "form-control", name: "scheduleDate" },
+                  paper: { sx: { minWidth: 260, maxWidth: 320 } }
+                }}
+                format="HH:mm dd/MM/yyyy"
+              />
+            </LocalizationProvider>
           </div>
           <div className="form-group">
             <label>Địa điểm<span className="required">*</span></label>
