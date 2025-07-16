@@ -1368,24 +1368,7 @@ const VaxResults = () => {
           </button>
         </div>
 
-        <div className="vax-results-stats">
-          <div className="vax-results-stat-card">
-            <h4>Tổng kết quả</h4>
-            <p>{statusCounts.total}</p>
-          </div>
-          <div className="vax-results-stat-card completed">
-            <h4>Đã hoàn thành</h4>
-            <p>{statusCounts.completed}</p>
-          </div>
-          <div className="vax-results-stat-card pending">
-            <h4>Chưa hoàn thành</h4>
-            <p>{statusCounts.pending}</p>
-          </div>
-          <div className="vax-results-stat-card cancelled">
-            <h4>Đã hủy</h4>
-            <p>{statusCounts.cancelled}</p>
-        </div>
-      </div>
+
 
         <div className="vax-results-table-container">
         {loading ? (
@@ -1668,11 +1651,6 @@ const VaxResults = () => {
               <button className="vax-results-modal-close" onClick={() => setShowEditModal(false)}>×</button>
             </div>
             <div className="vax-results-modal-body">
-              {/* Thêm thông báo giới hạn cập nhật */}
-              <div className="warning-notification" style={{ backgroundColor: '#fff3cd', color: '#856404', padding: '10px', marginBottom: '15px', borderRadius: '4px', borderLeft: '4px solid #ffeeba' }}>
-                <strong>Lưu ý:</strong> Hiện tại, hệ thống chỉ hỗ trợ cập nhật các trường: Y tá phụ trách, Mũi số và Ghi chú. Các trường khác sẽ không được lưu.
-              </div>
-              
             <form onSubmit={handleUpdateResult}>
                 <div className="info-section">
                   <h4 className="section-title">Thông tin cơ bản</h4>

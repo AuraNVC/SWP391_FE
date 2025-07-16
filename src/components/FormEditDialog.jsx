@@ -43,14 +43,14 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
       };
       await API_SERVICE.formAPI.update(form.formId, payload);
       setNotif({
-        message: "Form updated successfully!",
+        message: "Cập nhật biểu mẫu thành công!",
         type: "success",
       });
       if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
       setNotif({
-        message: `Failed to update form. ${error?.response?.data?.message || error.message}`,
+        message: `Cập nhật biểu mẫu thất bại! ${error?.response?.data?.message || error.message}`,
         type: "error",
       });
     }

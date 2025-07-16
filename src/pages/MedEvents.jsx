@@ -46,7 +46,7 @@ const MedEvents = () => {
     { title: "Học sinh", dataIndex: "studentId", render: (id, record) => record.studentName || getStudentName(id) || "Không xác định" },
     { title: "Y tá", dataIndex: "nurseId", render: (id, record) => record.nurseName || getNurseName(id) || "Không xác định" },
     { title: "Triệu chứng", dataIndex: "symptoms" },
-    { title: "Xử lý", dataIndex: "actionTaken" }
+    { title: "Ghi chú", dataIndex: "actionTaken" }
   ];
 
   // Hàm lấy tên học sinh từ ID
@@ -592,7 +592,7 @@ const MedEvents = () => {
                 ></textarea>
               </div>
               <div className="mb-3">
-                <label htmlFor="actionTaken" className="form-label">Xử lý <span className="text-danger">*</span></label>
+                <label htmlFor="actionTaken" className="form-label">Ghi chú <span className="text-danger">*</span></label>
                 <textarea
                   className="form-control"
                   id="actionTaken"
@@ -604,7 +604,7 @@ const MedEvents = () => {
                 ></textarea>
               </div>
               <div className="mb-3">
-                <label htmlFor="note" className="form-label">Ghi chú</label>
+                <label htmlFor="note" className="form-label">Ghi chú bổ sung</label>
                 <textarea
                   className="form-control"
                   id="note"
@@ -665,11 +665,11 @@ const MedEvents = () => {
                     <span>{selectedEvent.symptoms}</span>
                   </div>
                   <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                    <label>Xử lý:</label>
+                    <label>Ghi chú:</label>
                     <span>{selectedEvent.actionTaken}</span>
                   </div>
                   <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                    <label>Ghi chú:</label>
+                    <label>Ghi chú bổ sung:</label>
                     <span>{selectedEvent.note || "Không có"}</span>
                   </div>
                 </div>
@@ -770,7 +770,7 @@ const MedEvents = () => {
                   ></textarea>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="actionTaken" className="form-label">Xử lý <span className="text-danger">*</span></label>
+                  <label htmlFor="actionTaken" className="form-label">Ghi chú <span className="text-danger">*</span></label>
                 <textarea
                     className="form-control"
                     id="actionTaken"
@@ -782,7 +782,7 @@ const MedEvents = () => {
                   ></textarea>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="note" className="form-label">Ghi chú</label>
+                  <label htmlFor="note" className="form-label">Ghi chú bổ sung</label>
                   <textarea
                   className="form-control"
                     id="note"
