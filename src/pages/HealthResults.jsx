@@ -393,20 +393,8 @@ const HealthResults = () => {
         return processedStudents;
       } else {
         console.warn("Students API did not return an array:", response);
-        
-        // Thử tạo một mảng học sinh mẫu để test
-        const dummyStudents = [
-          { studentId: 1, fullName: "Nguyễn Văn A" },
-          { studentId: 2, fullName: "Trần Thị B" },
-          { studentId: 3, fullName: "Lê Văn C" },
-          { studentId: 4, fullName: "Phạm Thị D" },
-          { studentId: 5, fullName: "Hoàng Văn E" }
-        ];
-        
-        console.log("Using dummy students due to API issue:", dummyStudents);
-        setStudents(dummyStudents);
-        localStorage.setItem('studentsList', JSON.stringify(dummyStudents));
-        return dummyStudents;
+        setStudents([]);
+        return [];
       }
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -419,19 +407,8 @@ const HealthResults = () => {
         return parsedStudents;
       }
       
-      // Nếu không có dữ liệu trong localStorage, tạo dữ liệu mẫu
-      const dummyStudents = [
-        { studentId: 1, fullName: "Nguyễn Văn A" },
-        { studentId: 2, fullName: "Trần Thị B" },
-        { studentId: 3, fullName: "Lê Văn C" },
-        { studentId: 4, fullName: "Phạm Thị D" },
-        { studentId: 5, fullName: "Hoàng Văn E" }
-      ];
-      
-      console.log("Using dummy students due to error:", dummyStudents);
-      setStudents(dummyStudents);
-      localStorage.setItem('studentsList', JSON.stringify(dummyStudents));
-      return dummyStudents;
+      setStudents([]);
+      return [];
     }
   };
 
@@ -597,28 +574,7 @@ const HealthResults = () => {
         setSchedules(processedSchedules);
       } else {
         console.warn("Health check schedules API did not return valid data:", response);
-        const dummySchedules = [
-          { 
-            healthCheckScheduleId: 1, 
-            name: "Khám định kỳ học kỳ 1", 
-            checkDate: new Date().toISOString(),
-            healthProfileId: 1
-          },
-          { 
-            healthCheckScheduleId: 2, 
-            name: "Khám mắt học kỳ 1", 
-            checkDate: new Date().toISOString(),
-            healthProfileId: 2
-          },
-          { 
-            healthCheckScheduleId: 3, 
-            name: "Khám răng học kỳ 1", 
-            checkDate: new Date().toISOString(),
-            healthProfileId: 3
-          }
-        ];
-        console.log("Using dummy health check schedules due to empty API response");
-        setSchedules(dummySchedules);
+        setSchedules([]);
       }
     } catch (error) {
       console.error("Error fetching health check schedules:", error);
@@ -627,28 +583,8 @@ const HealthResults = () => {
         type: "error"
       });
       
-      const dummySchedules = [
-        { 
-          healthCheckScheduleId: 1, 
-          name: "Khám định kỳ học kỳ 1", 
-          checkDate: new Date().toISOString(),
-          healthProfileId: 1
-        },
-        { 
-          healthCheckScheduleId: 2, 
-          name: "Khám mắt học kỳ 1", 
-          checkDate: new Date().toISOString(),
-          healthProfileId: 2
-        },
-        { 
-          healthCheckScheduleId: 3, 
-          name: "Khám răng học kỳ 1", 
-          checkDate: new Date().toISOString(),
-          healthProfileId: 3
-        }
-      ];
-      console.log("Using dummy health check schedules due to error");
-      setSchedules(dummySchedules);
+      console.log("Error fetching health check schedules");
+      setSchedules([]);
     }
   };
 
@@ -1871,15 +1807,9 @@ const HealthResults = () => {
 
       {/* Phần bộ lọc nâng cao */}
       {showAdvancedFilter && (
-        <div className="admin-advanced-filter" style={{ 
-          backgroundColor: '#f8f9fa', 
-          padding: '15px', 
-          borderRadius: '5px', 
-          marginBottom: '20px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
+        <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '5px', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <h3 style={{ margin: '0', fontSize: '1.1rem', color: '#333' }}>Tìm kiếm nâng cao</h3>
+              <h3 style={{ margin: '0', fontSize: '1.1rem', color: '#333' }}>Tìm kiếm nâng cao</h3>
             <button
               className="admin-btn"
               style={{ backgroundColor: '#6c757d', padding: '4px 8px', fontSize: '0.8rem' }}
@@ -1914,8 +1844,7 @@ const HealthResults = () => {
                 name="date"
                 value={filters.date}
                 onChange={handleFilterChange}
-                className="form-control"
-                style={{ width: '100%', padding: '8px' }}
+                className="form-control" style={{ width: '100%', padding: '8px' }}
               />
             </div>
             
@@ -2057,13 +1986,7 @@ const HealthResults = () => {
             </div>
             <div className="student-dialog-body">
               <div className="student-info-section">
-                <h3 style={{ 
-                  borderBottom: '2px solid #007bff',
-                  paddingBottom: '8px',
-                  margin: '0 0 16px 0',
-                  color: '#333',
-                  fontSize: '1.1rem'
-                }}>Thông tin chung</h3>
+                <h3 className="section-heading-blue">Thông tin chung</h3>
                 <div className="info-grid">
                   <div className="info-item">
                     <label>ID:</label>
@@ -2098,13 +2021,7 @@ const HealthResults = () => {
                 </div>
               </div>
               <div className="student-info-section">
-                <h3 style={{ 
-                  borderBottom: '2px solid #007bff',
-                  paddingBottom: '8px',
-                  margin: '0 0 16px 0',
-                  color: '#333',
-                  fontSize: '1.1rem'
-                }}>Kết quả khám</h3>
+                <h3 className="section-heading-blue">Kết quả khám</h3>
                 <div className="info-grid">
                   <div className="info-item">
                     <label>Chiều cao:</label>
@@ -2142,525 +2059,430 @@ const HealthResults = () => {
 
       {/* Edit Modal - Updated to match MedEvents style */}
       {showEditModal && selectedResult && (
-        <div className="student-dialog-overlay">
-          <div className="student-dialog-content" style={{ width: '700px', maxWidth: '90%' }}>
-            <div className="student-dialog-header">
-              <h2>Chỉnh sửa kết quả khám sức khỏe</h2>
-              <button className="student-dialog-close" onClick={() => setShowEditModal(false)}>×</button>
+        <div className="student-create-modal-overlay">
+          <div className="student-create-modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">Chỉnh sửa kết quả khám sức khỏe</h3>
+              <button type="button" className="btn-close" onClick={() => setShowEditModal(false)}></button>
             </div>
-            <div className="student-dialog-body">
-              <form onSubmit={handleUpdateResult}>
+            <form onSubmit={handleUpdateResult}>
+              <div className="modal-body">
                 <input type="hidden" name="healthCheckupRecordId" value={formData.healthCheckupRecordId} />
-                <div className="student-info-section">
-                  <h3 style={{ 
-                    borderBottom: '2px solid #007bff',
-                    paddingBottom: '8px',
-                    margin: '0 0 16px 0',
-                    color: '#333',
-                    fontSize: '1.1rem'
-                  }}>Thông tin chung</h3>
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <label htmlFor="edit-healthCheckScheduleId">Lịch khám <span className="text-danger">*</span></label>
-                <select
-                  name="healthCheckScheduleId"
-                        id="edit-healthCheckScheduleId"
-                  value={formData.healthCheckScheduleId}
-                  onChange={handleScheduleChange}
-                  required
-                  className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                >
-                  <option value="">-- Chọn lịch khám --</option>
-                  {schedules.map((schedule) => (
-                    <option key={schedule.healthCheckScheduleId} value={schedule.healthCheckScheduleId}>
-                      {schedule.name} - {new Date(schedule.checkDate).toLocaleDateString('vi-VN')}
-                    </option>
-                  ))}
-                </select>
-              </div>
-                    <div className="info-item">
-                      <label htmlFor="edit-studentId">Học sinh <span className="text-danger">*</span></label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                  className="form-control"
-                          id="edit-studentSearchTerm"
-                          name="studentSearchTerm"
-                          value={formData.studentSearchTerm}
-                          onChange={handleInputChange}
-                          onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
-                          onClick={() => setShowStudentDropdown(true)}
-                          placeholder="Nhập tên hoặc ID học sinh"
-                          required
-                        style={{ backgroundColor: '#f8f9fa' }}
-                        />
-                        {showStudentDropdown && filteredStudents.length > 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            maxHeight: '200px',
-                            overflowY: 'auto',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000,
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                          }}>
-                            {filteredStudents.map(student => (
-                              <div 
-                                key={student.studentId} 
-                                className="dropdown-item" 
-                                style={{ padding: '8px 12px', cursor: 'pointer' }}
-                                onClick={() => handleSelectStudent(student)}
-                              >
-                                {student.fullName || `Học sinh ID: ${student.studentId}`}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {showStudentDropdown && filteredStudents.length === 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            padding: '8px 12px',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000
-                          }}>
-                            Không tìm thấy học sinh
-                          </div>
-                        )}
-                      </div>
-              </div>
-                    <div className="info-item">
-                      <label htmlFor="edit-nurseId">Y tá phụ trách <span className="text-danger">*</span></label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="edit-nurseSearchTerm"
-                          name="nurseSearchTerm"
-                          value={formData.nurseSearchTerm}
-                  onChange={handleInputChange}
-                          onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
-                          onClick={() => setShowNurseDropdown(true)}
-                          placeholder="Nhập tên hoặc ID y tá"
-                  required
-                        style={{ backgroundColor: '#f8f9fa' }}
-                        />
-                        {showNurseDropdown && filteredNurses.length > 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            maxHeight: '200px',
-                            overflowY: 'auto',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000,
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                          }}>
-                            {filteredNurses.map(nurse => (
-                              <div 
-                                key={nurse.nurseId} 
-                                className="dropdown-item" 
-                                style={{ padding: '8px 12px', cursor: 'pointer' }}
-                                onClick={() => handleSelectNurse(nurse)}
-                              >
-                                {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
-                              </div>
-                            ))}
-              </div>
-                        )}
-                        {showNurseDropdown && filteredNurses.length === 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            padding: '8px 12px',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000
-                          }}>
-                            Không tìm thấy y tá
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                <div className="mb-3">
+                  <label htmlFor="edit-healthCheckScheduleId" className="form-label">Lịch khám <span className="text-danger">*</span></label>
+                  <select
+                    name="healthCheckScheduleId"
+                    id="edit-healthCheckScheduleId"
+                    value={formData.healthCheckScheduleId}
+                    onChange={handleScheduleChange}
+                    required
+                    className="form-control"
+                  >
+                    <option value="">-- Chọn lịch khám --</option>
+                    {schedules.map((schedule) => (
+                      <option key={schedule.healthCheckScheduleId} value={schedule.healthCheckScheduleId}>
+                        {schedule.name} - {new Date(schedule.checkDate).toLocaleDateString('vi-VN')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="edit-studentId" className="form-label">Học sinh</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="form-control bg-light"
+                      id="edit-studentSearchTerm"
+                      name="studentSearchTerm"
+                      value={formData.studentSearchTerm}
+                      readOnly
+                    />
                   </div>
                 </div>
-                <div className="student-info-section">
-                  <h3 style={{ 
-                    borderBottom: '2px solid #007bff',
-                    paddingBottom: '8px',
-                    margin: '0 0 16px 0',
-                    color: '#333',
-                    fontSize: '1.1rem'
-                  }}>Kết quả khám</h3>
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <label htmlFor="edit-height">Chiều cao (cm) <span className="text-danger">*</span></label>
-                <input
-                  type="number"
-                  name="height"
-                        id="edit-height"
-                  value={formData.height}
-                  onChange={handleInputChange}
-                  required
-                  min="0"
-                  step="0.1"
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                />
-              </div>
-                    <div className="info-item">
-                      <label htmlFor="edit-weight">Cân nặng (kg) <span className="text-danger">*</span></label>
-                <input
-                  type="number"
-                  name="weight"
-                        id="edit-weight"
-                  value={formData.weight}
-                  onChange={handleInputChange}
-                  required
-                  min="0"
-                  step="0.1"
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                />
+                <div className="mb-3">
+                  <label htmlFor="edit-nurseId" className="form-label">Y tá phụ trách <span className="text-danger">*</span></label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="edit-nurseSearchTerm"
+                      name="nurseSearchTerm"
+                      value={formData.nurseSearchTerm}
+                      onChange={handleInputChange}
+                      onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
+                      onClick={() => setShowNurseDropdown(true)}
+                      placeholder="Nhập tên hoặc ID y tá"
+                      required
+                    />
+                    {showNurseDropdown && filteredNurses.length > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000,
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                      }}>
+                        {filteredNurses.map(nurse => (
+                          <div 
+                            key={nurse.nurseId} 
+                            className="dropdown-item" 
+                            style={{ padding: '8px 12px', cursor: 'pointer' }}
+                            onClick={() => handleSelectNurse(nurse)}
+                          >
+                            {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {showNurseDropdown && filteredNurses.length === 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        padding: '8px 12px',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000
+                      }}>
+                        Không tìm thấy y tá
+                      </div>
+                    )}
+                  </div>
                 </div>
-                    <div className="info-item">
-                      <label htmlFor="edit-leftVision">Thị lực mắt trái <span className="text-danger">*</span></label>
+                <div className="mb-3">
+                  <label htmlFor="edit-height" className="form-label">Chiều cao (cm) <span className="text-danger">*</span></label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="edit-height"
+                    name="height"
+                    value={formData.height}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="edit-weight" className="form-label">Cân nặng (kg) <span className="text-danger">*</span></label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="edit-weight"
+                    name="weight"
+                    value={formData.weight}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="edit-leftVision" className="form-label">Thị lực mắt trái</label>
                   <input
                     type="text"
+                    className="form-control"
+                    id="edit-leftVision"
                     name="leftVision"
-                        id="edit-leftVision"
                     value={formData.leftVision}
                     onChange={handleInputChange}
-                        required
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
                   />
                 </div>
-                    <div className="info-item">
-                      <label htmlFor="edit-rightVision">Thị lực mắt phải <span className="text-danger">*</span></label>
+                <div className="mb-3">
+                  <label htmlFor="edit-rightVision" className="form-label">Thị lực mắt phải</label>
                   <input
                     type="text"
+                    className="form-control"
+                    id="edit-rightVision"
                     name="rightVision"
-                        id="edit-rightVision"
                     value={formData.rightVision}
                     onChange={handleInputChange}
-                        required
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
                   />
                 </div>
-                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                      <label htmlFor="edit-result">Kết quả <span className="text-danger">*</span></label>
-                <textarea
-                  name="result"
-                        id="edit-result"
-                  value={formData.result}
-                  onChange={handleInputChange}
-                        required
-                  rows="3"
-                        className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                ></textarea>
+                <div className="mb-3">
+                  <label htmlFor="edit-result" className="form-label">Kết quả <span className="text-danger">*</span></label>
+                  <textarea
+                    className="form-control"
+                    id="edit-result"
+                    name="result"
+                    value={formData.result}
+                    onChange={handleInputChange}
+                    rows={3}
+                    required
+                  ></textarea>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="edit-note" className="form-label">Ghi chú</label>
+                  <textarea
+                    className="form-control"
+                    id="edit-note"
+                    name="note"
+                    value={formData.note}
+                    onChange={handleInputChange}
+                    rows={2}
+                  ></textarea>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="edit-status" className="form-label">Trạng thái</label>
+                  <select
+                    className="form-control"
+                    id="edit-status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                  >
+                    <option value="1">Hoàn thành</option>
+                    <option value="2">Chờ xử lý</option>
+                    <option value="3">Đã hủy</option>
+                  </select>
+                </div>
               </div>
-                    {/* Status field removed */}
-                    <input type="hidden" name="status" value="1" />
-                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                      <label htmlFor="edit-note">Ghi chú</label>
-                <textarea
-                  name="note"
-                        id="edit-note"
-                  value={formData.note}
-                  onChange={handleInputChange}
-                        rows="2"
-                  className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                ></textarea>
+              <div className="modal-footer">
+                <button type="submit" className="btn btn-primary">Lưu thay đổi</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Hủy</button>
               </div>
-              </div>
-          </div>
-                <div className="student-dialog-footer">
-                  <button type="submit" className="admin-btn">Lưu</button>
-                  <button type="button" className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowEditModal(false)}>Hủy</button>
-        </div>
-              </form>
-            </div>
+            </form>
           </div>
         </div>
       )}
 
       {/* Add Modal - Updated to match MedEvents style */}
       {showAddModal && (
-        <div className="student-dialog-overlay">
-          <div className="student-dialog-content" style={{ width: '700px', maxWidth: '90%' }}>
-            <div className="student-dialog-header">
-              <h2>Thêm kết quả khám sức khỏe mới</h2>
-              <button className="student-dialog-close" onClick={() => setShowAddModal(false)}>×</button>
+        <div className="student-create-modal-overlay">
+          <div className="student-create-modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">Thêm kết quả khám sức khỏe mới</h3>
+              <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
             </div>
-            <div className="student-dialog-body">
-              <form onSubmit={handleAddResult}>
-                <div className="student-info-section">
-                  <h3 style={{ 
-                    borderBottom: '2px solid #007bff',
-                    paddingBottom: '8px',
-                    margin: '0 0 16px 0',
-                    color: '#333',
-                    fontSize: '1.1rem'
-                  }}>Thông tin chung</h3>
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <label htmlFor="healthCheckScheduleId">Lịch khám <span className="text-danger">*</span></label>
-                <select
-                  name="healthCheckScheduleId"
-                        id="healthCheckScheduleId"
-                  value={formData.healthCheckScheduleId}
-                  onChange={handleScheduleChange}
-                  required
-                  className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                >
-                  <option value="">-- Chọn lịch khám --</option>
-                  {schedules.map((schedule) => (
-                    <option key={schedule.healthCheckScheduleId} value={schedule.healthCheckScheduleId}>
-                      {schedule.name} - {new Date(schedule.checkDate).toLocaleDateString('vi-VN')}
-                    </option>
-                  ))}
-                </select>
-              </div>
-                    <div className="info-item">
-                      <label htmlFor="studentId">Học sinh <span className="text-danger">*</span></label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                  className="form-control"
-                          id="studentSearchTerm"
-                          name="studentSearchTerm"
-                          value={formData.studentSearchTerm}
-                          onChange={handleInputChange}
-                          onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
-                          onClick={() => setShowStudentDropdown(true)}
-                          placeholder="Nhập tên hoặc ID học sinh"
-                          required
-                        style={{ backgroundColor: '#f8f9fa' }}
-                        />
-                        {showStudentDropdown && filteredStudents.length > 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            maxHeight: '200px',
-                            overflowY: 'auto',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000,
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                          }}>
-                            {filteredStudents.map(student => (
-                              <div 
-                                key={student.studentId} 
-                                className="dropdown-item" 
-                                style={{ padding: '8px 12px', cursor: 'pointer' }}
-                                onClick={() => handleSelectStudent(student)}
-                              >
-                                {student.fullName || `Học sinh ID: ${student.studentId}`}
-                              </div>
-                            ))}
+            <form onSubmit={handleAddResult}>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label htmlFor="healthCheckScheduleId" className="form-label">Lịch khám <span className="text-danger">*</span></label>
+                  <select
+                    name="healthCheckScheduleId"
+                    id="healthCheckScheduleId"
+                    value={formData.healthCheckScheduleId}
+                    onChange={handleScheduleChange}
+                    required
+                    className="form-control"
+                  >
+                    <option value="">-- Chọn lịch khám --</option>
+                    {schedules.map((schedule) => (
+                      <option key={schedule.healthCheckScheduleId} value={schedule.healthCheckScheduleId}>
+                        {schedule.name} - {new Date(schedule.checkDate).toLocaleDateString('vi-VN')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="studentId" className="form-label">Học sinh <span className="text-danger">*</span></label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="studentId"
+                      name="studentSearchTerm"
+                      value={formData.studentSearchTerm}
+                      onChange={handleInputChange}
+                      onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
+                      onClick={() => setShowStudentDropdown(true)}
+                      placeholder="Nhập tên hoặc ID học sinh"
+                      required
+                    />
+                    {showStudentDropdown && filteredStudents.length > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000,
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                      }}>
+                        {filteredStudents.map(student => (
+                          <div 
+                            key={student.studentId} 
+                            className="dropdown-item" 
+                            style={{ padding: '8px 12px', cursor: 'pointer' }}
+                            onClick={() => handleSelectStudent(student)}
+                          >
+                            {student.fullName || `Học sinh ID: ${student.studentId}`}
                           </div>
-                        )}
-                        {showStudentDropdown && filteredStudents.length === 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            padding: '8px 12px',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000
-                          }}>
-                            Không tìm thấy học sinh
-                          </div>
-                        )}
+                        ))}
                       </div>
-              </div>
-                    <div className="info-item">
-                      <label htmlFor="nurseId">Y tá phụ trách <span className="text-danger">*</span></label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="nurseSearchTerm"
-                          name="nurseSearchTerm"
-                          value={formData.nurseSearchTerm}
-                  onChange={handleInputChange}
-                          onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
-                          onClick={() => setShowNurseDropdown(true)}
-                          placeholder="Nhập tên hoặc ID y tá"
-                  required
-                        style={{ backgroundColor: '#f8f9fa' }}
-                        />
-                        {showNurseDropdown && filteredNurses.length > 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            maxHeight: '200px',
-                            overflowY: 'auto',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000,
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                          }}>
-                            {filteredNurses.map(nurse => (
-                              <div 
-                                key={nurse.nurseId} 
-                                className="dropdown-item" 
-                                style={{ padding: '8px 12px', cursor: 'pointer' }}
-                                onClick={() => handleSelectNurse(nurse)}
-                              >
-                                {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
-                              </div>
-                            ))}
-              </div>
-                        )}
-                        {showNurseDropdown && filteredNurses.length === 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            padding: '8px 12px',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000
-                          }}>
-                            Không tìm thấy y tá
-                          </div>
-                        )}
+                    )}
+                    {showStudentDropdown && filteredStudents.length === 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        padding: '8px 12px',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000
+                      }}>
+                        Không tìm thấy học sinh
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
-                <div className="student-info-section">
-                  <h3 style={{ 
-                    borderBottom: '2px solid #007bff',
-                    paddingBottom: '8px',
-                    margin: '0 0 16px 0',
-                    color: '#333',
-                    fontSize: '1.1rem'
-                  }}>Kết quả khám</h3>
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <label htmlFor="height">Chiều cao (cm) <span className="text-danger">*</span></label>
-                <input
-                  type="number"
-                  name="height"
-                        id="height"
-                  value={formData.height}
-                  onChange={handleInputChange}
-                  required
-                  min="0"
-                  step="0.1"
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                />
-              </div>
-                    <div className="info-item">
-                      <label htmlFor="weight">Cân nặng (kg) <span className="text-danger">*</span></label>
-                <input
-                  type="number"
-                  name="weight"
-                        id="weight"
-                  value={formData.weight}
-                  onChange={handleInputChange}
-                  required
-                  min="0"
-                  step="0.1"
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                />
+                <div className="mb-3">
+                  <label htmlFor="nurseId" className="form-label">Y tá phụ trách <span className="text-danger">*</span></label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="form-control"
+                      id="nurseId"
+                      name="nurseSearchTerm"
+                      value={formData.nurseSearchTerm}
+                      onChange={handleInputChange}
+                      onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
+                      onClick={() => setShowNurseDropdown(true)}
+                      placeholder="Nhập tên hoặc ID y tá"
+                      required
+                    />
+                    {showNurseDropdown && filteredNurses.length > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000,
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                      }}>
+                        {filteredNurses.map(nurse => (
+                          <div 
+                            key={nurse.nurseId} 
+                            className="dropdown-item" 
+                            style={{ padding: '8px 12px', cursor: 'pointer' }}
+                            onClick={() => handleSelectNurse(nurse)}
+                          >
+                            {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {showNurseDropdown && filteredNurses.length === 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        padding: '8px 12px',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000
+                      }}>
+                        Không tìm thấy y tá
+                      </div>
+                    )}
+                  </div>
                 </div>
-                    <div className="info-item">
-                      <label htmlFor="leftVision">Thị lực mắt trái <span className="text-danger">*</span></label>
+                <div className="mb-3">
+                  <label htmlFor="height" className="form-label">Chiều cao (cm) <span className="text-danger">*</span></label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="height"
+                    name="height"
+                    value={formData.height}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="weight" className="form-label">Cân nặng (kg) <span className="text-danger">*</span></label>
+                  <input
+                    type="number"
+                    className="form-control"
+                    id="weight"
+                    name="weight"
+                    value={formData.weight}
+                    onChange={handleInputChange}
+                    required
+                  />
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="leftVision" className="form-label">Thị lực mắt trái</label>
                   <input
                     type="text"
+                    className="form-control"
+                    id="leftVision"
                     name="leftVision"
-                        id="leftVision"
                     value={formData.leftVision}
                     onChange={handleInputChange}
-                        required
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
                   />
                 </div>
-                    <div className="info-item">
-                      <label htmlFor="rightVision">Thị lực mắt phải <span className="text-danger">*</span></label>
+                <div className="mb-3">
+                  <label htmlFor="rightVision" className="form-label">Thị lực mắt phải</label>
                   <input
                     type="text"
+                    className="form-control"
+                    id="rightVision"
                     name="rightVision"
-                        id="rightVision"
                     value={formData.rightVision}
                     onChange={handleInputChange}
-                        required
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
                   />
                 </div>
-                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                      <label htmlFor="result">Kết quả <span className="text-danger">*</span></label>
-                <textarea
-                  name="result"
-                        id="result"
-                  value={formData.result}
-                  onChange={handleInputChange}
-                        required
-                  rows="3"
-                        className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                ></textarea>
-              </div>
-                    {/* Status field removed */}
-                    <input type="hidden" name="status" value="1" />
-                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                      <label htmlFor="note">Ghi chú</label>
-                <textarea
-                  name="note"
-                        id="note"
-                  value={formData.note}
-                  onChange={handleInputChange}
-                        rows="2"
-                  className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                ></textarea>
-              </div>
-                  </div>
+                <div className="mb-3">
+                  <label htmlFor="result" className="form-label">Kết quả <span className="text-danger">*</span></label>
+                  <textarea
+                    className="form-control"
+                    id="result"
+                    name="result"
+                    value={formData.result}
+                    onChange={handleInputChange}
+                    rows={3}
+                    required
+                  ></textarea>
                 </div>
-                <div className="student-dialog-footer">
-                  <button type="submit" className="admin-btn">Lưu</button>
-                  <button type="button" className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowAddModal(false)}>Hủy</button>
+                <div className="mb-3">
+                  <label htmlFor="note" className="form-label">Ghi chú</label>
+                  <textarea
+                    className="form-control"
+                    id="note"
+                    name="note"
+                    value={formData.note}
+                    onChange={handleInputChange}
+                    rows={2}
+                  ></textarea>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="status" className="form-label">Trạng thái</label>
+                  <select
+                    className="form-control"
+                    id="status"
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                  >
+                    <option value="1">Hoàn thành</option>
+                    <option value="2">Chờ xử lý</option>
+                    <option value="3">Đã hủy</option>
+                  </select>
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="submit" className="btn btn-primary">Lưu</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Hủy</button>
               </div>
             </form>
-            </div>
           </div>
         </div>
       )}
