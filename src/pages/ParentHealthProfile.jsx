@@ -45,8 +45,13 @@ const ParentHealthProfile = () => {
         const profiles = {};
         for (const student of data) {
           try {
-            const healthProfile = await API_SERVICE.healthProfileAPI.get(student.studentId);
-            profiles[student.studentId] = healthProfile;
+            // Gọi API search thay vì get
+            const searchResult = await API_SERVICE.healthProfileAPI.search({ keyword: String(student.studentId) });
+            // Lọc đúng healthProfile có studentId trùng khớp
+            const healthProfile = Array.isArray(searchResult)
+              ? searchResult.find(p => String(p.studentId) === String(student.studentId))
+              : null;
+            profiles[student.studentId] = healthProfile || null;
           } catch (e) {
             profiles[student.studentId] = null;
           }
