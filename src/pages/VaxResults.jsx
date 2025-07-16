@@ -3,7 +3,7 @@ import { FaPlus, FaSearch, FaEye, FaEdit, FaTrash, FaFilter, FaSortAmountDown, F
 import { API_SERVICE } from "../services/api";
 import TableWithPaging from "../components/TableWithPaging";
 import { useNotification } from "../contexts/NotificationContext";
-import { formatDate } from "../services/utils";
+import { formatDate, getAcceptedStudentsBySchedule } from "../services/utils";
 import "../styles/Dashboard.css";
 import "../styles/VaxResults.css";
 
@@ -359,6 +359,47 @@ const VaxResults = () => {
           fetchVaccinationSchedules()
         ]);
         await fetchVaccinationResults();
+        
+        // Set current nurse name after fetching nurses
+        const currentNurseId = localStorage.getItem("userId");
+        if (currentNurseId) {
+          const currentNurse = nurses.find(n => n.nurseId.toString() === currentNurseId.toString());
+          if (currentNurse) {
+            const nurseName = currentNurse.fullName || 
+                            `${currentNurse.firstName || ''} ${currentNurse.lastName || ''}`.trim() || 
+                            `Y tá ID: ${currentNurseId}`;
+            setFormData(prev => ({
+              ...prev,
+              nurseId: currentNurseId,
+              nurseName: nurseName,
+              nurseSearchTerm: nurseName
+            }));
+          } else {
+            // If nurse not found in initial fetch, try to get directly
+            try {
+              const nurseResponse = await API_SERVICE.nurseAPI.getAll({
+                keyword: ""
+              });
+              
+              if (Array.isArray(nurseResponse)) {
+                const nurse = nurseResponse.find(n => n.nurseId.toString() === currentNurseId.toString());
+                if (nurse) {
+                  const nurseName = nurse.fullName || 
+                                  `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || 
+                                  `Y tá ID: ${currentNurseId}`;
+                  setFormData(prev => ({
+                    ...prev,
+                    nurseId: currentNurseId,
+                    nurseName: nurseName,
+                    nurseSearchTerm: nurseName
+                  }));
+                }
+              }
+            } catch (error) {
+              console.error("Error fetching nurse details:", error);
+            }
+          }
+        }
       } catch (error) {
         console.error("Error fetching initial data:", error);
         setNotif({
@@ -825,14 +866,40 @@ const VaxResults = () => {
     
     // Xử lý tìm kiếm học sinh khi người dùng nhập vào ô tìm kiếm học sinh
     if (name === "studentSearchTerm") {
-      const filtered = students.filter(student => 
-        (student.fullName?.toLowerCase().includes(value.toLowerCase())) ||
-        (student.firstName?.toLowerCase().includes(value.toLowerCase())) ||
-        (student.lastName?.toLowerCase().includes(value.toLowerCase())) ||
-        `${student.studentId}`.includes(value)
-      );
-      setFilteredStudents(filtered);
-      setShowStudentDropdown(true);
+      // Nếu đã chọn lịch tiêm chủng, chỉ lọc từ danh sách học sinh đã được chấp nhận
+      if (formData.vaccinationScheduleId) {
+        // Lấy danh sách học sinh đã được lọc theo lịch tiêm chủng
+        const acceptedStudents = filteredStudents.length > 0 ? filteredStudents : [];
+        
+        // Nếu có nhập từ khóa tìm kiếm, lọc tiếp theo từ khóa
+        if (value.trim() !== "") {
+          const searchResults = acceptedStudents.filter(student => 
+            (student.fullName?.toLowerCase().includes(value.toLowerCase())) ||
+            (student.firstName?.toLowerCase().includes(value.toLowerCase())) ||
+            (student.lastName?.toLowerCase().includes(value.toLowerCase())) ||
+            `${student.studentId}`.includes(value)
+          );
+          setFilteredStudents(searchResults);
+        }
+        
+        // Luôn hiển thị dropdown khi focus vào ô tìm kiếm
+        setShowStudentDropdown(true);
+      } else {
+        // Nếu chưa chọn lịch, nhưng có nhập từ khóa tìm kiếm
+        if (value.trim() !== "") {
+          const filtered = students.filter(student => 
+            (student.fullName?.toLowerCase().includes(value.toLowerCase())) ||
+            (student.firstName?.toLowerCase().includes(value.toLowerCase())) ||
+            (student.lastName?.toLowerCase().includes(value.toLowerCase())) ||
+            `${student.studentId}`.includes(value)
+          );
+          setFilteredStudents(filtered);
+        } else {
+          // Nếu chưa chọn lịch và không có từ khóa, hiển thị thông báo cần chọn lịch
+          setFilteredStudents([]);
+        }
+        setShowStudentDropdown(true);
+      }
     }
     
     // Xử lý tìm kiếm y tá khi người dùng nhập vào ô tìm kiếm y tá
@@ -1174,7 +1241,32 @@ const VaxResults = () => {
     if (currentNurseId) {
       const nurse = nurses.find(n => n.nurseId.toString() === currentNurseId.toString());
       if (nurse) {
-        nurseName = nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${currentNurseId}`;
+        nurseName = nurse.fullName || 
+                 `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || 
+                 `Y tá ID: ${currentNurseId}`;
+      } else {
+        // Nếu không tìm thấy trong danh sách nurses, thử lấy từ API
+        API_SERVICE.nurseAPI.getAll({
+          keyword: ""
+        }).then(response => {
+          if (Array.isArray(response)) {
+            const foundNurse = response.find(n => n.nurseId.toString() === currentNurseId.toString());
+            if (foundNurse) {
+              const name = foundNurse.fullName || 
+                          `${foundNurse.firstName || ''} ${foundNurse.lastName || ''}`.trim() || 
+                          `Y tá ID: ${currentNurseId}`;
+              
+              setFormData(prev => ({
+                ...prev,
+                nurseId: currentNurseId,
+                nurseName: name,
+                nurseSearchTerm: name
+              }));
+            }
+          }
+        }).catch(error => {
+          console.error("Error fetching nurse details in resetForm:", error);
+        });
       }
     }
     
@@ -1195,6 +1287,10 @@ const VaxResults = () => {
       injectionDate: "",
       injectionTime: ""
     });
+
+    // Reset danh sách học sinh đã lọc
+    setFilteredStudents([]);
+    setShowStudentDropdown(false);
   };
 
   // Cập nhật hàm xem chi tiết để hiển thị đúng thông tin
@@ -1246,23 +1342,24 @@ const VaxResults = () => {
     console.log("Editing vaccination result:", result);
     setSelectedResult(result);
     
-    // Lấy tên học sinh và y tá từ ID
-    let studentName = "";
+    // Lấy thông tin y tá đang đăng nhập
+    const currentNurseId = localStorage.getItem("userId") || "";
     let nurseName = "";
-        
+    
+    // Tìm thông tin y tá từ danh sách
+    if (currentNurseId) {
+      const nurse = nurses.find(n => n.nurseId.toString() === currentNurseId.toString());
+      if (nurse) {
+        nurseName = nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${currentNurseId}`;
+      }
+    }
+    
     // Tìm thông tin học sinh
+    let studentName = "";
     if (result.studentId) {
       const student = students.find(s => s.studentId === result.studentId);
       if (student) {
         studentName = student.fullName || `Học sinh ID: ${result.studentId}`;
-      }
-    }
-    
-    // Tìm thông tin y tá
-    if (result.nurseId) {
-      const nurse = nurses.find(n => n.nurseId === result.nurseId);
-      if (nurse) {
-        nurseName = nurse.fullName || `Y tá ID: ${result.nurseId}`;
       }
     }
     
@@ -1294,17 +1391,17 @@ const VaxResults = () => {
     // Khởi tạo form data với dữ liệu từ kết quả đã chọn
     setFormData({
       vaccinationResultId: result.vaccinationResultId,
-          vaccinationScheduleId: result.vaccinationScheduleId?.toString() || "",
+      vaccinationScheduleId: result.vaccinationScheduleId?.toString() || "",
       vaccinationScheduleName: scheduleName,
-          healthProfileId: result.healthProfileId?.toString() || "",
-          studentId: result.studentId?.toString() || "",
+      healthProfileId: result.healthProfileId?.toString() || "",
+      studentId: result.studentId?.toString() || "",
       studentName: studentName,
       studentSearchTerm: result.studentName || studentName,
-          nurseId: result.nurseId?.toString() || "",
-      nurseName: result.nurseName || nurseName,
-      nurseSearchTerm: result.nurseName || nurseName,
+      nurseId: currentNurseId, // Sử dụng ID của y tá đang đăng nhập
+      nurseName: nurseName, // Sử dụng tên của y tá đang đăng nhập
+      nurseSearchTerm: nurseName, // Sử dụng tên của y tá đang đăng nhập
       doseNumber: result.doseNumber?.toString() || "",
-          note: result.note || "",
+      note: result.note || "",
       status: result.status?.toString() || "1",
       injectionDate: injectionDate || "",
       injectionTime: injectionTime || ""
@@ -1329,6 +1426,7 @@ const VaxResults = () => {
         vaccinationScheduleId: "",
         vaccineName: ""
       }));
+      setFilteredStudents([]);
       return;
     }
     
@@ -1363,6 +1461,20 @@ const VaxResults = () => {
         injectionDate: existingSchedule.scheduleDate ? new Date(existingSchedule.scheduleDate).toISOString().split('T')[0] : prev.injectionDate || "",
         injectionTime: extractedTime || existingSchedule.injectionTime || prev.injectionTime || ""
       }));
+
+      // Lấy danh sách học sinh đã được phụ huynh đồng ý theo lịch tiêm chủng
+      try {
+        const acceptedStudents = await getAcceptedStudentsBySchedule(existingSchedule, API_SERVICE);
+        console.log("Students with accepted consent forms:", acceptedStudents);
+        setFilteredStudents(acceptedStudents);
+      } catch (error) {
+        console.error("Error getting accepted students:", error);
+        setNotif({
+          message: "Không thể lấy danh sách học sinh đã được phụ huynh đồng ý: " + (error.message || "Lỗi không xác định"),
+          type: "error"
+        });
+        setFilteredStudents([]);
+      }
     } else {
       // Nếu không tìm thấy trong cache, thử lấy từ API
       try {
@@ -1395,6 +1507,20 @@ const VaxResults = () => {
             injectionDate: schedule.scheduleDate ? new Date(schedule.scheduleDate).toISOString().split('T')[0] : prev.injectionDate || "",
             injectionTime: extractedTime || schedule.injectionTime || prev.injectionTime || ""
           }));
+
+          // Lấy danh sách học sinh đã được phụ huynh đồng ý theo lịch tiêm chủng
+          try {
+            const acceptedStudents = await getAcceptedStudentsBySchedule(schedule, API_SERVICE);
+            console.log("Students with accepted consent forms:", acceptedStudents);
+            setFilteredStudents(acceptedStudents);
+          } catch (error) {
+            console.error("Error getting accepted students:", error);
+            setNotif({
+              message: "Không thể lấy danh sách học sinh đã được phụ huynh đồng ý: " + (error.message || "Lỗi không xác định"),
+              type: "error"
+            });
+            setFilteredStudents([]);
+          }
         }
       } catch (error) {
         console.error("Error fetching schedule details:", error);
@@ -1402,7 +1528,8 @@ const VaxResults = () => {
           ...prev,
           vaccinationScheduleId: scheduleId.toString()
         }));
-    }
+        setFilteredStudents([]);
+      }
     }
   };
 
@@ -1750,12 +1877,37 @@ const VaxResults = () => {
     }
   };
 
+  // Thêm useEffect để đảm bảo tên y tá được hiển thị khi component mount
+  useEffect(() => {
+    // Lấy thông tin y tá hiện tại từ localStorage
+    const currentNurseId = localStorage.getItem("userId");
+    if (currentNurseId && nurses.length > 0) {
+      const nurse = nurses.find(n => n.nurseId.toString() === currentNurseId.toString());
+      if (nurse) {
+        const nurseName = nurse.fullName || 
+                        `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || 
+                        `Y tá ID: ${currentNurseId}`;
+        setFormData(prev => ({
+          ...prev,
+          nurseId: currentNurseId,
+          nurseName: nurseName,
+          nurseSearchTerm: nurseName
+        }));
+      }
+    }
+  }, [nurses]);
+
+  useEffect(() => {
+    // Reset form when Add modal is opened
+    if (showAddModal) {
+      resetForm();
+    }
+  }, [showAddModal]);
+
   return (
     <div className="admin-main">
       <h2 className="dashboard-title">Kết quả tiêm chủng</h2>
-      
 
-      
       <div className="admin-header">
         <button className="admin-btn" onClick={() => setShowAddModal(true)}>
           <FaPlus /> Thêm kết quả tiêm chủng
@@ -2010,42 +2162,47 @@ const VaxResults = () => {
           <div className="student-create-modal-content">
             <div className="modal-header">
               <h3 className="modal-title">Thêm kết quả tiêm chủng</h3>
-              <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
+              <button type="button" className="btn-close" onClick={() => {
+                setShowAddModal(false);
+                resetForm();
+              }}></button>
             </div>
             <form onSubmit={handleAddResult}>
               <div className="modal-body">
                 <div className="mb-3">
                   <label htmlFor="vaccinationScheduleId" className="form-label">Lịch tiêm chủng <span className="text-danger">*</span></label>
-                <select
+                  <select
                     className="form-control"
                     id="vaccinationScheduleId"
-                  name="vaccinationScheduleId"
-                      value={formData.vaccinationScheduleId || ""}
-                      onChange={handleInputChange}
-                  required
-                >
-                      <option value="">-- Chọn lịch tiêm chủng --</option>
-                  {schedules.map((schedule) => (
-                    <option key={schedule.vaccinationScheduleId} value={schedule.vaccinationScheduleId}>
-                          {schedule.vaccineName || schedule.name || `Lịch #${schedule.vaccinationScheduleId}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
-                  
+                    name="vaccinationScheduleId"
+                    value={formData.vaccinationScheduleId || ""}
+                    onChange={handleInputChange}
+                    required
+                  >
+                    <option value="">-- Chọn lịch tiêm chủng --</option>
+                    {schedules.map((schedule) => (
+                      <option key={schedule.vaccinationScheduleId} value={schedule.vaccinationScheduleId}>
+                        {schedule.vaccineName || schedule.name || `Lịch #${schedule.vaccinationScheduleId}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                      
                 <div className="mb-3">
                   <label htmlFor="studentId" className="form-label">Học sinh <span className="text-danger">*</span></label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="text"
                       className="form-control"
+                      style={{ backgroundColor: formData.vaccinationScheduleId ? "white" : "#e9ecef" }}
                       id="studentId"
                       name="studentSearchTerm"
                       value={formData.studentSearchTerm}
                       onChange={handleInputChange}
                       onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
-                      onClick={() => setShowStudentDropdown(true)}
-                      placeholder="Nhập tên hoặc ID học sinh"
+                      onClick={() => formData.vaccinationScheduleId ? setShowStudentDropdown(true) : null}
+                      placeholder={formData.vaccinationScheduleId ? "Nhập tên hoặc ID học sinh" : "Vui lòng chọn lịch tiêm chủng trước"}
+                      readOnly={!formData.vaccinationScheduleId}
                       required
                     />
                     {showStudentDropdown && filteredStudents.length > 0 && (
@@ -2086,139 +2243,83 @@ const VaxResults = () => {
                         borderRadius: '4px',
                         zIndex: 1000
                       }}>
-                        Không tìm thấy học sinh
+                        {formData.vaccinationScheduleId 
+                          ? "Không tìm thấy học sinh được phụ huynh đồng ý cho lịch tiêm chủng này" 
+                          : "Vui lòng chọn lịch tiêm chủng trước"}
                       </div>
                     )}
                   </div>
-                  </div>
-                  
+                </div>
+                      
                 <div className="mb-3">
                   <label htmlFor="nurseId" className="form-label">Y tá phụ trách <span className="text-danger">*</span></label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="nurseId"
-                      name="nurseSearchTerm"
-                      value={formData.nurseSearchTerm}
-                      onChange={handleInputChange}
-                      onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
-                      onClick={() => setShowNurseDropdown(true)}
-                      placeholder="Nhập tên hoặc ID y tá"
-                      required
-                    />
-                    {showNurseDropdown && filteredNurses.length > 0 && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        backgroundColor: 'white',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        zIndex: 1000,
-                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                      }}>
-                        {filteredNurses.map(nurse => (
-                          <div 
-                            key={nurse.nurseId} 
-                            className="dropdown-item" 
-                            style={{ padding: '8px 12px', cursor: 'pointer' }}
-                            onClick={() => handleSelectNurse(nurse)}
-                          >
-                            {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
-                          </div>
-                      ))}
-                      </div>
-                    )}
-                    {showNurseDropdown && filteredNurses.length === 0 && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        padding: '8px 12px',
-                        backgroundColor: 'white',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        zIndex: 1000
-                      }}>
-                        Không tìm thấy y tá
-                      </div>
-                    )}
-                  </div>
+                  <input
+                    type="text"
+                    className="form-control"
+                    style={{ backgroundColor: "#e9ecef" }}
+                    id="nurseId"
+                    name="nurseSearchTerm"
+                    value={formData.nurseSearchTerm}
+                    readOnly
+                    required
+                  />
                 </div>
 
                 <div className="mb-3">
                   <label htmlFor="doseNumber" className="form-label">Mũi số <span className="text-danger">*</span></label>
-                <input
-                  type="number"
+                  <input
+                    type="number"
                     className="form-control"
                     id="doseNumber"
-                  name="doseNumber"
-                  value={formData.doseNumber}
-                  onChange={handleInputChange}
-                  required
-                  min="1"
-                  placeholder="Nhập số mũi tiêm"
-                />
-              </div>
+                    name="doseNumber"
+                    value={formData.doseNumber}
+                    onChange={handleInputChange}
+                    required
+                    min="1"
+                    placeholder="Nhập số mũi tiêm"
+                  />
+                </div>
 
                 <div className="row">
                   <div className="col-md-6 mb-3">
                     <label htmlFor="injectionDate" className="form-label">Ngày tiêm</label>
-                      <input
-                        type="date"
+                    <input
+                      type="date"
                       className="form-control"
+                      style={{ backgroundColor: "#e9ecef" }}
                       id="injectionDate"
-                        name="injectionDate"
-                        value={formData.injectionDate ? new Date(formData.injectionDate).toISOString().split('T')[0] : ""}
-                        onChange={handleInputChange}
-                      />
-                    </div>
+                      name="injectionDate"
+                      value={formData.injectionDate ? new Date(formData.injectionDate).toISOString().split('T')[0] : ""}
+                      readOnly
+                    />
+                  </div>
                   <div className="col-md-6 mb-3">
                     <label htmlFor="injectionTime" className="form-label">Giờ tiêm</label>
-                      <input
-                        type="time"
+                    <input
+                      type="time"
                       className="form-control"
+                      style={{ backgroundColor: "#e9ecef" }}
                       id="injectionTime"
-                        name="injectionTime"
-                        value={formData.injectionTime || ""}
-                        onChange={handleInputChange}
-                      />
-                    </div>
+                      name="injectionTime"
+                      value={formData.injectionTime || ""}
+                      readOnly
+                    />
                   </div>
-
-                <div className="mb-3">
-                  <label htmlFor="reactionAfterInjection" className="form-label">Phản ứng sau tiêm</label>
-                <textarea
-                    className="form-control"
-                    id="reactionAfterInjection"
-                  name="reactionAfterInjection"
-                  value={formData.reactionAfterInjection}
-                  onChange={handleInputChange}
-                  placeholder="Nhập phản ứng sau tiêm (nếu có)"
-                    rows={3}
-                ></textarea>
-              </div>
-
-
+                </div>
 
                 <div className="mb-3">
                   <label htmlFor="note" className="form-label">Ghi chú</label>
-                <textarea
+                  <textarea
                     className="form-control"
                     id="note"
-                  name="note"
-                  value={formData.note}
-                  onChange={handleInputChange}
-                  placeholder="Nhập ghi chú"
+                    name="note"
+                    value={formData.note}
+                    onChange={handleInputChange}
+                    placeholder="Nhập ghi chú"
                     rows={3}
-                ></textarea>
-              </div>
+                  ></textarea>
                 </div>
+              </div>
               <div className="modal-footer">
                 <button type="submit" className="btn btn-primary" disabled={loading}>
                   {loading ? "Đang thêm..." : "Lưu"}
@@ -2226,7 +2327,10 @@ const VaxResults = () => {
                 <button
                   type="button"
                   className="btn btn-secondary"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    resetForm();
+                  }}
                   disabled={loading}
                 >
                   Hủy
@@ -2337,164 +2441,122 @@ const VaxResults = () => {
                 <input type="hidden" name="vaccinationResultId" value={formData.vaccinationResultId} />
                 <div className="mb-3">
                   <label htmlFor="vaccinationScheduleId" className="form-label">Lịch tiêm chủng <span className="text-danger">*</span></label>
-                <select
+                  <select
                     className="form-control"
+                    style={{ backgroundColor: "#e9ecef" }}
                     id="vaccinationScheduleId"
-                  name="vaccinationScheduleId"
-                      value={formData.vaccinationScheduleId || ""}
-                      onChange={handleInputChange}
-                  required
+                    name="vaccinationScheduleId"
+                    value={formData.vaccinationScheduleId || ""}
+                    onChange={handleInputChange}
+                    required
                     disabled={true}
-                >
-                      <option value="">-- Chọn lịch tiêm chủng --</option>
-                  {schedules.map((schedule) => (
-                    <option key={schedule.vaccinationScheduleId} value={schedule.vaccinationScheduleId}>
-                          {schedule.vaccineName || schedule.name || `Lịch #${schedule.vaccinationScheduleId}`}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  >
+                    <option value="">-- Chọn lịch tiêm chủng --</option>
+                    {schedules.map((schedule) => (
+                      <option key={schedule.vaccinationScheduleId} value={schedule.vaccinationScheduleId}>
+                        {schedule.vaccineName || schedule.name || `Lịch #${schedule.vaccinationScheduleId}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
                 <div className="mb-3">
                   <label htmlFor="studentId" className="form-label">Học sinh <span className="text-danger">*</span></label>
                   <input
                     type="text"
                     className="form-control"
+                    style={{ backgroundColor: "#e9ecef" }}
                     id="studentId"
                     name="studentSearchTerm"
                     value={formData.studentSearchTerm}
                     readOnly
                     disabled={true}
-                    style={{ backgroundColor: "#e9ecef" }}
                   />
-                  </div>
-                  
+                </div>
+                      
                 <div className="mb-3">
                   <label htmlFor="nurseId" className="form-label">Y tá phụ trách <span className="text-danger">*</span></label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="nurseId"
-                      name="nurseSearchTerm"
-                      value={formData.nurseSearchTerm}
-                      onChange={handleInputChange}
-                      onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
-                      onClick={() => setShowNurseDropdown(true)}
-                      placeholder="Nhập tên hoặc ID y tá"
-                      required
-                    />
-                    {showNurseDropdown && filteredNurses.length > 0 && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        backgroundColor: 'white',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        zIndex: 1000,
-                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                      }}>
-                        {filteredNurses.map(nurse => (
-                          <div 
-                            key={nurse.nurseId} 
-                            className="dropdown-item" 
-                            style={{ padding: '8px 12px', cursor: 'pointer' }}
-                            onClick={() => handleSelectNurse(nurse)}
-                          >
-                            {nurse.fullName || `${nurse.firstName || ''} ${nurse.lastName || ''}`.trim() || `Y tá ID: ${nurse.nurseId}`}
-                          </div>
-                      ))}
-                      </div>
-                    )}
-                    {showNurseDropdown && filteredNurses.length === 0 && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        padding: '8px 12px',
-                        backgroundColor: 'white',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        zIndex: 1000
-                      }}>
-                        Không tìm thấy y tá
-                      </div>
-                    )}
-                  </div>
+                  <input
+                    type="text"
+                    className="form-control"
+                    style={{ backgroundColor: "#e9ecef" }}
+                    id="nurseId"
+                    name="nurseSearchTerm"
+                    value={formData.nurseSearchTerm}
+                    readOnly
+                    required
+                  />
                 </div>
 
                 <div className="mb-3">
                   <label htmlFor="doseNumber" className="form-label">Mũi số <span className="text-danger">*</span></label>
-                <input
-                  type="number"
+                  <input
+                    type="number"
                     className="form-control"
                     id="doseNumber"
-                  name="doseNumber"
-                  value={formData.doseNumber}
-                  onChange={handleInputChange}
-                  required
-                  min="1"
-                />
-              </div>
+                    name="doseNumber"
+                    value={formData.doseNumber}
+                    onChange={handleInputChange}
+                    required
+                    min="1"
+                  />
+                </div>
 
                 <div className="row">
                   <div className="col-md-6 mb-3">
                     <label htmlFor="injectionDate" className="form-label">Ngày tiêm</label>
-                      <input
-                        type="date"
+                    <input
+                      type="date"
                       className="form-control"
+                      style={{ backgroundColor: "#e9ecef" }}
                       id="injectionDate"
-                        name="injectionDate"
-                        value={formData.injectionDate ? new Date(formData.injectionDate).toISOString().split('T')[0] : ""}
-                        onChange={handleInputChange}
+                      name="injectionDate"
+                      value={formData.injectionDate ? new Date(formData.injectionDate).toISOString().split('T')[0] : ""}
+                      readOnly
                       disabled={true}
-                      />
-                    </div>
+                    />
+                  </div>
                   <div className="col-md-6 mb-3">
                     <label htmlFor="injectionTime" className="form-label">Giờ tiêm</label>
-                      <input
-                        type="time"
+                    <input
+                      type="time"
                       className="form-control"
+                      style={{ backgroundColor: "#e9ecef" }}
                       id="injectionTime"
-                        name="injectionTime"
-                        value={formData.injectionTime || ""}
-                        onChange={handleInputChange}
+                      name="injectionTime"
+                      value={formData.injectionTime || ""}
+                      readOnly
                       disabled={true}
-                      />
-                    </div>
+                    />
                   </div>
+                </div>
 
                 <div className="mb-3">
                   <label htmlFor="note" className="form-label">Ghi chú</label>
-                <textarea
+                  <textarea
                     className="form-control"
                     id="note"
-                  name="note"
-                  value={formData.note}
-                  onChange={handleInputChange}
+                    name="note"
+                    value={formData.note}
+                    onChange={handleInputChange}
                     rows={3}
-                ></textarea>
-              </div>
+                  ></textarea>
                 </div>
+              </div>
               <div className="modal-footer">
                 <button type="submit" className="btn btn-primary" disabled={loading}>
                   {loading ? "Đang cập nhật..." : "Lưu thay đổi"}
                 </button>
                 {formData.status === "1" && (
-                <button
-                  type="button"
+                  <button
+                    type="button"
                     className="btn btn-success" 
                     onClick={() => {
                       setShowEditModal(false);
                       handleCompleteResult(formData.vaccinationResultId);
                     }}
-                  disabled={loading}
-                >
+                    disabled={loading}
+                  >
                     Đánh dấu hoàn thành
                   </button>
                 )}
