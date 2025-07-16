@@ -524,9 +524,23 @@ const MedEvents = () => {
       const isNumeric = /^\d+$/.test(searchKeyword);
       
       if (isNumeric) {
-        // Nếu là ID, tìm kiếm trong danh sách events hiện có
+        // Nếu là ID, tìm kiếm trực tiếp ID sự kiện y tế trước
+        const eventId = parseInt(searchKeyword);
+        const foundByEventId = events.find(event => event.medicalEventId === eventId);
+        
+        if (foundByEventId) {
+          // Nếu tìm thấy chính xác, chỉ hiển thị kết quả này
+          setFilteredEvents([foundByEventId]);
+          setSearchLoading(false);
+          setNotif({
+            message: `Đã tìm thấy sự kiện y tế với ID: ${eventId}`,
+            type: "success"
+          });
+          return;
+        }
+        
+        // Nếu không tìm thấy theo ID sự kiện, thử tìm theo ID học sinh hoặc y tá
         const foundEvents = events.filter(event => 
-          event.medicalEventId?.toString() === searchKeyword ||
           event.studentId?.toString() === searchKeyword ||
           event.nurseId?.toString() === searchKeyword
         );
@@ -535,7 +549,17 @@ const MedEvents = () => {
           // Nếu tìm thấy, cập nhật filteredEvents
           setFilteredEvents(foundEvents);
           setSearchLoading(false);
+          setNotif({
+            message: `Tìm thấy ${foundEvents.length} sự kiện y tế liên quan đến ID: ${searchKeyword}`,
+            type: "success"
+          });
           return;
+        } else {
+          // Nếu không tìm thấy, thông báo cho người dùng
+          setNotif({
+            message: `Không tìm thấy sự kiện y tế nào với ID: ${searchKeyword}`,
+            type: "warning"
+          });
         }
       }
       
@@ -562,6 +586,24 @@ const MedEvents = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Xử lý đặc biệt cho các trường ID, đảm bảo chúng là số nếu có giá trị
+    if (name === 'studentId' && value) {
+      // Nếu value không phải là số, không cập nhật state
+      if (isNaN(parseInt(value))) {
+        console.warn("studentId phải là số");
+        return;
+      }
+    }
+    
+    if (name === 'nurseId' && value) {
+      // Nếu value không phải là số, không cập nhật state
+      if (isNaN(parseInt(value))) {
+        console.warn("nurseId phải là số");
+        return;
+      }
+    }
+    
     setFormData({
       ...formData,
       [name]: value
@@ -588,11 +630,66 @@ const MedEvents = () => {
     }
   };
 
+  // Thêm hàm kiểm tra form
+  const validateForm = () => {
+    if (!formData.title) {
+      setNotif({
+        message: "Vui lòng nhập tiêu đề sự kiện",
+        type: "warning"
+      });
+      return false;
+    }
+    
+    if (!formData.eventDate) {
+      setNotif({
+        message: "Vui lòng chọn ngày sự kiện",
+        type: "warning"
+      });
+      return false;
+    }
+    
+    // Kiểm tra studentId có giá trị và có thể chuyển thành số không
+    if (!formData.studentId || isNaN(parseInt(formData.studentId))) {
+      setNotif({
+        message: "Vui lòng chọn học sinh",
+        type: "warning"
+      });
+      return false;
+    }
+    
+    // Kiểm tra nurseId có giá trị và có thể chuyển thành số không
+    if (!formData.nurseId || isNaN(parseInt(formData.nurseId))) {
+      setNotif({
+        message: "Vui lòng chọn y tá",
+        type: "warning"
+      });
+      return false;
+    }
+    
+    if (!formData.symptoms) {
+      setNotif({
+        message: "Vui lòng nhập triệu chứng",
+        type: "warning"
+      });
+      return false;
+    }
+    
+    if (!formData.actionTaken) {
+      setNotif({
+        message: "Vui lòng nhập hành động đã thực hiện",
+        type: "warning"
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   // Hàm mới để xử lý khi người dùng chọn một học sinh từ dropdown
   const handleSelectStudent = (student) => {
     setFormData({
       ...formData,
-      studentId: student.studentId,
+      studentId: parseInt(student.studentId),
       studentSearchTerm: student.fullName || `Học sinh ID: ${student.studentId}`
     });
     setShowStudentDropdown(false);
@@ -602,7 +699,7 @@ const MedEvents = () => {
   const handleSelectNurse = (nurse) => {
     setFormData({
       ...formData,
-      nurseId: nurse.nurseId,
+      nurseId: parseInt(nurse.nurseId),
       nurseSearchTerm: nurse.fullName || `Y tá ID: ${nurse.nurseId}`
     });
     setShowNurseDropdown(false);
@@ -610,6 +707,10 @@ const MedEvents = () => {
 
   const handleAddEvent = async (e) => {
     e.preventDefault();
+    // Kiểm tra form trước khi hiển thị hộp thoại xác nhận
+    if (!validateForm()) {
+      return;
+    }
     setShowConfirmAdd(true);
   };
 
@@ -645,16 +746,33 @@ const MedEvents = () => {
         }
       }
       
+      if (!studentId) {
+        throw new Error("Vui lòng chọn học sinh từ danh sách.");
+      }
+      
+      if (!nurseId) {
+        throw new Error("Vui lòng chọn y tá từ danh sách.");
+      }
+      
+      // Kiểm tra và đảm bảo định dạng đúng của ngày tháng
+      let formattedDate = formData.eventDate;
+      if (formattedDate && !formattedDate.includes('Z') && !formattedDate.includes('+')) {
+        // Thêm 'Z' để đảm bảo UTC nếu chưa có thông tin múi giờ
+        formattedDate = formattedDate + 'Z';
+      }
+      
       // Chuẩn bị dữ liệu để gửi
       const eventData = {
-        title: formData.title,
-        eventDate: formData.eventDate,
-        studentId: studentId,
-        nurseId: nurseId,
+        eventName: formData.title, // Đổi title thành eventName để phù hợp với model backend
+        eventDate: formattedDate,
+        studentId: parseInt(studentId),
+        nurseId: parseInt(nurseId),
         symptoms: formData.symptoms,
         actionTaken: formData.actionTaken,
-        note: formData.note
+        note: formData.note || ""
       };
+      
+      console.log("Sending data to API:", eventData);
       
       // Gọi API để thêm sự kiện y tế
       const response = await API_SERVICE.medicalEventAPI.create(eventData);
@@ -694,6 +812,10 @@ const MedEvents = () => {
 
   const handleUpdateEvent = async (e) => {
     e.preventDefault();
+    // Kiểm tra form trước khi hiển thị hộp thoại xác nhận
+    if (!validateForm()) {
+      return;
+    }
     setShowConfirmUpdate(true);
   };
 
@@ -729,29 +851,46 @@ const MedEvents = () => {
         }
       }
       
+      if (!studentId) {
+        throw new Error("Vui lòng chọn học sinh từ danh sách.");
+      }
+      
+      if (!nurseId) {
+        throw new Error("Vui lòng chọn y tá từ danh sách.");
+      }
+      
+      // Kiểm tra và đảm bảo định dạng đúng của ngày tháng
+      let formattedDate = formData.eventDate;
+      if (formattedDate && !formattedDate.includes('Z') && !formattedDate.includes('+')) {
+        // Thêm 'Z' để đảm bảo UTC nếu chưa có thông tin múi giờ
+        formattedDate = formattedDate + 'Z';
+      }
+      
       // Chuẩn bị dữ liệu để gửi
-        const eventData = {
-        medicalEventId: formData.medicalEventId,
-        title: formData.title,
-          eventDate: formData.eventDate,
-        studentId: studentId,
-        nurseId: nurseId,
+      const eventData = {
+        medicalEventId: parseInt(formData.medicalEventId),
+        eventName: formData.title, // Đổi title thành eventName để phù hợp với model backend
+        eventDate: formattedDate,
+        studentId: parseInt(studentId),
+        nurseId: parseInt(nurseId),
         symptoms: formData.symptoms,
         actionTaken: formData.actionTaken,
-        note: formData.note
+        note: formData.note || ""
       };
+      
+      console.log("Sending data to API for update:", eventData);
       
       // Gọi API để cập nhật sự kiện y tế
       const response = await API_SERVICE.medicalEventAPI.update(eventData);
         
-        // Nếu API thành công, cập nhật UI
-        setNotif({
-          message: "Cập nhật sự kiện y tế thành công!",
-          type: "success"
-        });
+      // Nếu API thành công, cập nhật UI
+      setNotif({
+        message: "Cập nhật sự kiện y tế thành công!",
+        type: "success"
+      });
         
       // Đóng modal và tải lại dữ liệu
-        setShowEditModal(false);
+      setShowEditModal(false);
       fetchMedicalEvents(searchKeyword);
     } catch (error) {
       console.error("Error updating medical event:", error);
@@ -839,6 +978,7 @@ const MedEvents = () => {
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             onKeyDown={handleSearchKeyDown}
+            title="Nhập ID sự kiện y tế để tìm kiếm nhanh"
           />
           <button
             className="admin-btn"

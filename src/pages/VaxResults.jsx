@@ -2143,11 +2143,18 @@ const VaxResults = () => {
                 </div>
                 <div className="info-item">
                     <strong>Học sinh:</strong> 
-                    {selectedResult.studentName || "Không có"} (ID: {selectedResult.studentId || "N/A"})
+                    <StudentNameCell 
+                      studentId={selectedResult.studentId} 
+                      initialName={selectedResult.studentName} 
+                      healthProfileId={selectedResult.healthProfileId} 
+                    />
                 </div>
                 <div className="info-item">
                     <strong>Y tá phụ trách:</strong> 
-                    {selectedResult.nurseName || "Không có"} (ID: {selectedResult.nurseId || "N/A"})
+                    <NurseNameCell 
+                      nurseId={selectedResult.nurseId} 
+                      initialName={selectedResult.nurseName} 
+                    />
                 </div>
                 </div>
               </div>
