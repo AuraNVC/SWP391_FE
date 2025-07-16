@@ -426,7 +426,7 @@ const ParentHealthProfile = () => {
                                               result.status === 'Accepted' ? 'bg-success' :
                                               'bg-danger'
                                             }`}>
-                                              {result.status === 'Accepted' ? 'Đã tiêm' : 'Chưa tiêm'}
+                                              {result.status}
                                             </span>
                                           </p>
                                           {result.note && <p className='mb-0 text-muted'><strong>Ghi chú:</strong> {result.note}</p>}

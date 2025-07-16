@@ -40,7 +40,7 @@ const API = {
     HEALTH_CHECK_SCHEDULE_DETAIL: (id) => `${API_BASE_URL}/healthCheckSchedule/${id}`,
     HEALTH_CHECK_SCHEDULE_DELETE: (id) => `${API_BASE_URL}/healthCheckSchedule/${id}`,
     STUDENT_DETAIL: (id) => `${API_BASE_URL}/student/${id}`,
-    STUDENT_BY_PARENT: (parentId) => `${API_BASE_URL}/student/parent/${parentId}`,
+    STUDENT_BY_PARENT: (parentId) => `${API_BASE_URL}/student/getParent${parentId}`,
     PARENT_PRESCRIPTION_BY_STUDENT: (studentId) => `${API_BASE_URL}/parent-prescription/student/${studentId}`,
     PARENT_PRESCRIPTION_BY_PARENT: (parentId) => `${API_BASE_URL}/parentPrescription/getPrescriptionByParent?parentId=${parentId}`,
     PARENT_PRESCRIPTION_GET_BY_PARENT: (parentId) => `${API_BASE_URL}/parentPrescription/getByParent?parentId=${parentId}`,

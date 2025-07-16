@@ -77,7 +77,7 @@ export default function ParentNotifications() {
         // Step 1: Fetch consent forms and students
         const [forms, studentList] = await Promise.all([
           API_SERVICE.consentFormAPI.getByParent(numericParentId),
-          API_SERVICE.parentAPI.getParent(numericParentId)
+          API_SERVICE.studentAPI.getByParent(numericParentId)
         ]);
         setConsentForms(forms);
         setStudents(studentList);
