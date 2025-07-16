@@ -130,6 +130,7 @@ const HealthResults = () => {
   const [selectedResult, setSelectedResult] = useState(null);
   const [formData, setFormData] = useState({
     healthCheckScheduleId: "",
+    healthCheckScheduleSearchTerm: "", // Thêm state mới để lưu từ khóa tìm kiếm lịch khám
     healthProfileId: "",
     studentId: "",
     studentSearchTerm: "", // Thêm state mới để lưu từ khóa tìm kiếm học sinh
@@ -141,15 +142,16 @@ const HealthResults = () => {
     leftVision: "",
     rightVision: "",
     result: "",
-    status: "1", // Default status: Completed
     note: ""
   });
   
-  // State mới để lưu danh sách học sinh và y tá đã lọc
+  // State mới để lưu danh sách học sinh, y tá và lịch khám đã lọc
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [filteredNurses, setFilteredNurses] = useState([]);
+  const [filteredSchedules, setFilteredSchedules] = useState([]);
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
   const [showNurseDropdown, setShowNurseDropdown] = useState(false);
+  const [showScheduleDropdown, setShowScheduleDropdown] = useState(false);
   
   // State mới cho tính năng lọc nâng cao
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
@@ -993,37 +995,70 @@ const HealthResults = () => {
           throw new Error("Không tìm thấy y tá. Vui lòng chọn y tá từ danh sách.");
         }
       }
+
+      // Lấy healthProfileId từ studentId
+      let healthProfileId = null;
+      try {
+        // Gọi API trực tiếp để lấy health profile từ studentId
+        const directProfile = await API_SERVICE.healthProfileAPI.getByStudent(studentId);
+        if (directProfile && directProfile.healthProfileId) {
+          healthProfileId = directProfile.healthProfileId;
+        } else {
+          // Nếu không tìm được bằng API trực tiếp, thử tìm qua search
+          const profileResponse = await API_SERVICE.healthProfileAPI.getAll({
+            keyword: studentId.toString()
+          });
+          
+          // Tìm profile của học sinh
+          if (Array.isArray(profileResponse) && profileResponse.length > 0) {
+            const studentProfile = profileResponse.find(p => p.studentId === parseInt(studentId));
+            if (studentProfile) {
+              healthProfileId = studentProfile.healthProfileId;
+            }
+          }
+        }
+        
+        if (!healthProfileId) {
+          throw new Error("Không tìm thấy hồ sơ sức khỏe của học sinh này.");
+        }
+      } catch (error) {
+        console.error("Error getting health profile:", error);
+        throw new Error("Không thể lấy thông tin hồ sơ sức khỏe: " + error.message);
+      }
       
       // Chuẩn bị dữ liệu để gửi
       const resultData = {
         healthCheckScheduleId: parseInt(formData.healthCheckScheduleId),
-        healthProfileId: parseInt(studentId), // Sử dụng studentId làm healthProfileId
+        healthProfileId: healthProfileId,
         nurseId: parseInt(nurseId),
         height: parseFloat(formData.height),
         weight: parseFloat(formData.weight),
         leftVision: formData.leftVision,
         rightVision: formData.rightVision,
         result: formData.result,
-        status: parseInt(formData.status),
         note: formData.note
+        // Status không cần gửi vì BE mặc định sẽ đặt là 1 (Pending)
       };
+      
+      console.log("Sending data to create health check result:", resultData);
       
       // Gọi API để thêm kết quả khám
       await API_SERVICE.healthCheckResultAPI.create(resultData);
       
       // Nếu API thành công, cập nhật UI
-          setNotif({
+      setNotif({
         message: "Thêm kết quả khám sức khỏe thành công!",
         type: "success"
       });
       
       // Đóng modal và tải lại dữ liệu
-          setShowAddModal(false);
+      setShowAddModal(false);
       fetchHealthCheckResults();
       
       // Reset form data
       setFormData({
         healthCheckScheduleId: "",
+        healthCheckScheduleSearchTerm: "",
         healthProfileId: "",
         studentId: "",
         studentSearchTerm: "",
@@ -1035,8 +1070,8 @@ const HealthResults = () => {
         leftVision: "",
         rightVision: "",
         result: "",
-        status: "1",
         note: ""
+        // status không cần thiết vì BE mặc định là 1
       });
     } catch (error) {
       console.error("Error adding health check result:", error);
@@ -1070,20 +1105,6 @@ const HealthResults = () => {
     setShowConfirmUpdate(false);
     setLoading(true);
     try {
-      // Tìm studentId từ tên học sinh đã nhập
-      let studentId = formData.studentId;
-      if (!studentId && formData.studentSearchTerm) {
-        const foundStudent = students.find(s => 
-          s.fullName === formData.studentSearchTerm || 
-          formData.studentSearchTerm.includes(`ID: ${s.studentId}`)
-        );
-        if (foundStudent) {
-          studentId = foundStudent.studentId;
-        } else {
-          throw new Error("Không tìm thấy học sinh. Vui lòng chọn học sinh từ danh sách.");
-        }
-      }
-      
       // Tìm nurseId từ tên y tá đã nhập
       let nurseId = formData.nurseId;
       if (!nurseId && formData.nurseSearchTerm) {
@@ -1098,20 +1119,19 @@ const HealthResults = () => {
         }
       }
       
-      // Chuẩn bị dữ liệu để gửi
+      // Chuẩn bị dữ liệu để gửi - chỉ gửi các trường mà BE có thể cập nhật
       const resultData = {
         healthCheckupRecordId: formData.healthCheckupRecordId,
-        healthCheckScheduleId: parseInt(formData.healthCheckScheduleId),
-        healthProfileId: parseInt(studentId), // Sử dụng studentId làm healthProfileId
         nurseId: parseInt(nurseId),
         height: parseFloat(formData.height),
         weight: parseFloat(formData.weight),
         leftVision: formData.leftVision,
         rightVision: formData.rightVision,
         result: formData.result,
-        status: parseInt(formData.status),
         note: formData.note
       };
+      
+      console.log("Sending data to update health check result:", resultData);
       
       // Gọi API để cập nhật kết quả khám
       await API_SERVICE.healthCheckResultAPI.update(resultData);
@@ -1389,11 +1409,11 @@ const HealthResults = () => {
           studentName = student.fullName || `Học sinh ID: ${record.studentId}`;
         } else {
           try {
-        const studentResponse = await API_SERVICE.studentAPI.getById(record.studentId);
-                  if (studentResponse) {
+            const studentResponse = await API_SERVICE.studentAPI.getById(record.studentId);
+            if (studentResponse) {
               studentName = studentResponse.fullName || 
-                                `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
-                    `Học sinh ID: ${record.studentId}`;
+                            `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
+                            `Học sinh ID: ${record.studentId}`;
             } else {
               studentName = record.studentName || `Học sinh ID: ${record.studentId}`;
             }
@@ -1402,6 +1422,29 @@ const HealthResults = () => {
             studentName = record.studentName || `Học sinh ID: ${record.studentId}`;
           }
         }
+      } else if (record.healthProfileId) {
+        // Nếu không có studentId nhưng có healthProfileId, thử lấy thông tin học sinh từ healthProfileId
+        try {
+          const profileData = await API_SERVICE.healthProfileAPI.get(record.healthProfileId);
+          if (profileData && profileData.studentId) {
+            const studentResponse = await API_SERVICE.studentAPI.getById(profileData.studentId);
+            if (studentResponse) {
+              studentName = studentResponse.fullName || 
+                            `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
+                            `Học sinh ID: ${profileData.studentId}`;
+              // Cập nhật studentId trong record
+              record.studentId = profileData.studentId;
+            } else {
+              studentName = `Học sinh ID: ${profileData.studentId}`;
+              record.studentId = profileData.studentId;
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching student from health profile:", error);
+          studentName = record.studentName || "Không xác định";
+        }
+      } else {
+        studentName = record.studentName || "Không xác định";
       }
       
       // Tìm thông tin y tá
@@ -1426,27 +1469,26 @@ const HealthResults = () => {
         }
       }
         
-        // Cập nhật formData cho chỉnh sửa
-        setFormData({
+      // Cập nhật formData cho chỉnh sửa - chỉ bao gồm các trường BE cho phép cập nhật
+      setFormData({
         healthCheckupRecordId: record.healthCheckupRecordId,
-          healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "",
-          healthProfileId: record.healthProfileId || "",
-          studentId: record.studentId || "",
-        studentSearchTerm: studentName,
-          nurseId: record.nurseId || localStorage.getItem("userId") || "",
-          nurseName: record.nurseName || "",
+        healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "", // Readonly, chỉ để hiển thị
+        healthProfileId: record.healthProfileId || "", // Readonly, chỉ để hiển thị
+        studentId: record.studentId || "", // Readonly, chỉ để hiển thị
+        studentSearchTerm: studentName, // Readonly, chỉ để hiển thị
+        nurseId: record.nurseId || localStorage.getItem("userId") || "",
+        nurseName: record.nurseName || "",
         nurseSearchTerm: nurseName,
-          height: record.height || "",
-          weight: record.weight || "",
-          leftVision: record.leftVision || "",
-          rightVision: record.rightVision || "",
-          result: record.result || "",
-          status: String(record.status) || "1",
-          note: record.note === null || record.note === undefined ? "" : record.note
-    });
+        height: record.height || "",
+        weight: record.weight || "",
+        leftVision: record.leftVision || "",
+        rightVision: record.rightVision || "",
+        result: record.result || "",
+        note: record.note === null || record.note === undefined ? "" : record.note
+      });
     
       setSelectedResult(record);
-    setShowEditModal(true);
+      setShowEditModal(true);
     } catch (error) {
       console.error("Error preparing edit data:", error);
       setNotif({
@@ -1577,12 +1619,19 @@ const HealthResults = () => {
     }
   }, [results]);
 
+  // Khởi tạo danh sách lịch khám đã lọc khi schedules thay đổi
+  useEffect(() => {
+    if (schedules.length > 0) {
+      setFilteredSchedules(schedules);
+    }
+  }, [schedules]);
+
   // Hàm mới để xử lý khi người dùng chọn một học sinh từ dropdown
   const handleSelectStudent = (student) => {
     setFormData({
       ...formData,
       studentId: student.studentId,
-      healthProfileId: student.studentId, // Sử dụng studentId làm healthProfileId
+      // healthProfileId will be fetched from API later
       studentSearchTerm: student.fullName || `Học sinh ID: ${student.studentId}`
     });
     setShowStudentDropdown(false);
@@ -1786,9 +1835,9 @@ const HealthResults = () => {
         </button>
           <div className="search-container">
             <input
-              className="admin-search"
+            className="admin-search"
               type="text"
-              placeholder="Tìm kiếm..."
+            placeholder="Tìm kiếm..."
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               onKeyDown={handleSearchKeyDown}
@@ -2065,27 +2114,25 @@ const HealthResults = () => {
               <h3 className="modal-title">Chỉnh sửa kết quả khám sức khỏe</h3>
               <button type="button" className="btn-close" onClick={() => setShowEditModal(false)}></button>
             </div>
-            <form onSubmit={handleUpdateResult}>
+              <form onSubmit={handleUpdateResult}>
               <div className="modal-body">
                 <input type="hidden" name="healthCheckupRecordId" value={formData.healthCheckupRecordId} />
                 <div className="mb-3">
-                  <label htmlFor="edit-healthCheckScheduleId" className="form-label">Lịch khám <span className="text-danger">*</span></label>
-                  <select
-                    name="healthCheckScheduleId"
-                    id="edit-healthCheckScheduleId"
-                    value={formData.healthCheckScheduleId}
-                    onChange={handleScheduleChange}
-                    required
-                    className="form-control"
-                  >
-                    <option value="">-- Chọn lịch khám --</option>
-                    {schedules.map((schedule) => (
-                      <option key={schedule.healthCheckScheduleId} value={schedule.healthCheckScheduleId}>
-                        {schedule.name} - {new Date(schedule.checkDate).toLocaleDateString('vi-VN')}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                  <label htmlFor="edit-healthCheckScheduleId" className="form-label">Lịch khám</label>
+                  <input
+                    type="text"
+                  name="healthCheckScheduleId"
+                        id="edit-healthCheckScheduleId"
+                    value={(() => {
+                      const schedule = schedules.find(s => String(s.healthCheckScheduleId) === String(formData.healthCheckScheduleId));
+                      return schedule 
+                        ? `${schedule.name} - ${new Date(schedule.checkDate).toLocaleDateString('vi-VN')}` 
+                        : `Lịch khám ID: ${formData.healthCheckScheduleId}`;
+                    })()}
+                    className="form-control bg-light"
+                    readOnly
+                  />
+              </div>
                 <div className="mb-3">
                   <label htmlFor="edit-studentId" className="form-label">Học sinh</label>
                   <div style={{ position: 'relative' }}>
@@ -2094,7 +2141,7 @@ const HealthResults = () => {
                       className="form-control bg-light"
                       id="edit-studentSearchTerm"
                       name="studentSearchTerm"
-                      value={formData.studentSearchTerm}
+                      value={formData.studentSearchTerm || "Không xác định"}
                       readOnly
                     />
                   </div>
@@ -2108,11 +2155,11 @@ const HealthResults = () => {
                       id="edit-nurseSearchTerm"
                       name="nurseSearchTerm"
                       value={formData.nurseSearchTerm}
-                      onChange={handleInputChange}
+                  onChange={handleInputChange}
                       onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
                       onClick={() => setShowNurseDropdown(true)}
                       placeholder="Nhập tên hoặc ID y tá"
-                      required
+                  required
                     />
                     {showNurseDropdown && filteredNurses.length > 0 && (
                       <div style={{
@@ -2138,7 +2185,7 @@ const HealthResults = () => {
                             {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
                           </div>
                         ))}
-                      </div>
+              </div>
                     )}
                     {showNurseDropdown && filteredNurses.length === 0 && (
                       <div style={{
@@ -2153,40 +2200,40 @@ const HealthResults = () => {
                         zIndex: 1000
                       }}>
                         Không tìm thấy y tá
-                      </div>
-                    )}
                   </div>
+                    )}
+                </div>
                 </div>
                 <div className="mb-3">
                   <label htmlFor="edit-height" className="form-label">Chiều cao (cm) <span className="text-danger">*</span></label>
-                  <input
-                    type="number"
+                <input
+                  type="number"
                     className="form-control"
-                    id="edit-height"
+                        id="edit-height"
                     name="height"
-                    value={formData.height}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+                  value={formData.height}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
                 <div className="mb-3">
                   <label htmlFor="edit-weight" className="form-label">Cân nặng (kg) <span className="text-danger">*</span></label>
-                  <input
-                    type="number"
+                <input
+                  type="number"
                     className="form-control"
-                    id="edit-weight"
+                        id="edit-weight"
                     name="weight"
-                    value={formData.weight}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  value={formData.weight}
+                  onChange={handleInputChange}
+                  required
+                />
                 </div>
                 <div className="mb-3">
                   <label htmlFor="edit-leftVision" className="form-label">Thị lực mắt trái</label>
                   <input
                     type="text"
                     className="form-control"
-                    id="edit-leftVision"
+                        id="edit-leftVision"
                     name="leftVision"
                     value={formData.leftVision}
                     onChange={handleInputChange}
@@ -2197,7 +2244,7 @@ const HealthResults = () => {
                   <input
                     type="text"
                     className="form-control"
-                    id="edit-rightVision"
+                        id="edit-rightVision"
                     name="rightVision"
                     value={formData.rightVision}
                     onChange={handleInputChange}
@@ -2205,47 +2252,34 @@ const HealthResults = () => {
                 </div>
                 <div className="mb-3">
                   <label htmlFor="edit-result" className="form-label">Kết quả <span className="text-danger">*</span></label>
-                  <textarea
+                <textarea
                     className="form-control"
-                    id="edit-result"
+                        id="edit-result"
                     name="result"
-                    value={formData.result}
-                    onChange={handleInputChange}
+                  value={formData.result}
+                  onChange={handleInputChange}
                     rows={3}
-                    required
-                  ></textarea>
-                </div>
+                        required
+                ></textarea>
+              </div>
                 <div className="mb-3">
                   <label htmlFor="edit-note" className="form-label">Ghi chú</label>
-                  <textarea
+                <textarea
                     className="form-control"
-                    id="edit-note"
+                        id="edit-note"
                     name="note"
-                    value={formData.note}
-                    onChange={handleInputChange}
+                  value={formData.note}
+                  onChange={handleInputChange}
                     rows={2}
-                  ></textarea>
-                </div>
-                <div className="mb-3">
-                  <label htmlFor="edit-status" className="form-label">Trạng thái</label>
-                  <select
-                    className="form-control"
-                    id="edit-status"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                  >
-                    <option value="1">Hoàn thành</option>
-                    <option value="2">Chờ xử lý</option>
-                    <option value="3">Đã hủy</option>
-                  </select>
-                </div>
+                ></textarea>
+              </div>
+
               </div>
               <div className="modal-footer">
                 <button type="submit" className="btn btn-primary">Lưu thay đổi</button>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Hủy</button>
-              </div>
-            </form>
+        </div>
+              </form>
           </div>
         </div>
       )}
@@ -2258,25 +2292,76 @@ const HealthResults = () => {
               <h3 className="modal-title">Thêm kết quả khám sức khỏe mới</h3>
               <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
             </div>
-            <form onSubmit={handleAddResult}>
+              <form onSubmit={handleAddResult}>
               <div className="modal-body">
                 <div className="mb-3">
                   <label htmlFor="healthCheckScheduleId" className="form-label">Lịch khám <span className="text-danger">*</span></label>
-                  <select
-                    name="healthCheckScheduleId"
-                    id="healthCheckScheduleId"
-                    value={formData.healthCheckScheduleId}
-                    onChange={handleScheduleChange}
-                    required
-                    className="form-control"
-                  >
-                    <option value="">-- Chọn lịch khám --</option>
-                    {schedules.map((schedule) => (
-                      <option key={schedule.healthCheckScheduleId} value={schedule.healthCheckScheduleId}>
-                        {schedule.name} - {new Date(schedule.checkDate).toLocaleDateString('vi-VN')}
-                      </option>
-                    ))}
-                  </select>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="form-control"
+                        id="healthCheckScheduleId"
+                      name="healthCheckScheduleSearchTerm"
+                      value={formData.healthCheckScheduleSearchTerm || ""}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          healthCheckScheduleSearchTerm: e.target.value
+                        });
+                        // Lọc lịch khám dựa trên từ khóa tìm kiếm
+                        const keyword = e.target.value.toLowerCase();
+                        const filtered = schedules.filter(schedule => 
+                          schedule.name?.toLowerCase().includes(keyword) || 
+                          String(schedule.healthCheckScheduleId).includes(keyword)
+                        );
+                        setFilteredSchedules(filtered);
+                        setShowScheduleDropdown(true);
+                      }}
+                      onFocus={() => setShowScheduleDropdown(true)}
+                      placeholder="Nhập tên hoặc ID lịch khám"
+                  required
+                    />
+                    {showScheduleDropdown && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000,
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                      }}>
+                        {filteredSchedules && filteredSchedules.length > 0 ? (
+                          filteredSchedules.map(schedule => (
+                            <div 
+                              key={schedule.healthCheckScheduleId} 
+                              className="dropdown-item" 
+                              style={{ padding: '8px 12px', cursor: 'pointer' }}
+                              onClick={() => {
+                                handleScheduleChange({ target: { value: schedule.healthCheckScheduleId } });
+                                setFormData({
+                                  ...formData,
+                                  healthCheckScheduleId: schedule.healthCheckScheduleId,
+                                  healthCheckScheduleSearchTerm: `${schedule.name} - ${new Date(schedule.checkDate).toLocaleDateString('vi-VN')}`
+                                });
+                                setShowScheduleDropdown(false);
+                              }}
+                            >
+                      {schedule.name} - {new Date(schedule.checkDate).toLocaleDateString('vi-VN')}
+              </div>
+                          ))
+                        ) : (
+                          <div style={{ padding: '8px 12px' }}>
+                            Không tìm thấy lịch khám
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="mb-3">
                   <label htmlFor="studentId" className="form-label">Học sinh <span className="text-danger">*</span></label>
@@ -2284,14 +2369,14 @@ const HealthResults = () => {
                     <input
                       type="text"
                       className="form-control"
-                      id="studentId"
+                        id="studentId"
                       name="studentSearchTerm"
                       value={formData.studentSearchTerm}
                       onChange={handleInputChange}
                       onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
                       onClick={() => setShowStudentDropdown(true)}
                       placeholder="Nhập tên hoặc ID học sinh"
-                      required
+                  required
                     />
                     {showStudentDropdown && filteredStudents.length > 0 && (
                       <div style={{
@@ -2317,7 +2402,7 @@ const HealthResults = () => {
                             {student.fullName || `Học sinh ID: ${student.studentId}`}
                           </div>
                         ))}
-                      </div>
+              </div>
                     )}
                     {showStudentDropdown && filteredStudents.length === 0 && (
                       <div style={{
@@ -2342,14 +2427,14 @@ const HealthResults = () => {
                     <input
                       type="text"
                       className="form-control"
-                      id="nurseId"
+                        id="nurseId"
                       name="nurseSearchTerm"
                       value={formData.nurseSearchTerm}
-                      onChange={handleInputChange}
+                  onChange={handleInputChange}
                       onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
                       onClick={() => setShowNurseDropdown(true)}
                       placeholder="Nhập tên hoặc ID y tá"
-                      required
+                  required
                     />
                     {showNurseDropdown && filteredNurses.length > 0 && (
                       <div style={{
@@ -2375,7 +2460,7 @@ const HealthResults = () => {
                             {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
                           </div>
                         ))}
-                      </div>
+              </div>
                     )}
                     {showNurseDropdown && filteredNurses.length === 0 && (
                       <div style={{
@@ -2390,40 +2475,40 @@ const HealthResults = () => {
                         zIndex: 1000
                       }}>
                         Không tìm thấy y tá
-                      </div>
-                    )}
                   </div>
+                    )}
+                </div>
                 </div>
                 <div className="mb-3">
                   <label htmlFor="height" className="form-label">Chiều cao (cm) <span className="text-danger">*</span></label>
-                  <input
-                    type="number"
+                <input
+                  type="number"
                     className="form-control"
-                    id="height"
+                        id="height"
                     name="height"
-                    value={formData.height}
-                    onChange={handleInputChange}
-                    required
-                  />
-                </div>
+                  value={formData.height}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
                 <div className="mb-3">
                   <label htmlFor="weight" className="form-label">Cân nặng (kg) <span className="text-danger">*</span></label>
-                  <input
-                    type="number"
+                <input
+                  type="number"
                     className="form-control"
-                    id="weight"
+                        id="weight"
                     name="weight"
-                    value={formData.weight}
-                    onChange={handleInputChange}
-                    required
-                  />
+                  value={formData.weight}
+                  onChange={handleInputChange}
+                  required
+                />
                 </div>
                 <div className="mb-3">
                   <label htmlFor="leftVision" className="form-label">Thị lực mắt trái</label>
                   <input
                     type="text"
                     className="form-control"
-                    id="leftVision"
+                        id="leftVision"
                     name="leftVision"
                     value={formData.leftVision}
                     onChange={handleInputChange}
@@ -2434,7 +2519,7 @@ const HealthResults = () => {
                   <input
                     type="text"
                     className="form-control"
-                    id="rightVision"
+                        id="rightVision"
                     name="rightVision"
                     value={formData.rightVision}
                     onChange={handleInputChange}
@@ -2442,42 +2527,29 @@ const HealthResults = () => {
                 </div>
                 <div className="mb-3">
                   <label htmlFor="result" className="form-label">Kết quả <span className="text-danger">*</span></label>
-                  <textarea
+                <textarea
                     className="form-control"
-                    id="result"
+                        id="result"
                     name="result"
-                    value={formData.result}
-                    onChange={handleInputChange}
+                  value={formData.result}
+                  onChange={handleInputChange}
                     rows={3}
-                    required
-                  ></textarea>
-                </div>
+                        required
+                ></textarea>
+              </div>
                 <div className="mb-3">
                   <label htmlFor="note" className="form-label">Ghi chú</label>
-                  <textarea
+                <textarea
                     className="form-control"
-                    id="note"
+                        id="note"
                     name="note"
-                    value={formData.note}
-                    onChange={handleInputChange}
+                  value={formData.note}
+                  onChange={handleInputChange}
                     rows={2}
-                  ></textarea>
-                </div>
-                <div className="mb-3">
-                  <label htmlFor="status" className="form-label">Trạng thái</label>
-                  <select
-                    className="form-control"
-                    id="status"
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                  >
-                    <option value="1">Hoàn thành</option>
-                    <option value="2">Chờ xử lý</option>
-                    <option value="3">Đã hủy</option>
-                  </select>
-                </div>
+                ></textarea>
               </div>
+
+                  </div>
               <div className="modal-footer">
                 <button type="submit" className="btn btn-primary">Lưu</button>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Hủy</button>

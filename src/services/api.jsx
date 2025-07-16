@@ -382,6 +382,7 @@ export const API_SERVICE = {
     healthProfileAPI: {
         get: (studentId) => callApi(API.HEALTH_PROFILE(studentId)),
         getById: (id) => callApi(API.HEALTH_PROFILE(id)),
+        getByStudent: (studentId) => callApi(API.HEALTH_PROFILE(studentId)),
         getAll: (data) => callApi(API.HEALTH_PROFILE_LIST, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
