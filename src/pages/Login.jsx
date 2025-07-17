@@ -83,7 +83,7 @@ export default function Login({ setNotif }) {
         if (!(data && data.user.accessToken && data.user.id)) {
           throw new Error();
         }
-        redirectPath = "/manager/dashboard";
+        redirectPath = "/manager/student";
       } else if (role === "student") {
         data = await API_SERVICE.login.student({
           studentNumber: username,
