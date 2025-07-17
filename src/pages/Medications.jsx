@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { API_SERVICE } from "../services/api";
 import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
-import { FaEye, FaSearch, FaEdit, FaFilter, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
+import { FaEye, FaSearch, FaEdit, FaFilter, FaSortAmountDown, FaSortAmountUp, FaCheck, FaTimes } from "react-icons/fa";
 import "../styles/Dashboard.css";
+import "../styles/VaxResults.css";
 
 const Medications = () => {
   const [medications, setMedications] = useState([]);
@@ -125,13 +126,38 @@ const Medications = () => {
       dataIndex: "status",
       render: (status) => {
         let statusText = "Chưa xác định";
+        let badgeStyle = {};
         
         if (status === "Pending" || status === 1) {
           statusText = "Đang chờ";
+          badgeStyle = {
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontSize: '0.85rem',
+            fontWeight: '500',
+            backgroundColor: '#ffc107',
+            color: '#212529'
+          };
         } else if (status === "Accepted" || status === 2) {
           statusText = "Đã duyệt";
+          badgeStyle = {
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontSize: '0.85rem',
+            fontWeight: '500',
+            backgroundColor: '#28a745',
+            color: '#fff'
+          };
         } else if (status === "Rejected" || status === 3) {
           statusText = "Đã từ chối";
+          badgeStyle = {
+            padding: '4px 8px',
+            borderRadius: '4px',
+            fontSize: '0.85rem',
+            fontWeight: '500',
+            backgroundColor: '#dc3545',
+            color: '#fff'
+          };
         }
         
         return (
@@ -139,7 +165,7 @@ const Medications = () => {
             style={{ cursor: 'pointer' }} 
             onClick={() => handleSort("status")}
           >
-            {statusText}
+            <span style={badgeStyle}>{statusText}</span>
             {sortConfig.key === "status" && (
               <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
                 {sortConfig.direction === 'asc' ? '▲' : '▼'}
@@ -399,7 +425,7 @@ const Medications = () => {
             return dateA - dateB;
           } else {
             return dateB - dateA;
-          }
+        }
         }
         else {
           // Xử lý các trường thông thường
@@ -413,8 +439,8 @@ const Medications = () => {
           }
         }
       });
-    }
-    
+        }
+        
     // Ưu tiên hiển thị các đơn thuốc chưa duyệt lên đầu
     if (currentSortConfig.key !== "status") {
       result.sort((a, b) => {
@@ -797,33 +823,31 @@ const Medications = () => {
 
   return (
     <div className="admin-main">
+      <h2 className="dashboard-title">Quản lý thuốc từ phụ huynh</h2>
       <div className="admin-header">
-        <h2>Quản lý thuốc từ phụ huynh</h2>
-        <div className="admin-header-actions">
-          <div className="search-container">
-            <input
-              className="admin-search"
-              type="text"
-              placeholder="Tìm kiếm..."
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-            />
-            <button
-              className="admin-btn"
-              style={{ marginLeft: '8px', padding: '8px' }}
-              onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
-              title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
-            >
-              <FaFilter />
-            </button>
-          </div>
+        <div className="search-container">
+          <input
+            className="admin-search"
+            type="text"
+            placeholder="Tìm kiếm..."
+            value={searchKeyword}
+            onChange={(e) => setSearchKeyword(e.target.value)}
+            onKeyDown={handleSearchKeyDown}
+          />
+          <button
+            className="admin-btn"
+            style={{ marginLeft: '8px', padding: '8px' }}
+            onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+            title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
+          >
+            <FaFilter />
+          </button>
         </div>
       </div>
 
       {/* Phần tìm kiếm nâng cao */}
       {showAdvancedFilter && (
-        <div className="admin-advanced-search" style={{ 
+        <div className="admin-advanced-filter" style={{ 
           backgroundColor: '#f8f9fa', 
           padding: '15px', 
           borderRadius: '5px', 
@@ -887,6 +911,20 @@ const Medications = () => {
               />
             </div>
             
+            {/* Lọc theo ngày */}
+            <div>
+              <label htmlFor="dateFrom" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Từ ngày</label>
+              <input
+                type="date"
+                id="dateFrom"
+                name="dateFrom"
+                value={filters.dateFrom}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
             {/* Lọc theo trạng thái */}
             <div>
               <label htmlFor="status" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Trạng thái</label>
@@ -899,10 +937,27 @@ const Medications = () => {
                 style={{ width: '100%', padding: '8px' }}
               >
                 <option value="all">Tất cả</option>
-                <option value="Pending">Chờ duyệt</option>
-                <option value="Approved">Đã duyệt</option>
-                <option value="Rejected">Từ chối</option>
-                <option value="Completed">Hoàn thành</option>
+                <option value="pending">Đang chờ</option>
+                <option value="accepted">Đã duyệt</option>
+                <option value="rejected">Đã từ chối</option>
+              </select>
+            </div>
+            
+            {/* Lọc theo số lượng còn lại */}
+            <div>
+              <label htmlFor="remainingQuantity" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Số lượng còn lại</label>
+              <select
+                id="remainingQuantity"
+                name="remainingQuantity"
+                value={filters.remainingQuantity}
+                onChange={handleFilterChange}
+                className="form-control"
+                style={{ width: '100%', padding: '8px' }}
+              >
+                <option value="all">Tất cả</option>
+                <option value="low">Thấp (≤ 20%)</option>
+                <option value="medium">Trung bình (21-50%)</option>
+                <option value="high">Cao ({'>'}50%)</option>
               </select>
             </div>
           </div>
@@ -917,12 +972,13 @@ const Medications = () => {
                 className="form-control"
                 style={{ display: 'inline-block', width: 'auto', padding: '6px' }}
               >
-                <option value="medicationId">ID</option>
+                <option value="prescriptionId">ID</option>
                 <option value="medicationName">Tên thuốc</option>
                 <option value="studentName">Học sinh</option>
-                <option value="quantity">Số lượng</option>
+                <option value="parentName">Phụ huynh</option>
+                <option value="createdDate">Ngày gửi</option>
                 <option value="status">Trạng thái</option>
-                <option value="createdDate">Ngày tạo</option>
+                <option value="remainingQuantity">Số lượng còn lại</option>
               </select>
             </div>
             
@@ -946,13 +1002,18 @@ const Medications = () => {
 
       <div className="admin-table-container">
         {loading ? (
-          <div className="loading-spinner">Đang tải...</div>
+          <div className="loading-container">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Đang tải...</span>
+            </div>
+            <p>Đang tải dữ liệu...</p>
+          </div>
         ) : (
           <TableWithPaging
             columns={columns}
-            data={filteredMedications} // Sử dụng filteredMedications để hiển thị dữ liệu đã lọc và sắp xếp
-            page={page}
+            data={filteredMedications}
             pageSize={10}
+            page={page}
             onPageChange={setPage}
             renderActions={(row) => (
               <div className="admin-action-group">
@@ -963,24 +1024,48 @@ const Medications = () => {
                 >
                   <FaEye style={iconStyle.view} size={18} />
                 </button>
-                {row.medicationId && (
-                <button
-                  className="admin-action-btn admin-action-edit admin-action-btn-reset"
+                {(row.status === "Pending" || row.status === 1) && (
+                  <>
+                    <button
+                      className="admin-action-btn admin-action-accept admin-action-btn-reset"
+                      title="Chấp nhận"
+                      onClick={() => {
+                        setSelectedMedication(row);
+                        setShowConfirmAccept(true);
+                      }}
+                    >
+                      <FaCheck style={{ color: "#28a745" }} size={18} />
+                    </button>
+                    <button
+                      className="admin-action-btn admin-action-reject admin-action-btn-reset"
+                      title="Từ chối"
+                      onClick={() => {
+                        setSelectedMedication(row);
+                        setShowConfirmReject(true);
+                      }}
+                    >
+                      <FaTimes style={{ color: "#dc3545" }} size={18} />
+                    </button>
+                  </>
+                )}
+                {(row.status === "Accepted" || row.status === 2) && (
+                  <button
+                    className="admin-action-btn admin-action-edit admin-action-btn-reset"
                     title="Cập nhật số lượng"
                     onClick={() => {
                       setSelectedMedication(row);
-                      setUpdatedQuantity(row.remainingQuantity || "");
+                      setUpdatedQuantity(row.remainingQuantity?.toString() || "");
                       setShowUpdateQuantityModal(true);
                     }}
-                >
-                  <FaEdit style={iconStyle.edit} size={18} />
-                </button>
+                  >
+                    <FaEdit style={iconStyle.edit} size={18} />
+                  </button>
                 )}
               </div>
             )}
           />
         )}
-        {!loading && filteredMedications.length === 0 && ( // Sử dụng filteredMedications
+        {!loading && filteredMedications.length === 0 && (
           <div className="no-data-message">
             Không có yêu cầu thuốc nào
           </div>
@@ -1016,7 +1101,7 @@ const Medications = () => {
                 </div>
                 <div className="info-item">
                     <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "Không có"}
-                </div>
+                  </div>
                 <div className="info-item">
                   <strong>Trạng thái:</strong> {" "}
                   {(() => {
@@ -1082,12 +1167,12 @@ const Medications = () => {
                               display: 'inline-block',
                               cursor: 'pointer'
                             }}
-                          >
-                            Xem đơn thuốc
-                          </a>
+                        >
+                          Xem đơn thuốc
+                        </a>
                         </div>
-                      </div>
-                    </div>
+                </div>
+                </div>
                   )}
                 </div>
               </div>

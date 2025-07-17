@@ -4,6 +4,7 @@ import { useNotification } from "../contexts/NotificationContext";
 import TableWithPaging from "../components/TableWithPaging";
 import { FaEye, FaEdit, FaPlus, FaSearch, FaSync, FaTrash, FaFilter, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
 import "../styles/Dashboard.css";
+import { getAcceptedStudentsBySchedule } from "../services/utils";
 
 // Component riêng để hiển thị tên học sinh
 const StudentNameCell = ({ studentId, initialName, healthProfileId, showIdInTable = true }) => {
@@ -130,6 +131,7 @@ const HealthResults = () => {
   const [selectedResult, setSelectedResult] = useState(null);
   const [formData, setFormData] = useState({
     healthCheckScheduleId: "",
+    healthCheckScheduleSearchTerm: "", // Thêm state mới để lưu từ khóa tìm kiếm lịch khám
     healthProfileId: "",
     studentId: "",
     studentSearchTerm: "", // Thêm state mới để lưu từ khóa tìm kiếm học sinh
@@ -141,26 +143,61 @@ const HealthResults = () => {
     leftVision: "",
     rightVision: "",
     result: "",
-    status: "1", // Default status: Completed
     note: ""
   });
   
-  // State mới để lưu danh sách học sinh và y tá đã lọc
+  // Thêm useEffect để tự động lấy thông tin y tá đăng nhập
+  useEffect(() => {
+    const fetchLoggedInNurseInfo = async () => {
+      const userId = localStorage.getItem("userId");
+      if (userId) {
+        try {
+          const nurseInfo = await API_SERVICE.nurseAPI.getById(userId);
+          if (nurseInfo) {
+            setFormData(prevFormData => ({
+              ...prevFormData,
+              nurseId: userId,
+              nurseName: nurseInfo.fullName || `${nurseInfo.firstName || ''} ${nurseInfo.lastName || ''}`.trim(),
+              nurseSearchTerm: nurseInfo.fullName || `${nurseInfo.firstName || ''} ${nurseInfo.lastName || ''}`.trim()
+            }));
+          }
+        } catch (error) {
+          console.error("Error fetching logged-in nurse info:", error);
+        }
+      }
+    };
+    
+    fetchLoggedInNurseInfo();
+  }, []);
+  
+  // Thêm useEffect để xóa thông tin học sinh khi thay đổi lịch khám
+  useEffect(() => {
+    if (!formData.healthCheckScheduleId) {
+      setFormData(prevFormData => ({
+        ...prevFormData,
+        studentId: "",
+        studentSearchTerm: "",
+      }));
+      setFilteredStudents([]);
+    }
+  }, [formData.healthCheckScheduleId]);
+  
+  // State mới để lưu danh sách học sinh, y tá và lịch khám đã lọc
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [filteredNurses, setFilteredNurses] = useState([]);
+  const [filteredSchedules, setFilteredSchedules] = useState([]);
   const [showStudentDropdown, setShowStudentDropdown] = useState(false);
   const [showNurseDropdown, setShowNurseDropdown] = useState(false);
+  const [showScheduleDropdown, setShowScheduleDropdown] = useState(false);
   
   // State mới cho tính năng lọc nâng cao
   const [showAdvancedFilter, setShowAdvancedFilter] = useState(false);
   const [filters, setFilters] = useState({
     date: "",
     studentName: "",
-    nurseName: "",
     height: "",
     weight: "",
-    vision: "",
-    result: ""
+    schedule: ""
   });
   
   // State mới cho tính năng sắp xếp
@@ -246,8 +283,23 @@ const HealthResults = () => {
       dataIndex: "vision", 
       key: "visionValue", 
       render: (_, record) => {
-      const leftVision = record.leftVision || "N/A";
-      const rightVision = record.rightVision || "N/A";
+        // Xử lý hiển thị thị lực đúng định dạng
+        let leftVision = record.leftVision || "N/A";
+        let rightVision = record.rightVision || "N/A";
+        
+        // Đảm bảo hiển thị đúng định dạng X/10
+        if (leftVision !== "N/A") {
+          leftVision = leftVision.includes("/10") ? leftVision : `${leftVision}/10`;
+          // Loại bỏ các định dạng lỗi như 2/10/10
+          leftVision = leftVision.replace(/\/10\/10$/, "/10");
+        }
+        
+        if (rightVision !== "N/A") {
+          rightVision = rightVision.includes("/10") ? rightVision : `${rightVision}/10`;
+          // Loại bỏ các định dạng lỗi như 2/10/10
+          rightVision = rightVision.replace(/\/10\/10$/, "/10");
+        }
+        
         return (
           <span style={{ cursor: 'pointer' }} onClick={() => handleSort("leftVision")}>
             {`Trái: ${leftVision} - Phải: ${rightVision}`}
@@ -395,20 +447,8 @@ const HealthResults = () => {
         return processedStudents;
       } else {
         console.warn("Students API did not return an array:", response);
-        
-        // Thử tạo một mảng học sinh mẫu để test
-        const dummyStudents = [
-          { studentId: 1, fullName: "Nguyễn Văn A" },
-          { studentId: 2, fullName: "Trần Thị B" },
-          { studentId: 3, fullName: "Lê Văn C" },
-          { studentId: 4, fullName: "Phạm Thị D" },
-          { studentId: 5, fullName: "Hoàng Văn E" }
-        ];
-        
-        console.log("Using dummy students due to API issue:", dummyStudents);
-        setStudents(dummyStudents);
-        localStorage.setItem('studentsList', JSON.stringify(dummyStudents));
-        return dummyStudents;
+        setStudents([]);
+        return [];
       }
     } catch (error) {
       console.error("Error fetching students:", error);
@@ -421,19 +461,8 @@ const HealthResults = () => {
         return parsedStudents;
       }
       
-      // Nếu không có dữ liệu trong localStorage, tạo dữ liệu mẫu
-      const dummyStudents = [
-        { studentId: 1, fullName: "Nguyễn Văn A" },
-        { studentId: 2, fullName: "Trần Thị B" },
-        { studentId: 3, fullName: "Lê Văn C" },
-        { studentId: 4, fullName: "Phạm Thị D" },
-        { studentId: 5, fullName: "Hoàng Văn E" }
-      ];
-      
-      console.log("Using dummy students due to error:", dummyStudents);
-      setStudents(dummyStudents);
-      localStorage.setItem('studentsList', JSON.stringify(dummyStudents));
-      return dummyStudents;
+      setStudents([]);
+      return [];
     }
   };
 
@@ -465,6 +494,7 @@ const HealthResults = () => {
     }
   };
 
+  // Hàm tìm kiếm cập nhật để tập trung vào lịch khám
   const fetchHealthCheckResults = async (keyword = "") => {
     setLoading(true);
     try {
@@ -496,10 +526,21 @@ const HealthResults = () => {
           setColumns(prevColumns => prevColumns.filter(col => col.dataIndex !== 'status'));
         
         if (keyword && keyword.trim() !== "") {
-          // Lọc kết quả dựa trên từ khóa tìm kiếm
+          // Lọc kết quả dựa trên từ khóa tìm kiếm, ưu tiên tìm kiếm theo lịch khám
           const filteredResults = processedResults.filter(result => {
             const searchStr = keyword.toLowerCase();
             
+            // Tìm kiếm theo tên lịch khám (ưu tiên)
+            if (result.scheduleName && result.scheduleName.toLowerCase().includes(searchStr)) {
+              return true;
+            }
+            
+            // Tìm kiếm theo ID lịch khám
+            if (result.healthCheckScheduleId && String(result.healthCheckScheduleId).includes(searchStr)) {
+              return true;
+            }
+            
+            // Các điều kiện tìm kiếm khác giữ nguyên
             // Tìm kiếm theo ID
             if (result.healthCheckupRecordId && String(result.healthCheckupRecordId).includes(searchStr)) {
               return true;
@@ -587,28 +628,7 @@ const HealthResults = () => {
         setSchedules(processedSchedules);
       } else {
         console.warn("Health check schedules API did not return valid data:", response);
-        const dummySchedules = [
-          { 
-            healthCheckScheduleId: 1, 
-            name: "Khám định kỳ học kỳ 1", 
-            checkDate: new Date().toISOString(),
-            healthProfileId: 1
-          },
-          { 
-            healthCheckScheduleId: 2, 
-            name: "Khám mắt học kỳ 1", 
-            checkDate: new Date().toISOString(),
-            healthProfileId: 2
-          },
-          { 
-            healthCheckScheduleId: 3, 
-            name: "Khám răng học kỳ 1", 
-            checkDate: new Date().toISOString(),
-            healthProfileId: 3
-          }
-        ];
-        console.log("Using dummy health check schedules due to empty API response");
-        setSchedules(dummySchedules);
+        setSchedules([]);
       }
     } catch (error) {
       console.error("Error fetching health check schedules:", error);
@@ -617,56 +637,66 @@ const HealthResults = () => {
         type: "error"
       });
       
-      const dummySchedules = [
-        { 
-          healthCheckScheduleId: 1, 
-          name: "Khám định kỳ học kỳ 1", 
-          checkDate: new Date().toISOString(),
-          healthProfileId: 1
-        },
-        { 
-          healthCheckScheduleId: 2, 
-          name: "Khám mắt học kỳ 1", 
-          checkDate: new Date().toISOString(),
-          healthProfileId: 2
-        },
-        { 
-          healthCheckScheduleId: 3, 
-          name: "Khám răng học kỳ 1", 
-          checkDate: new Date().toISOString(),
-          healthProfileId: 3
-        }
-      ];
-      console.log("Using dummy health check schedules due to error");
-      setSchedules(dummySchedules);
+      console.log("Error fetching health check schedules");
+      setSchedules([]);
     }
   };
 
+  // Cập nhật hàm handleSearch để tìm kiếm ưu tiên theo ID
   const handleSearch = async () => {
     setSearchLoading(true);
     try {
-      console.log("Tìm kiếm với từ khóa:", searchKeyword);
+      console.log("Tìm kiếm kết quả khám với từ khóa:", searchKeyword);
+      
+      // Nếu từ khóa trống, hiển thị tất cả kết quả
+      if (!searchKeyword.trim()) {
+        await fetchHealthCheckResults("");
+        setSearchLoading(false);
+        return;
+      }
       
       // Kiểm tra xem searchKeyword có phải là ID không
       const isNumeric = /^\d+$/.test(searchKeyword);
       
       if (isNumeric) {
-        // Nếu là ID, tìm kiếm trong danh sách results hiện có
+        // Nếu là ID, ưu tiên tìm kiếm theo ID kết quả khám
         const foundResults = results.filter(result => 
-          result.healthCheckupRecordId?.toString() === searchKeyword ||
-          result.studentId?.toString() === searchKeyword ||
-          result.nurseId?.toString() === searchKeyword
+          result.healthCheckupRecordId?.toString() === searchKeyword
         );
         
         if (foundResults.length > 0) {
           // Nếu tìm thấy, cập nhật filteredResults
           setFilteredResults(foundResults);
+          setNotif({
+            message: `Tìm thấy kết quả khám có ID: ${searchKeyword}`,
+            type: "success",
+            autoDismiss: true,
+            duration: 3000
+          });
+          setSearchLoading(false);
+          return;
+        }
+        
+        // Nếu không tìm thấy ID kết quả khám, thử tìm theo ID học sinh hoặc ID lịch khám
+        const otherResults = results.filter(result => 
+          result.healthCheckScheduleId?.toString() === searchKeyword ||
+          result.studentId?.toString() === searchKeyword
+        );
+        
+        if (otherResults.length > 0) {
+          setFilteredResults(otherResults);
+          setNotif({
+            message: `Tìm thấy ${otherResults.length} kết quả khám liên quan đến ID: ${searchKeyword}`,
+            type: "success",
+            autoDismiss: true,
+            duration: 3000
+          });
           setSearchLoading(false);
           return;
         }
       }
       
-      // Nếu không phải ID hoặc không tìm thấy, gọi API
+      // Nếu không phải ID hoặc không tìm thấy, gọi API với từ khóa
       setPage(1);
       await fetchHealthCheckResults(searchKeyword);
     } catch (error) {
@@ -849,10 +879,18 @@ const HealthResults = () => {
       
       if (leftVisionValue === null || leftVisionValue === undefined) {
         leftVisionValue = "N/A";
+      } else {
+        // Đảm bảo định dạng X/10 và loại bỏ các định dạng lỗi
+        leftVisionValue = leftVisionValue.includes("/10") ? leftVisionValue : `${leftVisionValue}/10`;
+        leftVisionValue = leftVisionValue.replace(/\/10\/10$/, "/10");
       }
       
       if (rightVisionValue === null || rightVisionValue === undefined) {
         rightVisionValue = "N/A";
+      } else {
+        // Đảm bảo định dạng X/10 và loại bỏ các định dạng lỗi
+        rightVisionValue = rightVisionValue.includes("/10") ? rightVisionValue : `${rightVisionValue}/10`;
+        rightVisionValue = rightVisionValue.replace(/\/10\/10$/, "/10");
       }
       
       // Xử lý trường kết quả
@@ -922,19 +960,81 @@ const HealthResults = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Xử lý đặc biệt cho trường thị lực
+    if (name === "leftVision" || name === "rightVision") {
+      // Kiểm tra nếu giá trị rỗng
+      if (value === "") {
+        // Cho phép trường rỗng
     setFormData({
       ...formData,
       [name]: value
     });
+      } else {
+        // Chỉ cho phép số nguyên từ 0-10
+        const numValue = parseInt(value);
+        if (!isNaN(numValue) && numValue >= 0 && numValue <= 10) {
+          // Lưu giá trị dạng X/10
+          setFormData({
+            ...formData,
+            [name]: `${numValue}/10`
+          });
+        }
+      }
+    } else {
+      // Xử lý bình thường cho các trường khác
+      setFormData({
+        ...formData,
+        [name]: value
+      });
+    }
 
     // Xử lý tìm kiếm học sinh khi người dùng nhập vào ô tìm kiếm học sinh
     if (name === "studentSearchTerm") {
-      const filtered = students.filter(student => 
-        student.fullName?.toLowerCase().includes(value.toLowerCase()) ||
-        `${student.studentId}`.includes(value)
-      );
-      setFilteredStudents(filtered);
-      setShowStudentDropdown(true);
+      // Chỉ cho phép tìm kiếm trong danh sách học sinh đã được lọc theo lịch khám
+      if (formData.healthCheckScheduleId) {
+        // Nếu ô trống, reset danh sách học sinh và đóng dropdown
+        if (!value.trim()) {
+          resetStudentsList();
+          setShowStudentDropdown(false);
+          return;
+        }
+        
+        // Chỉ lọc từ danh sách học sinh ban đầu của lịch khám đã chọn
+        if (window.originalStudentsList && window.originalStudentsList.length > 0) {
+          const filtered = window.originalStudentsList.filter(student => 
+            student.fullName?.toLowerCase().includes(value.toLowerCase()) ||
+            `${student.studentId}`.includes(value)
+          );
+          
+          setFilteredStudents(filtered);
+          
+          // Chỉ hiển thị dropdown khi có kết quả
+          if (filtered.length > 0) {
+            setShowStudentDropdown(true);
+          } else {
+            setShowStudentDropdown(false);
+            setNotif({
+              message: "Không tìm thấy học sinh nào phù hợp",
+              type: "info",
+              autoDismiss: true,
+              duration: 2000
+            });
+          }
+        }
+      } else {
+        // Nếu chưa chọn lịch khám, không cho phép tìm kiếm học sinh
+        setNotif({
+          message: "Vui lòng chọn lịch khám trước",
+          type: "warning",
+          autoDismiss: true,
+          duration: 3000
+        });
+        setFormData({
+          ...formData,
+          studentSearchTerm: ""
+        });
+      }
     }
     
     // Xử lý tìm kiếm y tá khi người dùng nhập vào ô tìm kiếm y tá
@@ -972,6 +1072,27 @@ const HealthResults = () => {
       }
     }
     
+    // Validate vision format
+    if (formData.leftVision && !formData.leftVision.includes('/10')) {
+      setNotif({
+        message: 'Thị lực mắt trái phải có định dạng X/10',
+        type: "error",
+        autoDismiss: true,
+        duration: 5000
+      });
+      return false;
+    }
+    
+    if (formData.rightVision && !formData.rightVision.includes('/10')) {
+      setNotif({
+        message: 'Thị lực mắt phải phải có định dạng X/10',
+        type: "error",
+        autoDismiss: true,
+        duration: 5000
+      });
+      return false;
+    }
+    
     return true;
   };
 
@@ -1004,50 +1125,75 @@ const HealthResults = () => {
         }
       }
       
-      // Tìm nurseId từ tên y tá đã nhập
-      let nurseId = formData.nurseId;
-      if (!nurseId && formData.nurseSearchTerm) {
-        const foundNurse = nurses.find(n => 
-          n.fullName === formData.nurseSearchTerm || 
-          formData.nurseSearchTerm.includes(`ID: ${n.nurseId}`)
-        );
-        if (foundNurse) {
-          nurseId = foundNurse.nurseId;
+      // Lấy nurseId từ localStorage (ID của y tá đăng nhập)
+      let nurseId = localStorage.getItem("userId");
+      if (!nurseId) {
+        throw new Error("Không tìm thấy thông tin y tá đăng nhập. Vui lòng đăng nhập lại.");
+      }
+
+      // Lấy healthProfileId từ studentId
+      let healthProfileId = null;
+      try {
+        // Gọi API trực tiếp để lấy health profile từ studentId
+        const directProfile = await API_SERVICE.healthProfileAPI.getByStudent(studentId);
+        if (directProfile && directProfile.healthProfileId) {
+          healthProfileId = directProfile.healthProfileId;
         } else {
-          throw new Error("Không tìm thấy y tá. Vui lòng chọn y tá từ danh sách.");
+          // Nếu không tìm được bằng API trực tiếp, thử tìm qua search
+          const profileResponse = await API_SERVICE.healthProfileAPI.getAll({
+            keyword: studentId.toString()
+          });
+          
+          // Tìm profile của học sinh
+          if (Array.isArray(profileResponse) && profileResponse.length > 0) {
+            const studentProfile = profileResponse.find(p => p.studentId === parseInt(studentId));
+            if (studentProfile) {
+              healthProfileId = studentProfile.healthProfileId;
+            }
+          }
         }
+        
+        if (!healthProfileId) {
+          throw new Error("Không tìm thấy hồ sơ sức khỏe của học sinh này.");
+        }
+      } catch (error) {
+        console.error("Error getting health profile:", error);
+        throw new Error("Không thể lấy thông tin hồ sơ sức khỏe: " + error.message);
       }
       
       // Chuẩn bị dữ liệu để gửi
       const resultData = {
         healthCheckScheduleId: parseInt(formData.healthCheckScheduleId),
-        healthProfileId: parseInt(studentId), // Sử dụng studentId làm healthProfileId
+        healthProfileId: healthProfileId,
         nurseId: parseInt(nurseId),
         height: parseFloat(formData.height),
         weight: parseFloat(formData.weight),
-        leftVision: formData.leftVision,
-        rightVision: formData.rightVision,
+        leftVision: formData.leftVision,  // Đã có định dạng X/10
+        rightVision: formData.rightVision,  // Đã có định dạng X/10
         result: formData.result,
-        status: parseInt(formData.status),
         note: formData.note
+        // Status không cần gửi vì BE mặc định sẽ đặt là 1 (Pending)
       };
+      
+      console.log("Sending data to create health check result:", resultData);
       
       // Gọi API để thêm kết quả khám
       await API_SERVICE.healthCheckResultAPI.create(resultData);
       
       // Nếu API thành công, cập nhật UI
-          setNotif({
+      setNotif({
         message: "Thêm kết quả khám sức khỏe thành công!",
         type: "success"
       });
       
       // Đóng modal và tải lại dữ liệu
-          setShowAddModal(false);
+      setShowAddModal(false);
       fetchHealthCheckResults();
       
       // Reset form data
       setFormData({
         healthCheckScheduleId: "",
+        healthCheckScheduleSearchTerm: "",
         healthProfileId: "",
         studentId: "",
         studentSearchTerm: "",
@@ -1059,8 +1205,8 @@ const HealthResults = () => {
         leftVision: "",
         rightVision: "",
         result: "",
-        status: "1",
         note: ""
+        // status không cần thiết vì BE mặc định là 1
       });
     } catch (error) {
       console.error("Error adding health check result:", error);
@@ -1094,48 +1240,25 @@ const HealthResults = () => {
     setShowConfirmUpdate(false);
     setLoading(true);
     try {
-      // Tìm studentId từ tên học sinh đã nhập
-      let studentId = formData.studentId;
-      if (!studentId && formData.studentSearchTerm) {
-        const foundStudent = students.find(s => 
-          s.fullName === formData.studentSearchTerm || 
-          formData.studentSearchTerm.includes(`ID: ${s.studentId}`)
-        );
-        if (foundStudent) {
-          studentId = foundStudent.studentId;
-        } else {
-          throw new Error("Không tìm thấy học sinh. Vui lòng chọn học sinh từ danh sách.");
-        }
+      // Lấy nurseId từ localStorage (ID của y tá đăng nhập)
+      let nurseId = localStorage.getItem("userId");
+      if (!nurseId) {
+        throw new Error("Không tìm thấy thông tin y tá đăng nhập. Vui lòng đăng nhập lại.");
       }
       
-      // Tìm nurseId từ tên y tá đã nhập
-      let nurseId = formData.nurseId;
-      if (!nurseId && formData.nurseSearchTerm) {
-        const foundNurse = nurses.find(n => 
-          n.fullName === formData.nurseSearchTerm || 
-          formData.nurseSearchTerm.includes(`ID: ${n.nurseId}`)
-        );
-        if (foundNurse) {
-          nurseId = foundNurse.nurseId;
-        } else {
-          throw new Error("Không tìm thấy y tá. Vui lòng chọn y tá từ danh sách.");
-        }
-      }
-      
-      // Chuẩn bị dữ liệu để gửi
+      // Chuẩn bị dữ liệu để gửi - chỉ gửi các trường mà BE có thể cập nhật
       const resultData = {
         healthCheckupRecordId: formData.healthCheckupRecordId,
-        healthCheckScheduleId: parseInt(formData.healthCheckScheduleId),
-        healthProfileId: parseInt(studentId), // Sử dụng studentId làm healthProfileId
         nurseId: parseInt(nurseId),
         height: parseFloat(formData.height),
         weight: parseFloat(formData.weight),
-        leftVision: formData.leftVision,
-        rightVision: formData.rightVision,
+        leftVision: formData.leftVision,  // Đã có định dạng X/10
+        rightVision: formData.rightVision,  // Đã có định dạng X/10
         result: formData.result,
-        status: parseInt(formData.status),
         note: formData.note
       };
+      
+      console.log("Sending data to update health check result:", resultData);
       
       // Gọi API để cập nhật kết quả khám
       await API_SERVICE.healthCheckResultAPI.update(resultData);
@@ -1171,8 +1294,19 @@ const HealthResults = () => {
     try {
       console.log("Xóa kết quả khám ID:", deleteId);
       
+      // Lưu lại thông tin về lịch khám và học sinh trước khi xóa
+      const deletedResult = results.find(r => r.healthCheckupRecordId === deleteId);
+      const scheduleId = deletedResult?.healthCheckScheduleId;
+      const studentId = deletedResult?.studentId;
+      const studentName = deletedResult?.studentName;
+      
+      console.log(`Xóa kết quả khám của học sinh ${studentName} (ID: ${studentId}) cho lịch khám ID: ${scheduleId}`);
+      
       // Gọi API xóa
       await API_SERVICE.healthCheckResultAPI.delete(deleteId);
+      
+      // Xóa cache sau khi xóa thành công
+      clearCache();
       
       setNotif({
         message: "Xóa kết quả khám sức khỏe thành công",
@@ -1182,7 +1316,86 @@ const HealthResults = () => {
       });
       
       // Tải lại dữ liệu từ server
-      fetchHealthCheckResults(searchKeyword);
+      await fetchHealthCheckResults(searchKeyword);
+      
+      // Nếu đang mở form thêm mới và đã chọn lịch khám, làm mới danh sách học sinh
+      if (showAddModal && formData.healthCheckScheduleId) {
+        console.log("Đang mở form thêm mới, làm mới danh sách học sinh sau khi xóa kết quả");
+        
+        // Tìm lịch khám đã chọn
+        const selectedSchedule = schedules.find(s => String(s.healthCheckScheduleId) === String(formData.healthCheckScheduleId));
+        
+        if (selectedSchedule) {
+          try {
+            // Kiểm tra formId
+            if (!selectedSchedule.formId) {
+              console.log("Không tìm thấy formId trong dữ liệu lịch khám, thử lấy từ API...");
+              
+              try {
+                // Lấy thông tin chi tiết lịch khám từ API
+                const scheduleDetail = await API_SERVICE.healthCheckScheduleAPI.getById(formData.healthCheckScheduleId);
+                
+                if (scheduleDetail && scheduleDetail.formId) {
+                  console.log("Đã lấy được formId từ API:", scheduleDetail.formId);
+                  
+                  // Cập nhật formId vào lịch khám trong state
+                  selectedSchedule.formId = scheduleDetail.formId;
+                  
+                  // Cập nhật lại danh sách lịch khám
+                  setSchedules(prevSchedules => {
+                    const updatedSchedules = [...prevSchedules];
+                    const index = updatedSchedules.findIndex(s => String(s.healthCheckScheduleId) === String(formData.healthCheckScheduleId));
+                    if (index !== -1) {
+                      updatedSchedules[index] = {...updatedSchedules[index], formId: scheduleDetail.formId};
+                    }
+                    return updatedSchedules;
+                  });
+                } else {
+                  throw new Error("Không tìm thấy formId trong dữ liệu API");
+                }
+              } catch (error) {
+                console.error("Lỗi khi lấy thông tin lịch khám từ API:", error);
+                throw new Error("Không thể lấy thông tin lịch khám");
+              }
+            }
+            
+            // Sử dụng hàm từ utils.jsx để lấy danh sách học sinh theo lớp
+            const studentsInClass = await getAcceptedStudentsBySchedule(selectedSchedule, API_SERVICE);
+            console.log("Học sinh theo lớp sau khi xóa:", studentsInClass.length);
+            
+            // Lọc học sinh đã có kết quả khám
+            const studentsWithResults = results
+              .filter(r => String(r.healthCheckScheduleId) === String(formData.healthCheckScheduleId))
+              .map(r => r.studentId);
+            
+            console.log("Học sinh đã có kết quả khám sau khi xóa:", studentsWithResults);
+            
+            // Lọc ra học sinh chưa có kết quả khám
+            const availableStudents = studentsInClass.filter(
+              student => !studentsWithResults.includes(student.studentId)
+            );
+            
+            console.log(`Học sinh có thể thêm kết quả khám sau khi xóa: ${availableStudents.length}`);
+            console.log("Học sinh đã xóa kết quả:", studentName, "(ID:", studentId, ")");
+            
+            // Cập nhật danh sách học sinh có thể chọn
+            setFilteredStudents(availableStudents);
+            
+            // Hiển thị thông báo nếu học sinh vừa xóa đã được thêm vào danh sách
+            const studentAdded = availableStudents.some(s => String(s.studentId) === String(studentId));
+            if (studentAdded) {
+              setNotif({
+                message: `Học sinh ${studentName} đã được thêm vào danh sách có thể chọn`,
+                type: "info",
+                autoDismiss: true,
+                duration: 3000
+              });
+            }
+          } catch (error) {
+            console.error("Error refreshing student list after deletion:", error);
+          }
+        }
+      }
     } catch (error) {
       console.error("Error deleting health check result:", error);
       setNotif({
@@ -1402,9 +1615,8 @@ const HealthResults = () => {
   // Xử lý khi nhấn nút chỉnh sửa
   const handleEdit = async (record) => {
     try {
-      // Tìm thông tin học sinh và y tá từ ID
+      // Tìm thông tin học sinh từ ID
       let studentName = "";
-      let nurseName = "";
       
       // Tìm thông tin học sinh
       if (record.studentId) {
@@ -1426,37 +1638,54 @@ const HealthResults = () => {
             studentName = record.studentName || `Học sinh ID: ${record.studentId}`;
           }
         }
-      }
-      
-      // Tìm thông tin y tá
-      if (record.nurseId) {
-        const nurse = nurses.find(n => n.nurseId === record.nurseId);
-        if (nurse) {
-          nurseName = nurse.fullName || `Y tá ID: ${record.nurseId}`;
-        } else {
-          try {
-            const nurseResponse = await API_SERVICE.nurseAPI.getById(record.nurseId);
-            if (nurseResponse) {
-              nurseName = nurseResponse.fullName || 
-                        `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim() || 
-                        `Y tá ID: ${record.nurseId}`;
+      } else if (record.healthProfileId) {
+        // Nếu không có studentId nhưng có healthProfileId, thử lấy thông tin học sinh từ healthProfileId
+        try {
+          const profileData = await API_SERVICE.healthProfileAPI.get(record.healthProfileId);
+          if (profileData && profileData.studentId) {
+            const studentResponse = await API_SERVICE.studentAPI.getById(profileData.studentId);
+            if (studentResponse) {
+              studentName = studentResponse.fullName || 
+                        `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim() || 
+                        `Học sinh ID: ${profileData.studentId}`;
+              // Cập nhật studentId trong record
+              record.studentId = profileData.studentId;
             } else {
-              nurseName = record.nurseName || `Y tá ID: ${record.nurseId}`;
+              studentName = `Học sinh ID: ${profileData.studentId}`;
+              record.studentId = profileData.studentId;
+            }
           }
         } catch (error) {
-            console.error("Error fetching nurse:", error);
-            nurseName = record.nurseName || `Y tá ID: ${record.nurseId}`;
+          console.error("Error fetching student from health profile:", error);
+          studentName = record.studentName || "Không xác định";
+            }
+          } else {
+        studentName = record.studentName || "Không xác định";
+      }
+      
+      // Lấy thông tin y tá đăng nhập
+      const userId = localStorage.getItem("userId");
+      let nurseName = "";
+      
+      try {
+        const nurseInfo = await API_SERVICE.nurseAPI.getById(userId);
+        if (nurseInfo) {
+          nurseName = nurseInfo.fullName || `${nurseInfo.firstName || ''} ${nurseInfo.lastName || ''}`.trim();
+        } else {
+          nurseName = "Y tá hiện tại";
           }
-        }
+        } catch (error) {
+        console.error("Error fetching logged-in nurse info:", error);
+        nurseName = "Y tá hiện tại";
       }
         
-        // Cập nhật formData cho chỉnh sửa
+      // Cập nhật formData cho chỉnh sửa - chỉ bao gồm các trường BE cho phép cập nhật
         setFormData({
         healthCheckupRecordId: record.healthCheckupRecordId,
-          healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "",
-          healthProfileId: record.healthProfileId || "",
-          studentId: record.studentId || "",
-        studentSearchTerm: studentName,
+        healthCheckScheduleId: record.healthCheckScheduleId || record.scheduleId || "", // Readonly, chỉ để hiển thị
+        healthProfileId: record.healthProfileId || "", // Readonly, chỉ để hiển thị
+        studentId: record.studentId || "", // Readonly, chỉ để hiển thị
+        studentSearchTerm: studentName, // Readonly, chỉ để hiển thị
           nurseId: record.nurseId || localStorage.getItem("userId") || "",
           nurseName: record.nurseName || "",
         nurseSearchTerm: nurseName,
@@ -1465,7 +1694,6 @@ const HealthResults = () => {
           leftVision: record.leftVision || "",
           rightVision: record.rightVision || "",
           result: record.result || "",
-          status: String(record.status) || "1",
           note: record.note === null || record.note === undefined ? "" : record.note
     });
     
@@ -1480,42 +1708,144 @@ const HealthResults = () => {
     }
   };
 
-  const handleScheduleChange = (e) => {
+  const handleScheduleChange = async (e) => {
     const scheduleId = e.target.value;
+    console.log("handleScheduleChange called with scheduleId:", scheduleId);
     
     if (!scheduleId) {
       setFormData({
         ...formData,
         healthCheckScheduleId: "",
         healthProfileId: "",
-        studentId: ""
+        studentId: "",
+        studentSearchTerm: ""
       });
+      setFilteredStudents([]);
       return;
     }
     
+    setNotif({
+      message: "Đang tải danh sách học sinh...",
+      type: "info",
+      autoDismiss: true,
+      duration: 2000
+    });
+    
     // Tìm lịch khám được chọn
     const selectedSchedule = schedules.find(s => String(s.healthCheckScheduleId) === String(scheduleId));
+    console.log("Selected schedule:", selectedSchedule);
     
     if (selectedSchedule) {
       console.log("Selected schedule:", selectedSchedule);
+      
+      // Kiểm tra formId
+      if (!selectedSchedule.formId) {
+        console.log("Không tìm thấy formId trong dữ liệu lịch khám, thử lấy từ API...");
+        
+        try {
+          // Lấy thông tin chi tiết lịch khám từ API
+          const scheduleDetail = await API_SERVICE.healthCheckScheduleAPI.getById(scheduleId);
+          console.log("Schedule detail from API:", scheduleDetail);
+          
+          if (scheduleDetail && scheduleDetail.formId) {
+            console.log("Đã lấy được formId từ API:", scheduleDetail.formId);
+            
+            // Cập nhật formId vào lịch khám trong state
+            selectedSchedule.formId = scheduleDetail.formId;
+            
+            // Cập nhật lại danh sách lịch khám
+            setSchedules(prevSchedules => {
+              const updatedSchedules = [...prevSchedules];
+              const index = updatedSchedules.findIndex(s => String(s.healthCheckScheduleId) === String(scheduleId));
+              if (index !== -1) {
+                updatedSchedules[index] = {...updatedSchedules[index], formId: scheduleDetail.formId};
+              }
+              return updatedSchedules;
+            });
+          } else {
+            throw new Error("Không tìm thấy formId trong dữ liệu API");
+          }
+        } catch (error) {
+          console.error("Lỗi khi lấy thông tin lịch khám từ API:", error);
+          setNotif({
+            message: "Lịch khám này không có liên kết với form nào. Vui lòng chọn lịch khám khác hoặc liên hệ quản lý.",
+            type: "error",
+            autoDismiss: true,
+            duration: 5000
+          });
+          setFilteredStudents([]);
+          return;
+        }
+      }
       
       // Cập nhật formData với thông tin từ lịch khám
       setFormData({
         ...formData,
         healthCheckScheduleId: scheduleId,
-        healthProfileId: selectedSchedule.healthProfileId || ""
+        healthProfileId: selectedSchedule.healthProfileId || "",
+        studentId: "", // Reset studentId khi thay đổi lịch khám
+        studentSearchTerm: "",
+        healthCheckScheduleSearchTerm: selectedSchedule.name || `Lịch khám ID: ${scheduleId}`
       });
       
-      // Nếu lịch khám có healthProfileId, thử lấy thông tin học sinh từ healthProfileId
-      if (selectedSchedule.healthProfileId) {
-        fetchStudentInfoFromHealthProfile(selectedSchedule.healthProfileId);
-      }
+      setLoading(true);
+      try {
+        // Sử dụng hàm từ utils.jsx để lấy danh sách học sinh
+        console.log("Calling getAcceptedStudentsBySchedule with:", selectedSchedule);
+        const studentsInClass = await getAcceptedStudentsBySchedule(selectedSchedule, API_SERVICE);
+        
+        console.log("Danh sách học sinh theo lớp:", studentsInClass);
+        
+        // Lọc học sinh đã có kết quả khám
+        const studentsWithResults = results
+          .filter(r => String(r.healthCheckScheduleId) === String(scheduleId))
+          .map(r => r.studentId);
+        
+        console.log("Học sinh đã có kết quả khám:", studentsWithResults);
+        
+        // Lọc ra học sinh chưa có kết quả khám
+        const availableStudents = studentsInClass.filter(
+          student => !studentsWithResults.includes(student.studentId)
+        );
+        
+        console.log("Học sinh có thể thêm kết quả khám:", availableStudents);
+        
+        // Lưu danh sách học sinh gốc để sử dụng cho việc lọc
+        setFilteredStudents(availableStudents);
+        
+        // Lưu danh sách học sinh gốc vào biến mới để dùng khi reset
+        window.originalStudentsList = [...availableStudents];
+        
+        if (availableStudents.length === 0) {
+          setNotif({
+            message: "Tất cả học sinh đã có kết quả khám hoặc không có học sinh nào trong lớp này",
+            type: "warning",
+            autoDismiss: true,
+            duration: 3000
+          });
     } else {
-      console.warn(`Schedule with ID ${scheduleId} not found`);
-      setFormData({
-        ...formData,
-        healthCheckScheduleId: scheduleId
-      });
+          setNotif({
+            message: `Đã tải xong! Có ${availableStudents.length} học sinh có thể thêm kết quả khám`,
+            type: "success",
+            autoDismiss: true,
+            duration: 3000
+          });
+          // Không tự động mở dropdown học sinh
+          setShowStudentDropdown(false);
+        }
+      } catch (error) {
+        console.error("Lỗi khi tìm học sinh:", error);
+        setNotif({
+          message: "Lỗi khi tìm học sinh: " + error.message,
+          type: "error",
+          autoDismiss: true,
+          duration: 3000
+        });
+        setFilteredStudents([]);
+      } finally {
+        setLoading(false);
+        setShowScheduleDropdown(false);
+      }
     }
   };
 
@@ -1569,8 +1899,23 @@ const HealthResults = () => {
       handleRefresh();
     }, 500);
     
-    return () => clearTimeout(refreshTimer);
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    // Thêm sự kiện click toàn cục để đóng dropdown khi click ra ngoài
+    const handleClickOutside = (event) => {
+      if (showScheduleDropdown && !event.target.closest('.schedule-dropdown-container')) {
+        setShowScheduleDropdown(false);
+      }
+      if (showStudentDropdown && !event.target.closest('.student-dropdown-container')) {
+        setShowStudentDropdown(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    return () => {
+      clearTimeout(refreshTimer);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showScheduleDropdown, showStudentDropdown]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Thêm useEffect để tải lại danh sách học sinh trước khi hiển thị kết quả
   useEffect(() => {
@@ -1601,15 +1946,29 @@ const HealthResults = () => {
     }
   }, [results]);
 
+  // Khởi tạo danh sách lịch khám đã lọc khi schedules thay đổi
+  useEffect(() => {
+    if (schedules.length > 0) {
+      setFilteredSchedules(schedules);
+    }
+  }, [schedules]);
+
   // Hàm mới để xử lý khi người dùng chọn một học sinh từ dropdown
   const handleSelectStudent = (student) => {
     setFormData({
       ...formData,
       studentId: student.studentId,
-      healthProfileId: student.studentId, // Sử dụng studentId làm healthProfileId
+      // healthProfileId will be fetched from API later
       studentSearchTerm: student.fullName || `Học sinh ID: ${student.studentId}`
     });
     setShowStudentDropdown(false);
+  };
+  
+  // Hàm để reset danh sách học sinh về danh sách ban đầu
+  const resetStudentsList = () => {
+    if (window.originalStudentsList && window.originalStudentsList.length > 0) {
+      setFilteredStudents(window.originalStudentsList);
+    }
   };
 
   // Hàm mới để xử lý khi người dùng chọn một y tá từ dropdown
@@ -1635,88 +1994,94 @@ const HealthResults = () => {
     applyFiltersAndSort(results, filters, sortConfig);
   }, [results, filters, sortConfig]);
 
-  // Hàm mới để áp dụng bộ lọc và sắp xếp
+  // Cập nhật hàm applyFiltersAndSort để xử lý tìm kiếm lịch khám bằng văn bản
   const applyFiltersAndSort = (resultsList = results, currentFilters = filters, currentSortConfig = sortConfig) => {
+    if (!resultsList || resultsList.length === 0) {
+      setFilteredResults([]);
+      return;
+    }
+
+    // Clone mảng kết quả để không thay đổi mảng gốc
     let filteredData = [...resultsList];
-    
-    // Lọc theo ngày
-    if (currentFilters.date) {
-      const selectedDate = new Date(currentFilters.date);
-      selectedDate.setHours(0, 0, 0, 0); // Đặt thời gian là đầu ngày
+
+    // Lọc kết quả dựa trên bộ lọc
+    if (currentFilters) {
+      // Lọc theo lịch khám - tìm kiếm văn bản thay vì chọn từ danh sách
+      if (currentFilters.schedule && currentFilters.schedule.trim() !== "") {
+        const scheduleSearch = currentFilters.schedule.toLowerCase().trim();
+        
+        filteredData = filteredData.filter(result => {
+          // Tìm kiếm theo ID lịch khám
+          if (result.healthCheckScheduleId && 
+              String(result.healthCheckScheduleId).includes(scheduleSearch)) {
+            return true;
+          }
+          
+          // Tìm kiếm theo tên lịch khám
+          if (result.scheduleName && 
+              result.scheduleName.toLowerCase().includes(scheduleSearch)) {
+            return true;
+          }
+          
+          // Tìm trong danh sách lịch khám đã biết
+          const matchedSchedule = schedules.find(s => 
+            (String(s.healthCheckScheduleId).includes(scheduleSearch)) || 
+            (s.name && s.name.toLowerCase().includes(scheduleSearch))
+          );
+          
+          if (matchedSchedule && 
+              String(result.healthCheckScheduleId) === String(matchedSchedule.healthCheckScheduleId)) {
+            return true;
+          }
+          
+          return false;
+        });
+      }
       
-      // Tạo ngày kết thúc (cuối ngày)
-      const endDate = new Date(selectedDate);
-      endDate.setHours(23, 59, 59, 999);
+      // Lọc theo ngày
+      if (currentFilters.date && currentFilters.date.trim() !== "") {
+        const filterDate = new Date(currentFilters.date);
+        filterDate.setHours(0, 0, 0, 0);
+        
+        filteredData = filteredData.filter(result => {
+          if (!result.date && !result.eventDate) return false;
+          
+          const resultDate = new Date(result.date || result.eventDate);
+          resultDate.setHours(0, 0, 0, 0);
+          
+          return resultDate.getTime() === filterDate.getTime();
+        });
+      }
       
-      filteredData = filteredData.filter(result => {
-        if (!result.checkupDate) return false;
-        const checkupDate = new Date(result.checkupDate);
-        return checkupDate >= selectedDate && checkupDate <= endDate;
-      });
+      // Lọc theo tên học sinh
+      if (currentFilters.studentName && currentFilters.studentName.trim() !== "") {
+        const searchStudentName = currentFilters.studentName.toLowerCase();
+        filteredData = filteredData.filter(result => {
+          return (result.studentName && result.studentName.toLowerCase().includes(searchStudentName)) || 
+                 (result.studentId && String(result.studentId).includes(searchStudentName));
+        });
+      }
+      
+      // Lọc theo chiều cao
+      if (currentFilters.height && currentFilters.height.trim() !== "") {
+        const searchHeight = currentFilters.height.toLowerCase();
+        filteredData = filteredData.filter(result => {
+          if (!result.height) return false;
+          return String(result.height).includes(searchHeight);
+        });
+      }
+      
+      // Lọc theo cân nặng
+      if (currentFilters.weight && currentFilters.weight.trim() !== "") {
+        const searchWeight = currentFilters.weight.toLowerCase();
+        filteredData = filteredData.filter(result => {
+          if (!result.weight) return false;
+          return String(result.weight).includes(searchWeight);
+        });
+      }
     }
-    
-    // Lọc theo tên hoặc ID học sinh
-    if (currentFilters.studentName) {
-      filteredData = filteredData.filter(result => {
-        // Tìm theo tên học sinh
-        const studentName = result.studentName || getStudentName(result.studentId) || "";
-        
-        // Tìm theo ID học sinh
-        const studentId = result.studentId ? result.studentId.toString() : "";
-        
-        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
-        return studentName.toLowerCase().includes(currentFilters.studentName.toLowerCase()) || 
-               studentId.includes(currentFilters.studentName);
-      });
-    }
-    
-    // Lọc theo tên hoặc ID y tá
-    if (currentFilters.nurseName) {
-      filteredData = filteredData.filter(result => {
-        // Tìm theo tên y tá
-        const nurseName = result.nurseName || getNurseName(result.nurseId) || "";
-        
-        // Tìm theo ID y tá
-        const nurseId = result.nurseId ? result.nurseId.toString() : "";
-        
-        // Trả về true nếu tên hoặc ID chứa từ khóa tìm kiếm
-        return nurseName.toLowerCase().includes(currentFilters.nurseName.toLowerCase()) || 
-               nurseId.includes(currentFilters.nurseName);
-      });
-    }
-    
-    // Lọc theo chiều cao
-    if (currentFilters.height) {
-      filteredData = filteredData.filter(result => 
-        result.height && result.height.toString().includes(currentFilters.height)
-      );
-    }
-    
-    // Lọc theo cân nặng
-    if (currentFilters.weight) {
-      filteredData = filteredData.filter(result => 
-        result.weight && result.weight.toString().includes(currentFilters.weight)
-      );
-    }
-    
-    // Lọc theo thị lực
-    if (currentFilters.vision) {
-      filteredData = filteredData.filter(result => {
-        const leftVision = result.leftVision || "";
-        const rightVision = result.rightVision || "";
-        return leftVision.includes(currentFilters.vision) || 
-               rightVision.includes(currentFilters.vision);
-      });
-    }
-    
-    // Lọc theo kết quả
-    if (currentFilters.result) {
-      filteredData = filteredData.filter(result => 
-        result.result && result.result.toLowerCase().includes(currentFilters.result.toLowerCase())
-      );
-    }
-    
-    // Áp dụng sắp xếp
+
+    // Áp dụng sắp xếp - giữ nguyên logic hiện có
     if (currentSortConfig.key) {
       filteredData.sort((a, b) => {
         if (currentSortConfig.key === "healthCheckupRecordId") {
@@ -1786,22 +2151,164 @@ const HealthResults = () => {
     const resetFilterValues = {
       date: "",
       studentName: "",
-      nurseName: "",
       height: "",
       weight: "",
-      vision: "",
-      result: ""
+      schedule: ""
     };
     setFilters(resetFilterValues);
     // Áp dụng ngay lập tức các bộ lọc đã reset
     applyFiltersAndSort(results, resetFilterValues, sortConfig);
   };
 
+  // Thêm hàm xóa cache
+  const clearCache = () => {
+    console.log("Xóa cache để đảm bảo dữ liệu mới nhất");
+    // Xóa cache API
+    if (window.caches) {
+      try {
+        caches.keys().then(names => {
+          names.forEach(name => {
+            caches.delete(name);
+          });
+        });
+      } catch (e) {
+        console.error("Error clearing browser cache:", e);
+      }
+    }
+    
+    // Xóa localStorage cache nếu có
+    try {
+      localStorage.removeItem('healthCheckResultsCache');
+      localStorage.removeItem('healthCheckSchedulesCache');
+    } catch (e) {
+      console.error("Error clearing localStorage cache:", e);
+    }
+  };
+  
+  // Thêm hàm mới để làm mới danh sách học sinh
+  const forceRefreshStudentList = async () => {
+    if (!formData.healthCheckScheduleId) {
+      setNotif({
+        message: "Vui lòng chọn lịch khám trước",
+        type: "warning",
+        autoDismiss: true,
+        duration: 3000
+      });
+      return;
+    }
+    
+    // Xóa cache trước khi làm mới
+    clearCache();
+    
+    setLoading(true);
+    try {
+      // Tìm lịch khám đã chọn
+      const scheduleId = formData.healthCheckScheduleId;
+      const selectedSchedule = schedules.find(s => String(s.healthCheckScheduleId) === String(scheduleId));
+      
+      if (selectedSchedule) {
+        console.log("Làm mới danh sách học sinh cho lịch khám ID:", scheduleId);
+        
+        // Kiểm tra formId
+        if (!selectedSchedule.formId) {
+          console.log("Không tìm thấy formId trong dữ liệu lịch khám, thử lấy từ API...");
+          
+          try {
+            // Lấy thông tin chi tiết lịch khám từ API
+            const scheduleDetail = await API_SERVICE.healthCheckScheduleAPI.getById(scheduleId);
+            
+            if (scheduleDetail && scheduleDetail.formId) {
+              console.log("Đã lấy được formId từ API:", scheduleDetail.formId);
+              
+              // Cập nhật formId vào lịch khám trong state
+              selectedSchedule.formId = scheduleDetail.formId;
+              
+              // Cập nhật lại danh sách lịch khám
+              setSchedules(prevSchedules => {
+                const updatedSchedules = [...prevSchedules];
+                const index = updatedSchedules.findIndex(s => String(s.healthCheckScheduleId) === String(scheduleId));
+                if (index !== -1) {
+                  updatedSchedules[index] = {...updatedSchedules[index], formId: scheduleDetail.formId};
+                }
+                return updatedSchedules;
+              });
+            } else {
+              throw new Error("Không tìm thấy formId trong dữ liệu API");
+            }
+          } catch (error) {
+            console.error("Lỗi khi lấy thông tin lịch khám từ API:", error);
+            setNotif({
+              message: "Lịch khám này không có liên kết với form nào. Vui lòng chọn lịch khám khác hoặc liên hệ quản lý.",
+              type: "error",
+              autoDismiss: true,
+              duration: 5000
+            });
+            setFilteredStudents([]);
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Sử dụng hàm từ utils.jsx để lấy danh sách học sinh theo lớp
+        const studentsInClass = await getAcceptedStudentsBySchedule(selectedSchedule, API_SERVICE);
+        
+        console.log("Danh sách học sinh theo lớp:", studentsInClass);
+        
+        // Lọc học sinh đã có kết quả khám
+        const studentsWithResults = results
+          .filter(r => String(r.healthCheckScheduleId) === String(scheduleId))
+          .map(r => r.studentId);
+        
+        console.log("Học sinh đã có kết quả khám:", studentsWithResults);
+        
+        // Lọc ra học sinh chưa có kết quả khám
+        const availableStudents = studentsInClass.filter(
+          student => !studentsWithResults.includes(student.studentId)
+        );
+        
+        console.log("Học sinh có thể thêm kết quả khám:", availableStudents);
+        
+        setFilteredStudents(availableStudents);
+        
+        if (availableStudents.length === 0) {
+          setNotif({
+            message: "Tất cả học sinh đã có kết quả khám hoặc không có học sinh nào trong lớp này",
+            type: "warning",
+            autoDismiss: true,
+            duration: 3000
+          });
+        } else {
+          setNotif({
+            message: `Đã tìm thấy ${availableStudents.length} học sinh có thể thêm kết quả khám`,
+            type: "success",
+            autoDismiss: true,
+            duration: 3000
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Lỗi khi làm mới danh sách học sinh:", error);
+      setNotif({
+        message: "Lỗi khi làm mới danh sách học sinh: " + error.message,
+        type: "error",
+        autoDismiss: true,
+        duration: 3000
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="admin-main">
       <h2 className="dashboard-title">Kết quả khám sức khỏe</h2>
       <div className="admin-header">
-        <button className="admin-btn" onClick={() => setShowAddModal(true)}>
+        <button className="admin-btn" onClick={() => {
+            setShowAddModal(true);
+            setShowScheduleDropdown(false);
+            setShowStudentDropdown(false);
+            setShowNurseDropdown(false);
+          }}>
           <FaPlus /> Thêm kết quả khám
         </button>
           <div className="search-container">
@@ -1812,29 +2319,24 @@ const HealthResults = () => {
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e.target.value)}
               onKeyDown={handleSearchKeyDown}
+              title="Nhập ID kết quả khám để tìm kiếm"
             />
-          <button
-            className="admin-btn"
-            style={{ marginLeft: '8px', padding: '8px' }}
-            onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
-            title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
-          >
-            <FaFilter />
-          </button>
+            <button
+              className="admin-btn"
+              style={{ marginLeft: '8px', padding: '8px' }}
+              onClick={() => setShowAdvancedFilter(!showAdvancedFilter)}
+              title={showAdvancedFilter ? "Ẩn bộ lọc nâng cao" : "Hiện bộ lọc nâng cao"}
+            >
+              <FaFilter />
+            </button>
           </div>
         </div>
 
       {/* Phần bộ lọc nâng cao */}
       {showAdvancedFilter && (
-        <div className="admin-advanced-filter" style={{ 
-          backgroundColor: '#f8f9fa', 
-          padding: '15px', 
-          borderRadius: '5px', 
-          marginBottom: '20px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-        }}>
+        <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '5px', marginBottom: '20px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <h3 style={{ margin: '0', fontSize: '1.1rem', color: '#333' }}>Tìm kiếm nâng cao</h3>
+              <h3 style={{ margin: '0', fontSize: '1.1rem', color: '#333' }}>Tìm kiếm nâng cao</h3>
             <button
               className="admin-btn"
               style={{ backgroundColor: '#6c757d', padding: '4px 8px', fontSize: '0.8rem' }}
@@ -1845,6 +2347,21 @@ const HealthResults = () => {
           </div>
           
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+            {/* Lọc theo lịch khám */}
+            <div>
+              <label htmlFor="schedule" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Lịch khám</label>
+              <input
+                type="text"
+                id="schedule"
+                name="schedule"
+                value={filters.schedule || ''}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập tên hoặc ID lịch khám..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
             {/* Lọc theo ngày */}
             <div>
               <label htmlFor="date" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Ngày khám</label>
@@ -1870,21 +2387,6 @@ const HealthResults = () => {
                 onChange={handleFilterChange}
                 className="form-control"
                 placeholder="Nhập tên học sinh hoặc ID"
-                style={{ width: '100%', padding: '8px' }}
-              />
-            </div>
-            
-            {/* Lọc theo y tá */}
-            <div>
-              <label htmlFor="nurseName" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Y tá</label>
-              <input
-                type="text"
-                id="nurseName"
-                name="nurseName"
-                value={filters.nurseName}
-                onChange={handleFilterChange}
-                className="form-control"
-                placeholder="Nhập tên y tá hoặc ID"
                 style={{ width: '100%', padding: '8px' }}
               />
             </div>
@@ -1915,36 +2417,6 @@ const HealthResults = () => {
                 onChange={handleFilterChange}
                 className="form-control"
                 placeholder="Nhập cân nặng..."
-                style={{ width: '100%', padding: '8px' }}
-              />
-            </div>
-            
-            {/* Lọc theo thị lực */}
-            <div>
-              <label htmlFor="vision" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Thị lực</label>
-              <input
-                type="text"
-                id="vision"
-                name="vision"
-                value={filters.vision}
-                onChange={handleFilterChange}
-                className="form-control"
-                placeholder="Nhập thị lực..."
-                style={{ width: '100%', padding: '8px' }}
-              />
-            </div>
-            
-            {/* Lọc theo kết quả */}
-            <div>
-              <label htmlFor="result" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Kết quả</label>
-              <input
-                type="text"
-                id="result"
-                name="result"
-                value={filters.result}
-                onChange={handleFilterChange}
-                className="form-control"
-                placeholder="Nhập kết quả khám..."
                 style={{ width: '100%', padding: '8px' }}
               />
             </div>
@@ -2042,13 +2514,7 @@ const HealthResults = () => {
             </div>
             <div className="student-dialog-body">
               <div className="student-info-section">
-                <h3 style={{ 
-                  borderBottom: '2px solid #007bff',
-                  paddingBottom: '8px',
-                  margin: '0 0 16px 0',
-                  color: '#333',
-                  fontSize: '1.1rem'
-                }}>Thông tin chung</h3>
+                <h3 className="section-heading-blue">Thông tin chung</h3>
                 <div className="info-grid">
                   <div className="info-item">
                     <label>ID:</label>
@@ -2083,13 +2549,7 @@ const HealthResults = () => {
                 </div>
               </div>
               <div className="student-info-section">
-                <h3 style={{ 
-                  borderBottom: '2px solid #007bff',
-                  paddingBottom: '8px',
-                  margin: '0 0 16px 0',
-                  color: '#333',
-                  fontSize: '1.1rem'
-                }}>Kết quả khám</h3>
+                <h3 className="section-heading-blue">Kết quả khám</h3>
                 <div className="info-grid">
                   <div className="info-item">
                     <label>Chiều cao:</label>
@@ -2101,11 +2561,23 @@ const HealthResults = () => {
                   </div>
                   <div className="info-item">
                     <label>Thị lực mắt trái:</label>
-                    <span>{selectedResult.leftVision || "Không có"}</span>
+                    <span>
+                      {selectedResult.leftVision 
+                        ? (selectedResult.leftVision.includes("/10") 
+                          ? selectedResult.leftVision 
+                          : `${selectedResult.leftVision}/10`).replace(/\/10\/10$/, "/10")
+                        : "Không có"}
+                    </span>
                   </div>
                   <div className="info-item">
                     <label>Thị lực mắt phải:</label>
-                    <span>{selectedResult.rightVision || "Không có"}</span>
+                    <span>
+                      {selectedResult.rightVision 
+                        ? (selectedResult.rightVision.includes("/10") 
+                          ? selectedResult.rightVision 
+                          : `${selectedResult.rightVision}/10`).replace(/\/10\/10$/, "/10")
+                        : "Không có"}
+                    </span>
                   </div>
                   <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
                     <label>Kết quả:</label>
@@ -2127,525 +2599,421 @@ const HealthResults = () => {
 
       {/* Edit Modal - Updated to match MedEvents style */}
       {showEditModal && selectedResult && (
-        <div className="student-dialog-overlay">
-          <div className="student-dialog-content" style={{ width: '700px', maxWidth: '90%' }}>
-            <div className="student-dialog-header">
-              <h2>Chỉnh sửa kết quả khám sức khỏe</h2>
-              <button className="student-dialog-close" onClick={() => setShowEditModal(false)}>×</button>
+        <div className="student-create-modal-overlay">
+          <div className="student-create-modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">Chỉnh sửa kết quả khám sức khỏe</h3>
+              <button type="button" className="btn-close" onClick={() => setShowEditModal(false)}></button>
             </div>
-            <div className="student-dialog-body">
               <form onSubmit={handleUpdateResult}>
+              <div className="modal-body">
                 <input type="hidden" name="healthCheckupRecordId" value={formData.healthCheckupRecordId} />
-                <div className="student-info-section">
-                  <h3 style={{ 
-                    borderBottom: '2px solid #007bff',
-                    paddingBottom: '8px',
-                    margin: '0 0 16px 0',
-                    color: '#333',
-                    fontSize: '1.1rem'
-                  }}>Thông tin chung</h3>
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <label htmlFor="edit-healthCheckScheduleId">Lịch khám <span className="text-danger">*</span></label>
-                <select
+                <div className="mb-3">
+                  <label htmlFor="edit-healthCheckScheduleId" className="form-label">Lịch khám</label>
+                  <input
+                    type="text"
                   name="healthCheckScheduleId"
                         id="edit-healthCheckScheduleId"
-                  value={formData.healthCheckScheduleId}
-                  onChange={handleScheduleChange}
-                  required
-                  className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                >
-                  <option value="">-- Chọn lịch khám --</option>
-                  {schedules.map((schedule) => (
-                    <option key={schedule.healthCheckScheduleId} value={schedule.healthCheckScheduleId}>
-                      {schedule.name} - {new Date(schedule.checkDate).toLocaleDateString('vi-VN')}
-                    </option>
-                  ))}
-                </select>
+                    value={(() => {
+                      const schedule = schedules.find(s => String(s.healthCheckScheduleId) === String(formData.healthCheckScheduleId));
+                      return schedule 
+                        ? `${schedule.name} - ${new Date(schedule.checkDate).toLocaleDateString('vi-VN')}` 
+                        : `Lịch khám ID: ${formData.healthCheckScheduleId}`;
+                    })()}
+                    className="form-control bg-light"
+                    readOnly
+                  />
               </div>
-                    <div className="info-item">
-                      <label htmlFor="edit-studentId">Học sinh <span className="text-danger">*</span></label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                  className="form-control"
-                          id="edit-studentSearchTerm"
-                          name="studentSearchTerm"
-                          value={formData.studentSearchTerm}
-                          onChange={handleInputChange}
-                          onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
-                          onClick={() => setShowStudentDropdown(true)}
-                          placeholder="Nhập tên hoặc ID học sinh"
-                          required
-                        style={{ backgroundColor: '#f8f9fa' }}
-                        />
-                        {showStudentDropdown && filteredStudents.length > 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            maxHeight: '200px',
-                            overflowY: 'auto',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000,
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                          }}>
-                            {filteredStudents.map(student => (
-                              <div 
-                                key={student.studentId} 
-                                className="dropdown-item" 
-                                style={{ padding: '8px 12px', cursor: 'pointer' }}
-                                onClick={() => handleSelectStudent(student)}
-                              >
-                                {student.fullName || `Học sinh ID: ${student.studentId}`}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {showStudentDropdown && filteredStudents.length === 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            padding: '8px 12px',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000
-                          }}>
-                            Không tìm thấy học sinh
-                          </div>
-                        )}
-                      </div>
+                <div className="mb-3">
+                  <label htmlFor="edit-studentId" className="form-label">Học sinh</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="form-control bg-light"
+                      id="edit-studentSearchTerm"
+                      name="studentSearchTerm"
+                      value={formData.studentSearchTerm || "Không xác định"}
+                      readOnly
+                    />
               </div>
-                    <div className="info-item">
-                      <label htmlFor="edit-nurseId">Y tá phụ trách <span className="text-danger">*</span></label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="edit-nurseSearchTerm"
-                          name="nurseSearchTerm"
-                          value={formData.nurseSearchTerm}
-                  onChange={handleInputChange}
-                          onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
-                          onClick={() => setShowNurseDropdown(true)}
-                          placeholder="Nhập tên hoặc ID y tá"
-                  required
-                        style={{ backgroundColor: '#f8f9fa' }}
-                        />
-                        {showNurseDropdown && filteredNurses.length > 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            maxHeight: '200px',
-                            overflowY: 'auto',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000,
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                          }}>
-                            {filteredNurses.map(nurse => (
-                              <div 
-                                key={nurse.nurseId} 
-                                className="dropdown-item" 
-                                style={{ padding: '8px 12px', cursor: 'pointer' }}
-                                onClick={() => handleSelectNurse(nurse)}
-                              >
-                                {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
-                              </div>
-                            ))}
-              </div>
-                        )}
-                        {showNurseDropdown && filteredNurses.length === 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            padding: '8px 12px',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000
-                          }}>
-                            Không tìm thấy y tá
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
                 </div>
-                <div className="student-info-section">
-                  <h3 style={{ 
-                    borderBottom: '2px solid #007bff',
-                    paddingBottom: '8px',
-                    margin: '0 0 16px 0',
-                    color: '#333',
-                    fontSize: '1.1rem'
-                  }}>Kết quả khám</h3>
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <label htmlFor="edit-height">Chiều cao (cm) <span className="text-danger">*</span></label>
+                <div className="mb-3">
+                  <label htmlFor="edit-nurseId" className="form-label">Y tá phụ trách <span className="text-danger">*</span></label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="form-control bg-light"
+                      id="edit-nurseSearchTerm"
+                      name="nurseSearchTerm"
+                      value={formData.nurseSearchTerm}
+                      readOnly
+                  required
+                    />
+              </div>
+                  </div>
+                <div className="mb-3">
+                  <label htmlFor="edit-height" className="form-label">Chiều cao (cm) <span className="text-danger">*</span></label>
                 <input
                   type="number"
-                  name="height"
+                    className="form-control"
                         id="edit-height"
+                    name="height"
                   value={formData.height}
                   onChange={handleInputChange}
                   required
-                  min="0"
-                  step="0.1"
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
                 />
               </div>
-                    <div className="info-item">
-                      <label htmlFor="edit-weight">Cân nặng (kg) <span className="text-danger">*</span></label>
+                <div className="mb-3">
+                  <label htmlFor="edit-weight" className="form-label">Cân nặng (kg) <span className="text-danger">*</span></label>
                 <input
                   type="number"
-                  name="weight"
+                    className="form-control"
                         id="edit-weight"
+                    name="weight"
                   value={formData.weight}
                   onChange={handleInputChange}
                   required
-                  min="0"
-                  step="0.1"
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
                 />
                 </div>
-                    <div className="info-item">
-                      <label htmlFor="edit-leftVision">Thị lực mắt trái <span className="text-danger">*</span></label>
+                <div className="mb-3">
+                  <label htmlFor="edit-leftVision" className="form-label">Thị lực mắt trái</label>
+                  <div className="input-group">
                   <input
-                    type="text"
-                    name="leftVision"
+                      type="number"
+                      className="form-control"
                         id="edit-leftVision"
-                    value={formData.leftVision}
+                      name="leftVision"
+                      value={formData.leftVision ? formData.leftVision.split('/')[0] : ''}
                     onChange={handleInputChange}
-                        required
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                  />
+                      placeholder="Nhập số từ 0-10"
+                      min="0"
+                      max="10"
+                      step="1"
+                    />
+                    <span className="input-group-text">/10</span>
                 </div>
-                    <div className="info-item">
-                      <label htmlFor="edit-rightVision">Thị lực mắt phải <span className="text-danger">*</span></label>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="edit-rightVision" className="form-label">Thị lực mắt phải</label>
+                  <div className="input-group">
                   <input
-                    type="text"
-                    name="rightVision"
+                      type="number"
+                      className="form-control"
                         id="edit-rightVision"
-                    value={formData.rightVision}
+                      name="rightVision"
+                      value={formData.rightVision ? formData.rightVision.split('/')[0] : ''}
                     onChange={handleInputChange}
-                        required
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                  />
+                      placeholder="Nhập số từ 0-10"
+                      min="0"
+                      max="10"
+                      step="1"
+                    />
+                    <span className="input-group-text">/10</span>
                 </div>
-                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                      <label htmlFor="edit-result">Kết quả <span className="text-danger">*</span></label>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="edit-result" className="form-label">Kết quả <span className="text-danger">*</span></label>
                 <textarea
-                  name="result"
+                    className="form-control"
                         id="edit-result"
+                    name="result"
                   value={formData.result}
                   onChange={handleInputChange}
+                    rows={3}
                         required
-                  rows="3"
-                        className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
                 ></textarea>
               </div>
-                    {/* Status field removed */}
-                    <input type="hidden" name="status" value="1" />
-                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                      <label htmlFor="edit-note">Ghi chú</label>
+                <div className="mb-3">
+                  <label htmlFor="edit-note" className="form-label">Ghi chú</label>
                 <textarea
-                  name="note"
+                    className="form-control"
                         id="edit-note"
+                    name="note"
                   value={formData.note}
                   onChange={handleInputChange}
-                        rows="2"
-                  className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
+                    rows={2}
                 ></textarea>
               </div>
               </div>
-          </div>
-                <div className="student-dialog-footer">
-                  <button type="submit" className="admin-btn">Lưu</button>
-                  <button type="button" className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowEditModal(false)}>Hủy</button>
+              <div className="modal-footer">
+                <button type="submit" className="btn btn-primary">Lưu thay đổi</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowEditModal(false)}>Hủy</button>
         </div>
               </form>
-            </div>
           </div>
         </div>
       )}
 
       {/* Add Modal - Updated to match MedEvents style */}
       {showAddModal && (
-        <div className="student-dialog-overlay">
-          <div className="student-dialog-content" style={{ width: '700px', maxWidth: '90%' }}>
-            <div className="student-dialog-header">
-              <h2>Thêm kết quả khám sức khỏe mới</h2>
-              <button className="student-dialog-close" onClick={() => setShowAddModal(false)}>×</button>
+        <div className="student-create-modal-overlay">
+          <div className="student-create-modal-content">
+            <div className="modal-header">
+              <h3 className="modal-title">Thêm kết quả khám sức khỏe mới</h3>
+              <button type="button" className="btn-close" onClick={() => setShowAddModal(false)}></button>
             </div>
-            <div className="student-dialog-body">
               <form onSubmit={handleAddResult}>
-                <div className="student-info-section">
-                  <h3 style={{ 
-                    borderBottom: '2px solid #007bff',
-                    paddingBottom: '8px',
-                    margin: '0 0 16px 0',
-                    color: '#333',
-                    fontSize: '1.1rem'
-                  }}>Thông tin chung</h3>
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <label htmlFor="healthCheckScheduleId">Lịch khám <span className="text-danger">*</span></label>
-                <select
-                  name="healthCheckScheduleId"
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label htmlFor="healthCheckScheduleId" className="form-label">Lịch khám <span className="text-danger">*</span></label>
+                  <div style={{ position: 'relative' }} className="schedule-dropdown-container">
+                    <input
+                      type="text"
+                      className="form-control"
                         id="healthCheckScheduleId"
-                  value={formData.healthCheckScheduleId}
-                  onChange={handleScheduleChange}
+                      name="healthCheckScheduleSearchTerm"
+                      value={formData.healthCheckScheduleSearchTerm || ""}
+                      onChange={(e) => {
+                        setFormData({
+                          ...formData,
+                          healthCheckScheduleSearchTerm: e.target.value
+                        });
+                        // Lọc lịch khám dựa trên từ khóa tìm kiếm
+                        const keyword = e.target.value.toLowerCase();
+                        const filtered = schedules.filter(schedule => 
+                          schedule.name?.toLowerCase().includes(keyword) || 
+                          String(schedule.healthCheckScheduleId).includes(keyword)
+                        );
+                        setFilteredSchedules(filtered);
+                        if (e.target.value.trim() !== "") {
+                          setShowScheduleDropdown(true);
+                        }
+                      }}
+                      onClick={() => {
+                        if (formData.healthCheckScheduleSearchTerm?.trim() !== "") {
+                          setShowScheduleDropdown(true);
+                        }
+                      }}
+                      placeholder="Nhập tên hoặc ID lịch khám"
+                      autoFocus
                   required
-                  className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                >
-                  <option value="">-- Chọn lịch khám --</option>
-                  {schedules.map((schedule) => (
-                    <option key={schedule.healthCheckScheduleId} value={schedule.healthCheckScheduleId}>
+                    />
+                    {showScheduleDropdown && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000,
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                      }}>
+                        {filteredSchedules && filteredSchedules.length > 0 ? (
+                          filteredSchedules.map(schedule => (
+                            <div 
+                              key={schedule.healthCheckScheduleId} 
+                              className="dropdown-item" 
+                              style={{ padding: '8px 12px', cursor: 'pointer' }}
+                              onClick={() => {
+                                handleScheduleChange({ target: { value: schedule.healthCheckScheduleId } });
+                                setFormData({
+                                  ...formData,
+                                  healthCheckScheduleId: schedule.healthCheckScheduleId,
+                                  healthCheckScheduleSearchTerm: `${schedule.name} - ${new Date(schedule.checkDate).toLocaleDateString('vi-VN')}`
+                                });
+                                setShowScheduleDropdown(false);
+                              }}
+                            >
                       {schedule.name} - {new Date(schedule.checkDate).toLocaleDateString('vi-VN')}
-                    </option>
-                  ))}
-                </select>
               </div>
-                    <div className="info-item">
-                      <label htmlFor="studentId">Học sinh <span className="text-danger">*</span></label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                  className="form-control"
-                          id="studentSearchTerm"
-                          name="studentSearchTerm"
-                          value={formData.studentSearchTerm}
-                          onChange={handleInputChange}
-                          onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
-                          onClick={() => setShowStudentDropdown(true)}
-                          placeholder="Nhập tên hoặc ID học sinh"
-                          required
-                        style={{ backgroundColor: '#f8f9fa' }}
-                        />
-                        {showStudentDropdown && filteredStudents.length > 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            maxHeight: '200px',
-                            overflowY: 'auto',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000,
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                          }}>
-                            {filteredStudents.map(student => (
-                              <div 
-                                key={student.studentId} 
-                                className="dropdown-item" 
-                                style={{ padding: '8px 12px', cursor: 'pointer' }}
-                                onClick={() => handleSelectStudent(student)}
-                              >
-                                {student.fullName || `Học sinh ID: ${student.studentId}`}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        {showStudentDropdown && filteredStudents.length === 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            padding: '8px 12px',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000
-                          }}>
-                            Không tìm thấy học sinh
+                          ))
+                        ) : (
+                          <div style={{ padding: '8px 12px' }}>
+                            Không tìm thấy lịch khám
                           </div>
                         )}
                       </div>
-              </div>
-                    <div className="info-item">
-                      <label htmlFor="nurseId">Y tá phụ trách <span className="text-danger">*</span></label>
-                      <div style={{ position: 'relative' }}>
-                        <input
-                          type="text"
-                          className="form-control"
-                          id="nurseSearchTerm"
-                          name="nurseSearchTerm"
-                          value={formData.nurseSearchTerm}
-                  onChange={handleInputChange}
-                          onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
-                          onClick={() => setShowNurseDropdown(true)}
-                          placeholder="Nhập tên hoặc ID y tá"
-                  required
-                        style={{ backgroundColor: '#f8f9fa' }}
-                        />
-                        {showNurseDropdown && filteredNurses.length > 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            maxHeight: '200px',
-                            overflowY: 'auto',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000,
-                            boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                          }}>
-                            {filteredNurses.map(nurse => (
-                              <div 
-                                key={nurse.nurseId} 
-                                className="dropdown-item" 
-                                style={{ padding: '8px 12px', cursor: 'pointer' }}
-                                onClick={() => handleSelectNurse(nurse)}
-                              >
-                                {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
-                              </div>
-                            ))}
-              </div>
-                        )}
-                        {showNurseDropdown && filteredNurses.length === 0 && (
-                          <div style={{
-                            position: 'absolute',
-                            top: '100%',
-                            left: 0,
-                            right: 0,
-                            padding: '8px 12px',
-                            backgroundColor: 'white',
-                            border: '1px solid #ddd',
-                            borderRadius: '4px',
-                            zIndex: 1000
-                          }}>
-                            Không tìm thấy y tá
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
-                <div className="student-info-section">
-                  <h3 style={{ 
-                    borderBottom: '2px solid #007bff',
-                    paddingBottom: '8px',
-                    margin: '0 0 16px 0',
-                    color: '#333',
-                    fontSize: '1.1rem'
-                  }}>Kết quả khám</h3>
-                  <div className="info-grid">
-                    <div className="info-item">
-                      <label htmlFor="height">Chiều cao (cm) <span className="text-danger">*</span></label>
+                <div className="mb-3">
+                  <label htmlFor="studentId" className="form-label">Học sinh <span className="text-danger">*</span></label>
+                  <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }} className="student-dropdown-container">
+                    <input
+                      type="text"
+                      className={`form-control ${!formData.healthCheckScheduleId ? 'bg-light' : ''}`}
+                        id="studentId"
+                      name="studentSearchTerm"
+                      value={formData.studentSearchTerm}
+                      onChange={handleInputChange}
+                      onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
+                      onClick={() => {
+                        if (formData.healthCheckScheduleId) {
+                          // Chỉ hiển thị dropdown khi đã chọn lịch khám và có học sinh để hiển thị
+                          if (filteredStudents.length > 0) {
+                            setShowStudentDropdown(true);
+                          } else {
+                            setNotif({
+                              message: "Không tìm thấy học sinh nào cho lịch khám này",
+                              type: "info",
+                              autoDismiss: true,
+                              duration: 3000
+                            });
+                          }
+                        } else {
+                          setNotif({
+                            message: "Vui lòng chọn lịch khám trước",
+                            type: "warning",
+                            autoDismiss: true,
+                            duration: 3000
+                          });
+                        }
+                      }}
+                      placeholder={formData.healthCheckScheduleId ? "Chọn học sinh từ danh sách" : "Vui lòng chọn lịch khám trước"}
+                      disabled={!formData.healthCheckScheduleId}
+                  required
+                      style={{ flex: 1 }}
+                    />
+                    {showStudentDropdown && filteredStudents.length > 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000,
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                      }}>
+                        {filteredStudents.map(student => (
+                          <div 
+                            key={student.studentId} 
+                            className="dropdown-item" 
+                            style={{ padding: '8px 12px', cursor: 'pointer' }}
+                            onClick={() => handleSelectStudent(student)}
+                          >
+                            {student.fullName || `Học sinh ID: ${student.studentId}`}
+                          </div>
+                        ))}
+              </div>
+                    )}
+                    {showStudentDropdown && filteredStudents.length === 0 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        padding: '8px 12px',
+                        backgroundColor: 'white',
+                        border: '1px solid #ddd',
+                        borderRadius: '4px',
+                        zIndex: 1000
+                      }}>
+                        Không tìm thấy học sinh
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="nurseId" className="form-label">Y tá phụ trách <span className="text-danger">*</span></label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="text"
+                      className="form-control bg-light"
+                        id="nurseId"
+                      name="nurseSearchTerm"
+                      value={formData.nurseSearchTerm}
+                      readOnly
+                  required
+                    />
+              </div>
+                  </div>
+                <div className="mb-3">
+                  <label htmlFor="height" className="form-label">Chiều cao (cm) <span className="text-danger">*</span></label>
                 <input
                   type="number"
-                  name="height"
+                    className="form-control"
                         id="height"
+                    name="height"
                   value={formData.height}
                   onChange={handleInputChange}
                   required
-                  min="0"
-                  step="0.1"
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
                 />
               </div>
-                    <div className="info-item">
-                      <label htmlFor="weight">Cân nặng (kg) <span className="text-danger">*</span></label>
+                <div className="mb-3">
+                  <label htmlFor="weight" className="form-label">Cân nặng (kg) <span className="text-danger">*</span></label>
                 <input
                   type="number"
-                  name="weight"
+                    className="form-control"
                         id="weight"
+                    name="weight"
                   value={formData.weight}
                   onChange={handleInputChange}
                   required
-                  min="0"
-                  step="0.1"
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
                 />
                 </div>
-                    <div className="info-item">
-                      <label htmlFor="leftVision">Thị lực mắt trái <span className="text-danger">*</span></label>
+                <div className="mb-3">
+                  <label htmlFor="leftVision" className="form-label">Thị lực mắt trái</label>
+                  <div className="input-group">
                   <input
-                    type="text"
-                    name="leftVision"
+                      type="number"
+                      className="form-control"
                         id="leftVision"
-                    value={formData.leftVision}
+                      name="leftVision"
+                      value={formData.leftVision ? formData.leftVision.split('/')[0] : ''}
                     onChange={handleInputChange}
-                        required
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                  />
+                      placeholder="Nhập số từ 0-10"
+                      min="0"
+                      max="10"
+                      step="1"
+                    />
+                    <span className="input-group-text">/10</span>
                 </div>
-                    <div className="info-item">
-                      <label htmlFor="rightVision">Thị lực mắt phải <span className="text-danger">*</span></label>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="rightVision" className="form-label">Thị lực mắt phải</label>
+                  <div className="input-group">
                   <input
-                    type="text"
-                    name="rightVision"
+                      type="number"
+                      className="form-control"
                         id="rightVision"
-                    value={formData.rightVision}
+                      name="rightVision"
+                      value={formData.rightVision ? formData.rightVision.split('/')[0] : ''}
                     onChange={handleInputChange}
-                        required
-                    className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
-                  />
+                      placeholder="Nhập số từ 0-10"
+                      min="0"
+                      max="10"
+                      step="1"
+                    />
+                    <span className="input-group-text">/10</span>
                 </div>
-                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                      <label htmlFor="result">Kết quả <span className="text-danger">*</span></label>
+                </div>
+                </div>
+                <div className="mb-3">
+                  <label htmlFor="result" className="form-label">Kết quả <span className="text-danger">*</span></label>
                 <textarea
-                  name="result"
+                    className="form-control"
                         id="result"
+                    name="result"
                   value={formData.result}
                   onChange={handleInputChange}
+                    rows={3}
                         required
-                  rows="3"
-                        className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
                 ></textarea>
               </div>
-                    {/* Status field removed */}
-                    <input type="hidden" name="status" value="1" />
-                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                      <label htmlFor="note">Ghi chú</label>
+                <div className="mb-3">
+                  <label htmlFor="note" className="form-label">Ghi chú</label>
                 <textarea
-                  name="note"
+                    className="form-control"
                         id="note"
+                    name="note"
                   value={formData.note}
                   onChange={handleInputChange}
-                        rows="2"
-                  className="form-control"
-                        style={{ backgroundColor: '#f8f9fa' }}
+                    rows={2}
                 ></textarea>
               </div>
-                  </div>
-                </div>
-                <div className="student-dialog-footer">
-                  <button type="submit" className="admin-btn">Lưu</button>
-                  <button type="button" className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowAddModal(false)}>Hủy</button>
+              <div className="modal-footer">
+                <button type="submit" className="btn btn-primary">Lưu</button>
+                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>Hủy</button>
               </div>
             </form>
-            </div>
           </div>
         </div>
       )}

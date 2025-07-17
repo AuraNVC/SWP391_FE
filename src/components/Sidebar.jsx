@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { FaSignOutAlt } from "react-icons/fa";
 import "../styles/Sidebar.css";
 import { useNavigate } from "react-router-dom";
@@ -7,11 +7,40 @@ import { useUserRole } from "../contexts/UserRoleContext"; // Thêm dòng này
 
 const Sidebar = ({ extraLinks = [] }) => {
     const navigate = useNavigate();
-    const { logout } = useUserRole(); // Lấy hàm logout từ context
+    const { logout, userRole } = useUserRole(); // Lấy hàm logout và userRole từ context
+    const [userName, setUserName] = useState("Người dùng");
+    const [avatarIndex, setAvatarIndex] = useState(3); // Default avatar
+
+    // Lấy thông tin người dùng từ localStorage khi component mount
+    useEffect(() => {
+        const storedUserRole = localStorage.getItem("userRole");
+        const storedUserName = localStorage.getItem("userName") || "Người dùng";
+        
+        // Đặt tên người dùng
+        setUserName(storedUserName);
+        
+        // Đặt avatar dựa trên vai trò
+        if (storedUserRole === "nurse") {
+            setAvatarIndex(8); // Avatar phù hợp cho y tá
+        } else if (storedUserRole === "manager") {
+            setAvatarIndex(3); // Avatar cho quản lý
+        } else if (storedUserRole === "parent") {
+            setAvatarIndex(5); // Avatar cho phụ huynh
+        }
+    }, [userRole]);
 
     const handleLogout = () => {
         logout(); // Xóa localStorage và cập nhật state
         navigate("/login");
+    };
+
+    // Xác định đường dẫn profile dựa trên vai trò
+    const getProfilePath = () => {
+        const role = localStorage.getItem("userRole");
+        if (role === "nurse") return "/nurse/profile";
+        if (role === "manager") return "/admin/profile";
+        if (role === "parent") return "/parent/profile";
+        return "/profile";
     };
 
     return (
@@ -31,10 +60,10 @@ const Sidebar = ({ extraLinks = [] }) => {
                 </li>
             </ul>
             <div className="navbar-profile">
-                <img src="https://i.pravatar.cc/40?img=3" alt="Admin" />
+                <img src={`https://i.pravatar.cc/40?img=${avatarIndex}`} alt={userName} />
                 <div>
-                    <div className="navbar-profile-name">Admin</div>
-                    <div className="navbar-profile-link"><a href="/admin/profile">Xem chi tiết</a></div>
+                    <div className="navbar-profile-name">{userName}</div>
+                    <div className="navbar-profile-link"><a href={getProfilePath()}>Xem chi tiết</a></div>
                 </div>
             </div>
         </nav>
