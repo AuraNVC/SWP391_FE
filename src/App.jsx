@@ -171,7 +171,7 @@ function AppContent() {
             <AdminLayout />
           </ProtectedRoute>
         }>
-          <Route path="/manager/dashboard" element={<AdminDashboard />} />
+          {/* <Route path="/manager/dashboard" element={<AdminDashboard />} /> */}
           <Route path="/manager/student" element={<AdminStudent />} />
           <Route path="/manager/student/create" element={<AdminStudentCreate />} />
           <Route path="/manager/parent" element={<AdminParent />} />

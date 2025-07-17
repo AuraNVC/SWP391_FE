@@ -9,7 +9,7 @@ export default function AdminLayout() {
     const current = location.pathname;
 
     const extraLinks = [
-        <a href="/manager/dashboard" className={current === "/manager/dashboard" ? "active" : ""}><FaTachometerAlt /> Bảng tổng kết</a>,
+        // <a href="/manager/dashboard" className={current === "/manager/dashboard" ? "active" : ""}><FaTachometerAlt /> Bảng tổng kết</a>,
         <a href="/manager/student" className={current === "/manager/student" ? "active" : ""}><FaUser /> Học sinh</a>,
         <a href="/manager/parent" className={current === "/manager/parent" ? "active" : ""}><FaUsers /> Phụ huynh</a>,
         <a href="/manager/nurse" className={current === "/manager/nurse" ? "active" : ""}><FaUserTie /> Y tá</a>,
