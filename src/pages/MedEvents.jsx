@@ -202,6 +202,21 @@ const MedEvents = () => {
     applyFiltersAndSort(events, filters, sortConfig);
   }, [events, filters, sortConfig]);
 
+  // Thêm useEffect để tự động cập nhật tên y tá khi danh sách y tá thay đổi
+  useEffect(() => {
+    const userId = localStorage.getItem("userId");
+    if (userId && nurses.length > 0) {
+      const currentNurse = nurses.find(n => n.nurseId === parseInt(userId));
+      if (currentNurse) {
+        setFormData(prev => ({
+          ...prev,
+          nurseId: parseInt(userId),
+          nurseSearchTerm: currentNurse.fullName || `Y tá ID: ${userId}`
+        }));
+      }
+    }
+  }, [nurses]);
+
   // Hàm mới để áp dụng bộ lọc và sắp xếp
   const applyFiltersAndSort = (eventList = events, currentFilters = filters, currentSortConfig = sortConfig) => {
     let result = [...eventList];
@@ -524,9 +539,23 @@ const MedEvents = () => {
       const isNumeric = /^\d+$/.test(searchKeyword);
       
       if (isNumeric) {
-        // Nếu là ID, tìm kiếm trong danh sách events hiện có
+        // Nếu là ID, tìm kiếm trực tiếp ID sự kiện y tế trước
+        const eventId = parseInt(searchKeyword);
+        const foundByEventId = events.find(event => event.medicalEventId === eventId);
+        
+        if (foundByEventId) {
+          // Nếu tìm thấy chính xác, chỉ hiển thị kết quả này
+          setFilteredEvents([foundByEventId]);
+          setSearchLoading(false);
+          setNotif({
+            message: `Đã tìm thấy sự kiện y tế với ID: ${eventId}`,
+            type: "success"
+          });
+          return;
+        }
+        
+        // Nếu không tìm thấy theo ID sự kiện, thử tìm theo ID học sinh hoặc y tá
         const foundEvents = events.filter(event => 
-          event.medicalEventId?.toString() === searchKeyword ||
           event.studentId?.toString() === searchKeyword ||
           event.nurseId?.toString() === searchKeyword
         );
@@ -535,7 +564,17 @@ const MedEvents = () => {
           // Nếu tìm thấy, cập nhật filteredEvents
           setFilteredEvents(foundEvents);
           setSearchLoading(false);
+          setNotif({
+            message: `Tìm thấy ${foundEvents.length} sự kiện y tế liên quan đến ID: ${searchKeyword}`,
+            type: "success"
+          });
           return;
+        } else {
+          // Nếu không tìm thấy, thông báo cho người dùng
+          setNotif({
+            message: `Không tìm thấy sự kiện y tế nào với ID: ${searchKeyword}`,
+            type: "warning"
+          });
         }
       }
       
@@ -562,6 +601,24 @@ const MedEvents = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    // Xử lý đặc biệt cho các trường ID, đảm bảo chúng là số nếu có giá trị
+    if (name === 'studentId' && value) {
+      // Nếu value không phải là số, không cập nhật state
+      if (isNaN(parseInt(value))) {
+        console.warn("studentId phải là số");
+        return;
+      }
+    }
+    
+    if (name === 'nurseId' && value) {
+      // Nếu value không phải là số, không cập nhật state
+      if (isNaN(parseInt(value))) {
+        console.warn("nurseId phải là số");
+        return;
+      }
+    }
+    
     setFormData({
       ...formData,
       [name]: value
@@ -588,11 +645,66 @@ const MedEvents = () => {
     }
   };
 
+  // Thêm hàm kiểm tra form
+  const validateForm = () => {
+    if (!formData.title) {
+      setNotif({
+        message: "Vui lòng nhập tiêu đề sự kiện",
+        type: "warning"
+      });
+      return false;
+    }
+    
+    if (!formData.eventDate) {
+      setNotif({
+        message: "Vui lòng chọn ngày sự kiện",
+        type: "warning"
+      });
+      return false;
+    }
+    
+    // Kiểm tra studentId có giá trị và có thể chuyển thành số không
+    if (!formData.studentId || isNaN(parseInt(formData.studentId))) {
+      setNotif({
+        message: "Vui lòng chọn học sinh",
+        type: "warning"
+      });
+      return false;
+    }
+    
+    // Kiểm tra nurseId có giá trị và có thể chuyển thành số không
+    if (!formData.nurseId || isNaN(parseInt(formData.nurseId))) {
+      setNotif({
+        message: "Vui lòng chọn y tá",
+        type: "warning"
+      });
+      return false;
+    }
+    
+    if (!formData.symptoms) {
+      setNotif({
+        message: "Vui lòng nhập triệu chứng",
+        type: "warning"
+      });
+      return false;
+    }
+    
+    if (!formData.actionTaken) {
+      setNotif({
+        message: "Vui lòng nhập hành động đã thực hiện",
+        type: "warning"
+      });
+      return false;
+    }
+    
+    return true;
+  };
+
   // Hàm mới để xử lý khi người dùng chọn một học sinh từ dropdown
   const handleSelectStudent = (student) => {
     setFormData({
       ...formData,
-      studentId: student.studentId,
+      studentId: parseInt(student.studentId),
       studentSearchTerm: student.fullName || `Học sinh ID: ${student.studentId}`
     });
     setShowStudentDropdown(false);
@@ -602,7 +714,7 @@ const MedEvents = () => {
   const handleSelectNurse = (nurse) => {
     setFormData({
       ...formData,
-      nurseId: nurse.nurseId,
+      nurseId: parseInt(nurse.nurseId),
       nurseSearchTerm: nurse.fullName || `Y tá ID: ${nurse.nurseId}`
     });
     setShowNurseDropdown(false);
@@ -610,6 +722,10 @@ const MedEvents = () => {
 
   const handleAddEvent = async (e) => {
     e.preventDefault();
+    // Kiểm tra form trước khi hiển thị hộp thoại xác nhận
+    if (!validateForm()) {
+      return;
+    }
     setShowConfirmAdd(true);
   };
 
@@ -645,16 +761,33 @@ const MedEvents = () => {
         }
       }
       
+      if (!studentId) {
+        throw new Error("Vui lòng chọn học sinh từ danh sách.");
+      }
+      
+      if (!nurseId) {
+        throw new Error("Vui lòng chọn y tá từ danh sách.");
+      }
+      
+      // Kiểm tra và đảm bảo định dạng đúng của ngày tháng
+      let formattedDate = formData.eventDate;
+      if (formattedDate && !formattedDate.includes('Z') && !formattedDate.includes('+')) {
+        // Thêm 'Z' để đảm bảo UTC nếu chưa có thông tin múi giờ
+        formattedDate = formattedDate + 'Z';
+      }
+
       // Chuẩn bị dữ liệu để gửi
       const eventData = {
-        title: formData.title,
-        eventDate: formData.eventDate,
-        studentId: studentId,
-        nurseId: nurseId,
+        eventName: formData.title, // Đổi title thành eventName để phù hợp với model backend
+        eventDate: formattedDate,
+        studentId: parseInt(studentId),
+        nurseId: parseInt(nurseId),
         symptoms: formData.symptoms,
         actionTaken: formData.actionTaken,
-        note: formData.note
+        note: formData.note || ""
       };
+      
+      console.log("Sending data to API:", eventData);
       
       // Gọi API để thêm sự kiện y tế
       const response = await API_SERVICE.medicalEventAPI.create(eventData);
@@ -692,8 +825,14 @@ const MedEvents = () => {
     }
   };
 
+  // Hàm mới để hiển thị thông báo trước khi hiện form cập nhật
   const handleUpdateEvent = async (e) => {
     e.preventDefault();
+    
+    // Kiểm tra form trước khi hiển thị hộp thoại xác nhận
+    if (!validateForm()) {
+      return;
+    }
     setShowConfirmUpdate(true);
   };
 
@@ -729,18 +868,33 @@ const MedEvents = () => {
         }
       }
       
-      // Chuẩn bị dữ liệu để gửi
+      if (!studentId) {
+        throw new Error("Vui lòng chọn học sinh từ danh sách.");
+      }
+      
+      if (!nurseId) {
+        throw new Error("Vui lòng chọn y tá từ danh sách.");
+      }
+      
+      // Kiểm tra và đảm bảo định dạng đúng của ngày tháng
+      let formattedDate = formData.eventDate;
+      if (formattedDate && !formattedDate.includes('Z') && !formattedDate.includes('+')) {
+        // Thêm 'Z' để đảm bảo UTC nếu chưa có thông tin múi giờ
+        formattedDate = formattedDate + 'Z';
+      }
+      
+      // Chuẩn bị dữ liệu để gửi - Sửa đổi theo đúng model backend
         const eventData = {
-        medicalEventId: formData.medicalEventId,
-        title: formData.title,
-          eventDate: formData.eventDate,
-        studentId: studentId,
-        nurseId: nurseId,
+        eventId: parseInt(formData.medicalEventId),
+        nurseId: parseInt(nurseId),
+        eventDate: formattedDate,
         symptoms: formData.symptoms,
         actionTaken: formData.actionTaken,
-        note: formData.note
-      };
-      
+          note: formData.note || ""
+        };
+        
+      console.log("Sending data to API for update:", eventData);
+        
       // Gọi API để cập nhật sự kiện y tế
       const response = await API_SERVICE.medicalEventAPI.update(eventData);
         
@@ -824,11 +978,41 @@ const MedEvents = () => {
     setShowEditModal(true);
   };
 
+  // Thêm hàm để reset form data về giá trị mặc định
+  const resetFormData = () => {
+    // Lấy thông tin y tá hiện tại
+    const userId = localStorage.getItem("userId");
+    let nurseSearchTerm = "";
+    
+    if (userId && nurses.length > 0) {
+      const currentNurse = nurses.find(n => n.nurseId === parseInt(userId));
+      if (currentNurse) {
+        nurseSearchTerm = currentNurse.fullName || `Y tá ID: ${userId}`;
+      }
+    }
+    
+    // Reset form về giá trị mặc định
+    setFormData({
+      title: "",
+      eventDate: new Date().toISOString().split('T')[0] + "T" + new Date().toTimeString().split(' ')[0],
+      studentId: "",
+      studentSearchTerm: "",
+      nurseId: userId || "",
+      nurseSearchTerm: nurseSearchTerm,
+      symptoms: "",
+      actionTaken: "",
+      note: ""
+    });
+  };
+
   return (
     <div className="admin-main">
       <h2 className="dashboard-title">Quản lý sự kiện y tế</h2>
       <div className="admin-header">
-        <button className="admin-btn" onClick={() => setShowAddModal(true)}>
+        <button className="admin-btn" onClick={() => {
+          resetFormData();
+          setShowAddModal(true);
+        }}>
           <FaPlus /> Thêm sự kiện y tế
         </button>
         <div className="search-container">
@@ -839,6 +1023,7 @@ const MedEvents = () => {
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             onKeyDown={handleSearchKeyDown}
+            title="Nhập ID sự kiện y tế để tìm kiếm nhanh"
           />
           <button
             className="admin-btn"
@@ -1051,12 +1236,12 @@ const MedEvents = () => {
                 <label htmlFor="eventDate" className="form-label">Ngày sự kiện <span className="text-danger">*</span></label>
                 <input
                   type="datetime-local"
-                  className="form-control"
+                  className="form-control bg-light"
                   id="eventDate"
                   name="eventDate"
                   value={formData.eventDate}
                   onChange={handleInputChange}
-                  required
+                  readOnly
                 />
               </div>
               <div className="mb-3">
@@ -1096,7 +1281,7 @@ const MedEvents = () => {
                         >
                           {student.fullName || `Học sinh ID: ${student.studentId}`}
                         </div>
-                      ))}
+                  ))}
                     </div>
                   )}
                   {showStudentDropdown && filteredStudents.length === 0 && (
@@ -1121,56 +1306,12 @@ const MedEvents = () => {
                 <div style={{ position: 'relative' }}>
                   <input
                     type="text"
-                    className="form-control"
-                  id="nurseId"
+                    className="form-control bg-light"
+                    id="nurseId"
                     name="nurseSearchTerm"
                     value={formData.nurseSearchTerm}
-                  onChange={handleInputChange}
-                    onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
-                    onClick={() => setShowNurseDropdown(true)}
-                    placeholder="Nhập tên hoặc ID y tá"
+                    readOnly
                   />
-                  {showNurseDropdown && filteredNurses.length > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      maxHeight: '200px',
-                      overflowY: 'auto',
-                      backgroundColor: 'white',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      zIndex: 1000,
-                      boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                    }}>
-                      {filteredNurses.map(nurse => (
-                        <div 
-                          key={nurse.nurseId} 
-                          className="dropdown-item" 
-                          style={{ padding: '8px 12px', cursor: 'pointer' }}
-                          onClick={() => handleSelectNurse(nurse)}
-                        >
-                          {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {showNurseDropdown && filteredNurses.length === 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '100%',
-                      left: 0,
-                      right: 0,
-                      padding: '8px 12px',
-                      backgroundColor: 'white',
-                      border: '1px solid #ddd',
-                      borderRadius: '4px',
-                      zIndex: 1000
-                    }}>
-                      Không tìm thấy y tá
-                    </div>
-                  )}
                 </div>
               </div>
               <div className="mb-3">
@@ -1288,143 +1429,55 @@ const MedEvents = () => {
               <div className="modal-body">
                 <input type="hidden" name="medicalEventId" value={formData.medicalEventId} />
                 <div className="mb-3">
-                  <label htmlFor="title" className="form-label">Tiêu đề <span className="text-danger">*</span></label>
-                <input
-                  type="text"
-                    className="form-control"
+                  <label htmlFor="title" className="form-label">Tiêu đề</label>
+                  <input
+                    type="text"
+                    className="form-control bg-light"
                     id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+                    name="title"
+                    value={formData.title}
+                    onChange={handleInputChange}
+                    readOnly
+                  />
+                </div>
                 <div className="mb-3">
                   <label htmlFor="eventDate" className="form-label">Ngày sự kiện <span className="text-danger">*</span></label>
                   <input
                     type="datetime-local"
-                  className="form-control"
+                    className="form-control bg-light"
                     id="eventDate"
-                  name="eventDate"
-                  value={formData.eventDate}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
+                    name="eventDate"
+                    value={formData.eventDate}
+                    onChange={handleInputChange}
+                    readOnly
+                  />
+                </div>
                 <div className="mb-3">
-                  <label htmlFor="studentId" className="form-label">Học sinh <span className="text-danger">*</span></label>
+                  <label htmlFor="studentId" className="form-label">Học sinh</label>
                   <div style={{ position: 'relative' }}>
                     <input
                       type="text"
-                      className="form-control"
-                    id="studentId"
+                      className="form-control bg-light"
+                      id="studentId"
                       name="studentSearchTerm"
                       value={formData.studentSearchTerm}
-                  onChange={handleInputChange}
-                      onBlur={() => setTimeout(() => setShowStudentDropdown(false), 200)}
-                      onClick={() => setShowStudentDropdown(true)}
-                      placeholder="Nhập tên hoặc ID học sinh"
+                      readOnly
                     />
-                    {showStudentDropdown && filteredStudents.length > 0 && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        backgroundColor: 'white',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        zIndex: 1000,
-                        boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                      }}>
-                        {filteredStudents.map(student => (
-                          <div 
-                            key={student.studentId} 
-                            className="dropdown-item" 
-                            style={{ padding: '8px 12px', cursor: 'pointer' }}
-                            onClick={() => handleSelectStudent(student)}
-                          >
-                            {student.fullName || `Học sinh ID: ${student.studentId}`}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {showStudentDropdown && filteredStudents.length === 0 && (
-                      <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        padding: '8px 12px',
-                        backgroundColor: 'white',
-                        border: '1px solid #ddd',
-                        borderRadius: '4px',
-                        zIndex: 1000
-                      }}>
-                        Không tìm thấy học sinh
-                      </div>
-                    )}
                   </div>
-              </div>
+                </div>
                 <div className="mb-3">
                   <label htmlFor="nurseId" className="form-label">Y tá <span className="text-danger">*</span></label>
-                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'relative' }}>
                     <input
                       type="text"
-                      className="form-control"
-                    id="nurseId"
+                      className="form-control bg-light"
+                      id="nurseId"
                       name="nurseSearchTerm"
                       value={formData.nurseSearchTerm}
-                  onChange={handleInputChange}
-                  onBlur={() => setTimeout(() => setShowNurseDropdown(false), 200)}
-                  onClick={() => setShowNurseDropdown(true)}
-                  placeholder="Nhập tên hoặc ID y tá"
-                />
-                {showNurseDropdown && filteredNurses.length > 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    backgroundColor: 'white',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    zIndex: 1000,
-                    boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
-                  }}>
-                    {filteredNurses.map(nurse => (
-                      <div 
-                        key={nurse.nurseId} 
-                        className="dropdown-item" 
-                        style={{ padding: '8px 12px', cursor: 'pointer' }}
-                        onClick={() => handleSelectNurse(nurse)}
-                      >
-                        {nurse.fullName || `Y tá ID: ${nurse.nurseId}`}
-                      </div>
-                    ))}
+                      readOnly
+                    />
                   </div>
-                )}
-                {showNurseDropdown && filteredNurses.length === 0 && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    padding: '8px 12px',
-                    backgroundColor: 'white',
-                    border: '1px solid #ddd',
-                    borderRadius: '4px',
-                    zIndex: 1000
-                  }}>
-                    Không tìm thấy y tá
-                  </div>
-                )}
-              </div>
-              </div>
+                </div>
                 <div className="mb-3">
                   <label htmlFor="symptoms" className="form-label">Triệu chứng <span className="text-danger">*</span></label>
                   <textarea
@@ -1439,12 +1492,12 @@ const MedEvents = () => {
                 </div>
                 <div className="mb-3">
                   <label htmlFor="actionTaken" className="form-label">Ghi chú <span className="text-danger">*</span></label>
-                <textarea
+                  <textarea
                     className="form-control"
                     id="actionTaken"
                     name="actionTaken"
                     value={formData.actionTaken}
-                  onChange={handleInputChange}
+                    onChange={handleInputChange}
                     rows={3}
                     required
                   ></textarea>
@@ -1452,7 +1505,7 @@ const MedEvents = () => {
                 <div className="mb-3">
                   <label htmlFor="note" className="form-label">Ghi chú bổ sung</label>
                   <textarea
-                  className="form-control"
+                    className="form-control"
                     id="note"
                     name="note"
                     value={formData.note}

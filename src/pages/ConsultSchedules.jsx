@@ -40,8 +40,8 @@ const ConsultSchedules = () => {
   const [editFormData, setEditFormData] = useState(null); // State mới cho dữ liệu form đang chỉnh sửa
   const [formHistory, setFormHistory] = useState([]); // State mới để lưu lịch sử chỉnh sửa form
   const [formData, setFormData] = useState({
-    consultationDate: new Date().toISOString().split('T')[0],
-    consultationTime: "08:00",
+    consultDate: new Date().toISOString().split('T')[0],
+    consultTime: "08:00",
     location: "Phòng y tế",
     studentId: "",
     studentSearchTerm: "",
@@ -98,7 +98,7 @@ const ConsultSchedules = () => {
       dataIndex: "studentName", 
       render: (name, record) => (
         <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
-          {name || "Không có"}
+          {name || "Không có"} 
           {sortConfig.key === "studentName" && (
             <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
               {sortConfig.direction === 'asc' ? '▲' : '▼'}
@@ -112,7 +112,7 @@ const ConsultSchedules = () => {
       dataIndex: "nurseName", 
       render: (name, record) => (
         <span style={{ cursor: 'pointer' }} onClick={() => handleSort("nurseName")}>
-          {name || "Chưa phân công"}
+          {name || "Chưa phân công"} 
           {sortConfig.key === "nurseName" && (
             <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
               {sortConfig.direction === 'asc' ? '▲' : '▼'}
@@ -239,6 +239,61 @@ const ConsultSchedules = () => {
       filteredData = filteredData.filter(schedule => 
         schedule.location && schedule.location.toLowerCase().includes(currentFilters.location.toLowerCase())
       );
+    }
+    
+    // Lọc theo trạng thái form
+    if (currentFilters.formStatus && currentFilters.formStatus !== "all") {
+      // Tạo một mảng Promise để kiểm tra trạng thái form của từng lịch
+      const checkFormStatusPromises = filteredData.map(async (schedule) => {
+        try {
+          // Tìm form tư vấn cho lịch này
+          const scheduleId = schedule.consultationScheduleId;
+          let form = null;
+          
+          // Thử lấy form trực tiếp theo ID lịch
+          try {
+            form = await API_SERVICE.consultationFormAPI.getById(scheduleId);
+          } catch (error) {
+            // Nếu không tìm thấy trực tiếp, thử tìm qua studentId
+            if (schedule.studentId) {
+              const studentForms = await API_SERVICE.consultationFormAPI.getByStudent(schedule.studentId);
+              if (Array.isArray(studentForms) && studentForms.length > 0) {
+                form = studentForms.find(f => f.consultationScheduleId === scheduleId);
+              }
+            }
+          }
+          
+          // Xác định trạng thái form
+          if (!form) {
+            // Không có form
+            return currentFilters.formStatus === "noform";
+          } else {
+            // Có form, kiểm tra trạng thái
+            const status = form.status;
+            return (
+              (currentFilters.formStatus === "pending" && (status === 0 || status === "Pending")) ||
+              (currentFilters.formStatus === "accepted" && (status === 1 || status === "Accepted")) ||
+              (currentFilters.formStatus === "rejected" && (status === 2 || status === "Rejected"))
+            );
+          }
+        } catch (error) {
+          console.error("Error checking form status:", error);
+          return false;
+        }
+      });
+      
+      // Đợi tất cả các Promise hoàn thành
+      console.log("Checking form statuses for filter...");
+      
+      // Lưu ý: Đây là cách đơn giản hóa vì async filter không thể sử dụng trực tiếp
+      // Trong thực tế, chúng ta nên sử dụng một cách tiếp cận khác để tránh chặn UI
+      Promise.all(checkFormStatusPromises).then(results => {
+        filteredData = filteredData.filter((_, index) => results[index]);
+        setFilteredSchedules(filteredData);
+      });
+      
+      // Trả về kết quả tạm thời, sẽ được cập nhật bởi Promise.all
+      return;
     }
     
     // Áp dụng sắp xếp
@@ -706,9 +761,21 @@ const ConsultSchedules = () => {
 
   const validateForm = () => {
     // Kiểm tra các trường chung
-    if (!formData.consultationDate || !formData.consultationTime || !formData.location) {
+    if (!formData.consultDate || !formData.consultTime || !formData.location) {
       setNotif({
         message: "Vui lòng điền đầy đủ thông tin lịch tư vấn",
+        type: "error"
+      });
+      return false;
+    }
+    
+    // Kiểm tra thời gian lịch tư vấn phải sau thời gian hiện tại
+    const selectedDateTime = new Date(`${formData.consultDate}T${formData.consultTime}`);
+    const currentDateTime = new Date();
+    
+    if (selectedDateTime <= currentDateTime) {
+      setNotif({
+        message: "Thời gian tư vấn phải sau thời gian hiện tại",
         type: "error"
       });
       return false;
@@ -758,6 +825,40 @@ const ConsultSchedules = () => {
     setShowConfirmAdd(true);
   };
 
+  // Thêm hàm resetAddForm để khởi tạo lại form với giá trị trống
+  const resetAddForm = () => {
+    setFormData({
+      consultDate: "",
+      consultTime: "",
+      location: "",
+      studentId: "",
+      studentSearchTerm: "",
+      nurseId: localStorage.getItem("userId") || "",
+      nurseSearchTerm: "",
+      parentId: "",
+      parentName: "",
+      formTitle: "",
+      formContent: "",
+      sendNotification: true,
+      showFormSection: false
+    });
+    
+    // Reset danh sách học sinh đã lọc
+    setFilteredStudents([]);
+    setShowStudentDropdown(false);
+    setFilteredNurses([]);
+    setShowNurseDropdown(false);
+  };
+
+  // Cập nhật hàm mở modal thêm mới
+  const openAddModal = () => {
+    resetAddForm();
+    setShowAddModal(true);
+  };
+
+  // Thay đổi phần JSX nút thêm mới để sử dụng hàm openAddModal thay vì setShowAddModal(true)
+  // Tìm phần code có nút thêm mới và thay đổi onClick từ setShowAddModal(true) thành openAddModal
+
   // Thêm hàm xác nhận thêm lịch tư vấn
   const confirmAddSchedule = async () => {
     setShowConfirmAdd(false);
@@ -782,7 +883,7 @@ const ConsultSchedules = () => {
           studentId = foundStudent.studentId;
         } else {
           throw new Error("Không tìm thấy học sinh. Vui lòng chọn học sinh từ danh sách.");
-        }
+      }
       }
       
       // Tìm nurseId từ tên y tá đã nhập
@@ -842,10 +943,10 @@ const ConsultSchedules = () => {
             studentId: parseInt(studentId),
             parentId: parseInt(parentId)
           };
-          
-          // Gọi API để tạo form tư vấn
+        
+        // Gọi API để tạo form tư vấn
           const formResponse = await API_SERVICE.consultationFormAPI.create(formData);
-          console.log("Form API response:", formResponse);
+        console.log("Form API response:", formResponse);
         } catch (formError) {
           console.error("Error creating consultation form:", formError);
           // Không throw lỗi ở đây vì lịch tư vấn đã được tạo thành công
@@ -873,28 +974,17 @@ const ConsultSchedules = () => {
       }
       
       // Hiển thị thông báo thành công
-      setNotif({
+        setNotif({
         message: "Thêm lịch tư vấn thành công",
-        type: "success"
-      });
+          type: "success"
+        });
       
       // Đóng modal và tải lại dữ liệu
       setShowAddModal(false);
       fetchConsultationSchedules();
       
       // Reset form data
-      setFormData({
-        consultDate: new Date().toISOString().split('T')[0],
-        consultTime: new Date().toTimeString().slice(0, 5),
-        studentId: "",
-        studentSearchTerm: "",
-        nurseId: localStorage.getItem("userId") || "",
-        nurseSearchTerm: "",
-        location: "",
-        createForm: true,
-        sendNotification: true,
-        parentId: ""
-      });
+      resetAddForm();
     } catch (error) {
       console.error("Error adding consultation schedule:", error);
       setNotif({
@@ -924,8 +1014,8 @@ const ConsultSchedules = () => {
     
     try {
       // Xử lý ngày và giờ
-      const consultDate = formData.consultationDate;
-      const consultTime = formData.consultationTime;
+      const consultDate = formData.consultDate;
+      const consultTime = formData.consultTime;
       
       // Kết hợp ngày và giờ thành một chuỗi ISO
       const consultDateTime = new Date(`${consultDate}T${consultTime}`).toISOString();
@@ -1447,14 +1537,14 @@ const ConsultSchedules = () => {
       }
       
       // Chuyển đổi ngày và giờ từ consultDate
-      let consultationDate = new Date().toISOString().split('T')[0];
-      let consultationTime = "08:00";
+      let consultDate = new Date().toISOString().split('T')[0];
+      let consultTime = "08:00";
       
       if (schedule.consultDate) {
         const date = new Date(schedule.consultDate);
         if (!isNaN(date)) {
-          consultationDate = date.toISOString().split('T')[0];
-          consultationTime = date.toTimeString().substring(0, 5);
+          consultDate = date.toISOString().split('T')[0];
+          consultTime = date.toTimeString().substring(0, 5);
         }
       }
       
@@ -1535,8 +1625,8 @@ const ConsultSchedules = () => {
         parentId,
         parentName,
         hasParentInfo,
-        consultationDate,
-        consultationTime,
+        consultDate,
+        consultTime,
         location: schedule.location || "",
         formId,
         formTitle,
@@ -1689,16 +1779,16 @@ const ConsultSchedules = () => {
     <div className="admin-main">
       <h2 className="dashboard-title">Lịch tư vấn</h2>
       <div className="admin-header">
-        <button className="admin-btn" onClick={() => setShowAddModal(true)}>
+        <button className="admin-btn" onClick={openAddModal}>
           <FaPlus /> Thêm lịch tư vấn
         </button>
-        <div className="search-container">
-          <input
+          <div className="search-container">
+            <input
             className="admin-search"
-            type="text"
+              type="text"
             placeholder="Tìm kiếm..."
-            value={searchKeyword}
-            onChange={(e) => setSearchKeyword(e.target.value)}
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
           />
           <button
@@ -1959,13 +2049,13 @@ const ConsultSchedules = () => {
               </div>
               </div>
               <div className="mb-3">
-                <label htmlFor="consultationDate" className="form-label">Ngày tư vấn <span className="text-danger">*</span></label>
+                <label htmlFor="consultDate" className="form-label">Ngày tư vấn <span className="text-danger">*</span></label>
                 <input
                   type="date"
                   className="form-control"
-                  id="consultationDate"
-                  name="consultationDate"
-                  value={formData.consultationDate}
+                  id="consultDate"
+                  name="consultDate"
+                  value={formData.consultDate}
                   onChange={handleInputChange}
                   required
                   min={new Date().toISOString().split('T')[0]}
@@ -1973,13 +2063,13 @@ const ConsultSchedules = () => {
               </div>
               
               <div className="mb-3">
-                <label htmlFor="consultationTime" className="form-label">Giờ tư vấn <span className="text-danger">*</span></label>
+                <label htmlFor="consultTime" className="form-label">Giờ tư vấn <span className="text-danger">*</span></label>
                 <input
                   type="time"
                   className="form-control"
-                  id="consultationTime"
-                  name="consultationTime"
-                  value={formData.consultationTime}
+                  id="consultTime"
+                  name="consultTime"
+                  value={formData.consultTime}
                   onChange={handleInputChange}
                   required
                 />
@@ -2341,25 +2431,25 @@ const ConsultSchedules = () => {
                 </div>
               </div>
               <div className="mb-3">
-                <label htmlFor="edit-consultationDate" className="form-label">Ngày tư vấn <span className="text-danger">*</span></label>
+                <label htmlFor="edit-consultDate" className="form-label">Ngày tư vấn <span className="text-danger">*</span></label>
                 <input
                   type="date"
                   className="form-control"
-                  id="edit-consultationDate"
-                  name="consultationDate"
-                  value={formData.consultationDate}
+                  id="edit-consultDate"
+                  name="consultDate"
+                  value={formData.consultDate}
                   onChange={handleInputChange}
                   required
                 />
               </div>
               <div className="mb-3">
-                <label htmlFor="edit-consultationTime" className="form-label">Giờ tư vấn <span className="text-danger">*</span></label>
+                <label htmlFor="edit-consultTime" className="form-label">Giờ tư vấn <span className="text-danger">*</span></label>
                 <input
                   type="time"
                   className="form-control"
-                  id="edit-consultationTime"
-                  name="consultationTime"
-                  value={formData.consultationTime}
+                  id="edit-consultTime"
+                  name="consultTime"
+                  value={formData.consultTime}
                   onChange={handleInputChange}
                   required
                 />

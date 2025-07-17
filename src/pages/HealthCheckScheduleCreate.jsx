@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../styles/StudentDashboard.css";
 import { API_SERVICE } from "../services/api";
 import { useNavigate } from "react-router-dom";
@@ -20,8 +20,23 @@ const HealthCheckScheduleCreate = () => {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [forms, setForms] = useState([]); // Danh sách form loại healthcheck
   const navigate = useNavigate();
   const { userId } = useUserRole();
+
+  useEffect(() => {
+    const fetchForms = async () => {
+      try {
+        const res = await API_SERVICE.formAPI.getAll({ keyword: "" });
+        // console.log(res.filter(f => f.type === "HealthCheck"));
+        setForms(res.filter(f => f.type === "HealthCheck"));
+      } catch {
+        setForms([]);
+      }
+    };
+    fetchForms();
+    console.log(forms);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -65,16 +80,19 @@ const HealthCheckScheduleCreate = () => {
       <div className="healthcheck-create-page-container">
         <form className="student-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Form ID<span className="required">*</span></label>
-            <input
-              type="text"
+            <label>Biểu mẫu<span className="required">*</span></label>
+            <select
               name="formId"
               value={form.formId}
               onChange={handleChange}
               required
               className="form-control"
-              placeholder="Nhập Form ID"
-            />
+            >
+              <option value="">Chọn biểu mẫu khám sức khỏe</option>
+              {forms.map(f => (
+                <option key={f.formId} value={f.formId}>{f.title} (Lớp: {f.className})</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label>Tên lịch<span className="required">*</span></label>

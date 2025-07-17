@@ -57,6 +57,20 @@ const StudentCreate = () => {
         passwordHash: form.studentNumber,
       };
       await API_SERVICE.studentAPI.create(payload);
+      // Sau khi tạo học sinh, lấy lại studentId
+      let studentId;
+      // Tìm lại học sinh vừa tạo theo studentNumber (unique)
+      const students = await API_SERVICE.studentAPI.getAll({ keyword: payload.studentNumber });
+      const createdStudent = students.find(stu => stu.studentNumber === payload.studentNumber);
+      studentId = createdStudent?.studentId;
+      if (studentId) {
+        try {
+          await API_SERVICE.healthProfileAPI.add({ studentId, bloodType: "", allergies: "" });
+        } catch (e) {
+          // Không cần chặn flow nếu tạo health profile lỗi
+          console.error("Tạo health profile thất bại", e);
+        }
+      }
       setSuccessMsg("Tạo học sinh thành công!");
       setNotif({
         message: "Tạo học sinh thành công!",
