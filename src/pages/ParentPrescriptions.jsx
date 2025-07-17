@@ -198,7 +198,16 @@ export default function ParentPrescriptions() {
   const handleChangeMedication = (idx, field, value) => {
     setNewPrescription(prev => ({
       ...prev,
-      medications: prev.medications.map((med, i) => i === idx ? { ...med, [field]: value } : med)
+      medications: prev.medications.map((med, i) => {
+        if (i === idx) {
+          if (field === 'quantity') {
+            // Khi nhập quantity, gán luôn remainingQuantity bằng quantity
+            return { ...med, quantity: value, remainingQuantity: value };
+          }
+          return { ...med, [field]: value };
+        }
+        return med;
+      })
     }));
   };
 
@@ -243,6 +252,7 @@ export default function ParentPrescriptions() {
           medicationName: med.medicationName,
           dosage: med.dosage,
           quantity: parseInt(med.quantity, 10) || 1,
+          remainingQuantity: parseInt(med.remainingQuantity, 10) || parseInt(med.quantity, 10) || 1, // Gửi luôn remainingQuantity
           studentId: selectedStudentId
         };
         const medResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medication/add`, {

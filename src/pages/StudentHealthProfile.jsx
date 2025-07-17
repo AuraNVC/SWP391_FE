@@ -24,7 +24,10 @@ const StudentHealthProfile = () => {
         const studentData = await API_SERVICE.studentAPI.getById(studentId);
         setStudent(studentData);
         // Lấy hồ sơ sức khỏe
-        const healthData = await API_SERVICE.healthProfileAPI.get(studentId);
+        const searchResult = await API_SERVICE.healthProfileAPI.search({ keyword: String(studentId) });
+        const healthData = Array.isArray(searchResult)
+          ? searchResult.find(p => String(p.studentId) === String(studentId))
+          : null;
         setHealthProfile(healthData);
         // Lấy lịch sử khám
         if (healthData.healthProfileId) {
