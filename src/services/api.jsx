@@ -394,6 +394,11 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
+        search: (data) => callApi(API.HEALTH_PROFILE_LIST, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        }),
         update: (healthProfileId, data) => callApi(API.HEALTH_PROFILE_UPDATE, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
