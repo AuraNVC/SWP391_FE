@@ -98,6 +98,19 @@ export default function ParentPrescriptions() {
     }
   }, [userRole, fetchPrescriptions]);
 
+  // Thông báo thân thiện khi không có đơn thuốc hoặc lỗi validation
+  let displayError = error;
+  if (
+    error && (
+      error.includes('One or more validation errors occurred') ||
+      error.toLowerCase().includes('validation') ||
+      error.toLowerCase().includes('not found') ||
+      error.toLowerCase().includes('không có đơn thuốc')
+    )
+  ) {
+    displayError = 'Không có đơn thuốc nào.';
+  }
+
   useEffect(() => {
     if (userRole === 'parent') {
       const fetchStudents = async () => {
@@ -303,7 +316,11 @@ export default function ParentPrescriptions() {
   };
 
   if (loading) return <div className="flex justify-center items-center h-screen">Loading...</div>;
-  if (error) return <div className="text-red-500 text-center p-4">{error}</div>;
+
+  // Chỉ return nếu là lỗi nghiêm trọng
+  if (displayError && displayError !== 'Không có đơn thuốc nào.') {
+    return <div className="text-center p-4 text-info">{displayError}</div>;
+  }
 
   return (
     <div className="min-vh-100 d-flex flex-column">
@@ -406,10 +423,14 @@ export default function ParentPrescriptions() {
                 </div>
               )}
 
+              {/* Nếu không có đơn thuốc, hiển thị thông báo và nút tạo đơn */}
               {sortedPrescriptions.length === 0 && !loading && (
-                <div className="alert alert-info text-center">Không tìm thấy đơn thuốc phù hợp.</div>
+                <div className="alert alert-info text-center">
+                  Không có đơn thuốc nào.
+                </div>
               )}
 
+              {/* Danh sách đơn thuốc */}
               <div className="list-group">
                 {sortedPrescriptions.map((p) => {
                   const presId = p.parentPrescriptionId || p.prescriptionId;
