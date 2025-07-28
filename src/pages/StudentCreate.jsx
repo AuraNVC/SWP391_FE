@@ -126,6 +126,7 @@ const StudentCreate = () => {
                     dateOfBirth: newValue ? newValue.toISOString().split('T')[0] : ""
                   }));
                 }}
+                maxDate={new Date()}
                 renderInput={(params) => <TextField {...params} required fullWidth />}
               />
             </LocalizationProvider>
