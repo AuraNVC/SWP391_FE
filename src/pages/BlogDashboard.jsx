@@ -44,6 +44,7 @@ const BlogList = () => {
   const [editBlog, setEditBlog] = useState(null);
   const { setNotif } = useNotification();
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleViewDetail = (row) => {
     setViewBlog(row);
@@ -84,11 +85,11 @@ const BlogList = () => {
   const fetchBlogList = async () => {
     setLoading(true);
     try {
-      const response = await API_SERVICE.blogAPI.getAll({ keyword: "" });
+      const response = await API_SERVICE.blogAPI.getAll({ keyword: searchTerm });
       const formatted = response.map((blog) => ({
-                      ...blog,
-                      category: formatBlogCategory(blog.category),
-                  }));
+        ...blog,
+        category: formatBlogCategory(blog.category),
+      }));
       setBlogList(formatted);
     } catch (error) {
       console.error("Error fetching blog list:", error);
@@ -96,10 +97,9 @@ const BlogList = () => {
     setLoading(false);
   };
 
-  
   useEffect(() => {
-    fetchBlogList()
-  }, []);
+    fetchBlogList();
+  }, [searchTerm]);
 
   const handleCreateNew = () => {
     navigate('/manager/blog/create');
@@ -112,7 +112,14 @@ const BlogList = () => {
         <button className="admin-btn" onClick={handleCreateNew}>
           + Thêm blog mới
         </button>
-        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
+        <input
+          className="admin-search"
+          type="text"
+          placeholder="Tìm kiếm blog..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{ background: '#fff', color: '#222' }}
+        />
       </div>
       <div className="admin-table-container">
         {loading ? (

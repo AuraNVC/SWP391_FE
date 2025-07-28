@@ -17,6 +17,7 @@ const HealthCheckScheduleDashboard = () => {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const iconStyle = {
     view: { color: "#007bff" },
@@ -27,12 +28,12 @@ const HealthCheckScheduleDashboard = () => {
   useEffect(() => {
     fetchSchedules();
     setPage(1);
-  }, []);
+  }, [searchTerm]);
 
   const fetchSchedules = async () => {
     setLoading(true);
     try {
-      const res = await API_SERVICE.healthCheckScheduleAPI.getAll({ keyword: "" });
+      const res = await API_SERVICE.healthCheckScheduleAPI.getAll({ keyword: searchTerm });
       const formatted = res.map((schedule) => ({
                             ...schedule,
                             checkDate: formatDate(schedule.checkDate),
@@ -69,7 +70,14 @@ const HealthCheckScheduleDashboard = () => {
       <h2 className="dashboard-title">Quản lý Lịch khám sức khỏe</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={() => navigate("/manager/health-check-schedule/create")}>+ Tạo lịch khám mới</button>
-        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
+        <input
+          className="admin-search"
+          type="text"
+          placeholder="Tìm kiếm lịch khám sức khỏe..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{ background: '#fff', color: '#222' }}
+        />
       </div>
       <div className="admin-table-container">
         <TableWithPaging

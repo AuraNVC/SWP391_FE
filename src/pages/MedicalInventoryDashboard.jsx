@@ -33,6 +33,7 @@ const MedicalInventoryDashboard = () => {
   const [editItem, setEditItem] = useState(null);
   const { setNotif } = useNotification();
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleViewDetail = (row) => {
     setViewItem(row);
@@ -68,7 +69,7 @@ const MedicalInventoryDashboard = () => {
     setLoading(true);
     try {
       // Gọi API lấy danh sách vật tư y tế
-      const response = await API_SERVICE.medicalInventoryAPI.search({ keyword: "" });
+      const response = await API_SERVICE.medicalInventoryAPI.search({ keyword: searchTerm });
       // Đảm bảo dữ liệu đúng format cho bảng
       setInventoryList(Array.isArray(response) ? response : []);
     } catch (error) {
@@ -79,7 +80,7 @@ const MedicalInventoryDashboard = () => {
 
   useEffect(() => {
     fetchInventoryList();
-  }, []);
+  }, [page, searchTerm]); // Re-fetch when page or search term changes
 
   const handleCreateNew = () => {
     navigate("/manager/medical-inventory/add");
@@ -92,7 +93,14 @@ const MedicalInventoryDashboard = () => {
         <button className="admin-btn" onClick={handleCreateNew}>
           + Thêm vật tư mới
         </button>
-        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
+        <input
+          className="admin-search"
+          type="text"
+          placeholder="Tìm kiếm vật tư y tế..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{ background: '#fff', color: '#222' }}
+        />
       </div>
       <div className="admin-table-container">
         {loading ? (

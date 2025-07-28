@@ -31,12 +31,13 @@ const StudentList = () => {
   const [editStudent, setEditStudent] = useState(null);
   const { setNotif } = useNotification();
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchStudentList = async () => {
       setLoading(true);
       try {
-        const response = await API_SERVICE.studentAPI.getAll({ keyword: "" });
+        const response = await API_SERVICE.studentAPI.getAll({ keyword: searchTerm });
         setStudentList(response);
       } catch (error) {
         console.error("Error fetching student list:", error);
@@ -44,7 +45,7 @@ const StudentList = () => {
       setLoading(false);
     };
     fetchStudentList();
-  }, []);
+  }, [searchTerm]);
 
   const handleViewDetail = (row) => {
     setViewStudent(row);
@@ -104,7 +105,14 @@ const StudentList = () => {
         <button className="admin-btn" onClick={handleCreateNew}>
           + Thêm học sinh mới
         </button>
-        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
+        <input
+          className="admin-search"
+          type="text"
+          placeholder="Tìm kiếm học sinh..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{ background: '#fff', color: '#222' }}
+        />
       </div>
       <div className="admin-table-container">
         {loading ? (

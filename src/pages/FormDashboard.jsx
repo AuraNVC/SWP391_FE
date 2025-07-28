@@ -11,6 +11,7 @@ import { formatDate, formatFormType } from "../services/utils";
 
 const columns = [
     { title: "Mã biểu mẫu", dataIndex: "formId" },
+    { title: "Tiêu đề", dataIndex: "title" },
     { title: "Loại", dataIndex: "type" },
     { title: "Ngày gửi", dataIndex: "sentDate" },
     { title: "Ngày tạo", dataIndex: "createdAt" },
@@ -30,6 +31,7 @@ const FormDashboard = () => {
     const [editForm, setEditForm] = useState(null);
     const { setNotif } = useNotification();
     const navigate = useNavigate();
+    const [searchTerm, setSearchTerm] = useState("");
 
     const handleViewDetail = (row) => {
         console.log("View form data:", row);
@@ -65,7 +67,7 @@ const FormDashboard = () => {
     const refreshFormList = async () => {
         setLoading(true);
         try {
-            const response = await API_SERVICE.formAPI.getAll({ keyword: "" });
+            const response = await API_SERVICE.formAPI.getAll({ keyword: searchTerm });
             const formatted = response.map((form) => ({
                 ...form,
                 type: formatFormType(form.type),
@@ -85,7 +87,7 @@ const FormDashboard = () => {
 
     useEffect(() => {
         refreshFormList();
-    }, []);
+    }, [searchTerm]);
 
     return (
         <div className="admin-main">
@@ -94,7 +96,14 @@ const FormDashboard = () => {
                 <button className="admin-btn" onClick={handleCreateNew}>
                     + Thêm biểu mẫu mới
                 </button>
-                <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
+                <input
+                  className="admin-search"
+                  type="text"
+                  placeholder="Tìm kiếm biểu mẫu..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  style={{ background: '#fff', color: '#222' }}
+                />
             </div>
             <div className="admin-table-container">
                 {loading ? (
