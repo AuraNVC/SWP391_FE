@@ -79,7 +79,17 @@ export default function ParentNotifications() {
           API_SERVICE.consentFormAPI.getByParent(numericParentId),
           API_SERVICE.studentAPI.getByParent(numericParentId)
         ]);
-        setConsentForms(forms);
+        
+        // Loại bỏ duplicate forms dựa trên FormId, chỉ giữ lại form đầu tiên
+        const uniqueForms = forms.reduce((acc, current) => {
+          const existingForm = acc.find(form => form.form.formId === current.form.formId);
+          if (!existingForm) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+        
+        setConsentForms(uniqueForms);
         setStudents(studentList);
 
         // Step 2: Based on forms, fetch their specific schedules
