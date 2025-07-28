@@ -18,6 +18,7 @@ const initialState = {
   parentPhoneNumber: "",
   parentEmail: "",
   parentAddress: "",
+  password: "",
 };
 
 const StudentCreate = () => {
@@ -54,7 +55,7 @@ const StudentCreate = () => {
         gender: form.gender,
         studentNumber: form.studentNumber,
         parentId: parent[0].parentId,
-        passwordHash: form.studentNumber,
+        passwordHash: form.password && form.password.trim() !== '' ? form.password : form.studentNumber,
       };
       await API_SERVICE.studentAPI.create(payload);
       // Sau khi tạo học sinh, lấy lại studentId
@@ -167,6 +168,17 @@ const StudentCreate = () => {
               required
               className="form-control"
               placeholder="VD: binhan1"
+            />
+          </div>
+          <div className="form-group">
+            <label>Mật khẩu (nếu bỏ trống sẽ lấy mã số học sinh làm mật khẩu)</label>
+            <input
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              className="form-control"
+              placeholder="Nhập mật khẩu hoặc để trống"
             />
           </div>
           <hr />
