@@ -101,6 +101,9 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
               onChange={handleChange}
               required
               className="form-control"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              onInput={e => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
             />
           </div>
           <div className="form-group">

@@ -202,6 +202,9 @@ const StudentCreate = () => {
               value={form.parentPhoneNumber}
               onChange={handleChange}
               className="form-control"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              onInput={e => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
             />
           </div>
           <div className="form-group">
