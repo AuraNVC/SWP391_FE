@@ -18,6 +18,7 @@ const initialState = {
   parentPhoneNumber: "",
   parentEmail: "",
   parentAddress: "",
+  password: "",
 };
 
 const StudentCreate = () => {
@@ -54,7 +55,7 @@ const StudentCreate = () => {
         gender: form.gender,
         studentNumber: form.studentNumber,
         parentId: parent[0].parentId,
-        passwordHash: form.studentNumber,
+        passwordHash: form.password && form.password.trim() !== '' ? form.password : '123456',
       };
       await API_SERVICE.studentAPI.create(payload);
       // Sau khi tạo học sinh, lấy lại studentId
@@ -126,6 +127,7 @@ const StudentCreate = () => {
                     dateOfBirth: newValue ? newValue.toISOString().split('T')[0] : ""
                   }));
                 }}
+                maxDate={new Date()}
                 renderInput={(params) => <TextField {...params} required fullWidth />}
               />
             </LocalizationProvider>
@@ -168,6 +170,17 @@ const StudentCreate = () => {
               placeholder="VD: binhan1"
             />
           </div>
+          <div className="form-group">
+            <label>Mật khẩu (nếu bỏ trống sẽ mặc định là 123456)</label>
+            <input
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              className="form-control"
+              placeholder="Nhập mật khẩu hoặc để trống"
+            />
+          </div>
           <hr />
           <h4>Thông tin phụ huynh</h4>
           <div className="form-group">
@@ -189,6 +202,9 @@ const StudentCreate = () => {
               value={form.parentPhoneNumber}
               onChange={handleChange}
               className="form-control"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              onInput={e => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
             />
           </div>
           <div className="form-group">

@@ -38,8 +38,8 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
       const payload = {
         title: formData.title,
         className: formData.className,
-        type: formData.type,
         content: formData.content,
+        // Không gửi trường type vì đã disable khả năng thay đổi
       };
       await API_SERVICE.formAPI.update(form.formId, payload);
       setNotif({
@@ -94,21 +94,7 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
               placeholder="e.g. 1A, 2B"
             />
           </div>
-          <div className="form-group">
-            <label>Thể loại<span className="required">*</span></label>
-            <select
-              name="type"
-              value={formData.type}
-              onChange={handleChange}
-              required
-              className="form-control"
-            >
-              <option value="">Chọn loại thông báo</option>
-              <option value="0">Sức khỏe</option>
-              <option value="1">Tiêm chủng</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
+
           <div className="form-group">
             <label>Nội dung<span className="required">*</span></label>
             <textarea

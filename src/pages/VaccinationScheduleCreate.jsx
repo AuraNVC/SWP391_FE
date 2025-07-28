@@ -113,6 +113,7 @@ const VaccinationScheduleCreate = () => {
                 label="Chọn ngày giờ tiêm"
                 value={form.scheduleDate ? new Date(form.scheduleDate) : null}
                 onChange={handleDateChange}
+                minDate={new Date()}
                 slotProps={{
                   textField: { required: true, className: "form-control", name: "scheduleDate" },
                   paper: { sx: { minWidth: 260, maxWidth: 320 } }

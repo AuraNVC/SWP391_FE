@@ -182,6 +182,9 @@ export default function Contact() {
                                                 value={formData.phone}
                                                 onChange={handleChange}
                                                 placeholder="0123 456 789"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                onInput={e => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
                                             />
                                         </div>
                                         <div className="col-12 col-md-6 mb-3">

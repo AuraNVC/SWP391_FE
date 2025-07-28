@@ -17,6 +17,7 @@ const VaccinationScheduleDashboard = () => {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const iconStyle = {
     view: { color: "#007bff" },
@@ -27,12 +28,12 @@ const VaccinationScheduleDashboard = () => {
   useEffect(() => {
     fetchSchedules();
     setPage(1);
-  }, []);
+  }, [searchTerm]);
 
   const fetchSchedules = async () => {
     setLoading(true);
     try {
-      const res = await API_SERVICE.vaccinationScheduleAPI.getAll({ keyword: "" });
+      const res = await API_SERVICE.vaccinationScheduleAPI.getAll({ keyword: searchTerm });
       const formatted = res.map((schedule) => ({
                                   ...schedule,
                                   scheduleDate: formatDate(schedule.scheduleDate),
@@ -69,7 +70,14 @@ const VaccinationScheduleDashboard = () => {
       <h2 className="dashboard-title">Quản lý Lịch tiêm chủng</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={() => navigate("/manager/vaccination-schedule/create")}>+ Tạo mới lịch tiêm</button>
-        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
+        <input
+          className="admin-search"
+          type="text"
+          placeholder="Tìm kiếm lịch tiêm chủng..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{ background: '#fff', color: '#222' }}
+        />
       </div>
       <div className="admin-table-container">
         <TableWithPaging

@@ -79,7 +79,17 @@ export default function ParentNotifications() {
           API_SERVICE.consentFormAPI.getByParent(numericParentId),
           API_SERVICE.studentAPI.getByParent(numericParentId)
         ]);
-        setConsentForms(forms);
+        
+        // Loại bỏ duplicate forms dựa trên FormId, chỉ giữ lại form đầu tiên
+        const uniqueForms = forms.reduce((acc, current) => {
+          const existingForm = acc.find(form => form.form.formId === current.form.formId);
+          if (!existingForm) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+        
+        setConsentForms(uniqueForms);
         setStudents(studentList);
 
         // Step 2: Based on forms, fetch their specific schedules
@@ -291,7 +301,7 @@ export default function ParentNotifications() {
                             <strong>Nội dung:</strong> {form.form.content}
                           </p>
                           
-                          {schedule && (
+                          {schedule && (schedule.checkDate || schedule.scheduleDate) ? (
                             <>
                               {form.form.type === 'Vaccine' || form.form.type === 'Vaccination' ? (
                                 <p className="card-text">
@@ -310,32 +320,40 @@ export default function ParentNotifications() {
                                 </p>
                               )}
                             </>
+                          ) : (
+                            <p className="card-text text-muted">Chưa có lịch liên kết.</p>
                           )}
 
                           {/* Action buttons */}
-                          <div className="d-flex justify-content-end mt-3">
-                            <div className="text-end">
-                              <button
-                                className={`btn btn-sm me-2 ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
-                                onClick={() => handleStatusChange(form.consentFormId, true, form.status)}
-                                disabled={isTooLateToChange || isUpdating || isStatusFinal}
-                              >
-                                {isUpdating ? 'Đang xử lý...' : 'Đồng ý'}
-                              </button>
-                              <button
-                                className={`btn btn-sm ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
-                                onClick={() => handleStatusChange(form.consentFormId, false, form.status)}
-                                disabled={isTooLateToChange || isUpdating || isStatusFinal}
-                              >
-                                {isUpdating ? 'Đang xử lý...' : 'Từ chối'}
-                              </button>
-                              <p className="text-muted fst-italic mt-1 mb-0">
-                                <small>
-                                  {isTooLateToChange ? 'Đã hết hạn thay đổi.' : ''}
-                                </small>
-                              </p>
+                          {schedule && (schedule.checkDate || schedule.scheduleDate) ? (
+                            <div className="d-flex justify-content-end mt-3">
+                              <div className="text-end">
+                                <button
+                                  className={`btn btn-sm me-2 ${form.status === 'Accepted' ? 'btn-success' : 'btn-outline-success'}`}
+                                  onClick={() => handleStatusChange(form.consentFormId, true, form.status)}
+                                  disabled={isTooLateToChange || isUpdating || isStatusFinal}
+                                >
+                                  {isUpdating ? 'Đang xử lý...' : 'Đồng ý'}
+                                </button>
+                                <button
+                                  className={`btn btn-sm ${form.status === 'Rejected' ? 'btn-danger' : 'btn-outline-danger'}`}
+                                  onClick={() => handleStatusChange(form.consentFormId, false, form.status)}
+                                  disabled={isTooLateToChange || isUpdating || isStatusFinal}
+                                >
+                                  {isUpdating ? 'Đang xử lý...' : 'Từ chối'}
+                                </button>
+                                <p className="text-muted fst-italic mt-1 mb-0">
+                                  <small>
+                                    {isTooLateToChange ? 'Đã hết hạn thay đổi.' : ''}
+                                  </small>
+                                </p>
+                              </div>
                             </div>
-                          </div>
+                          ) : (
+                            <div className="text-end text-muted fst-italic mt-3">
+                              <small>Chưa có lịch liên kết, không thể xác nhận.</small>
+                            </div>
+                          )}
                         </div>
                       </div>
                     );

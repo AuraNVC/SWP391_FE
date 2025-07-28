@@ -19,7 +19,7 @@ const ManagerHealthCheckStudents = () => {
   const [acceptedStudents, setAcceptedStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [page, setPage] = useState(1);
 
   // Lấy tất cả lịch khi mount
@@ -69,9 +69,9 @@ const ManagerHealthCheckStudents = () => {
 
   // Lọc học sinh theo search
   const filteredStudents = acceptedStudents.filter(stu => {
-    if (!search) return true;
+    if (!searchTerm) return true;
     const name = (stu.fullName || (stu.firstName + ' ' + stu.lastName)).toLowerCase();
-    return name.includes(search.toLowerCase());
+    return name.includes(searchTerm.toLowerCase());
   });
 
   return (
@@ -111,12 +111,12 @@ const ManagerHealthCheckStudents = () => {
             </select>
           </div>
           <input
-            className="admin-search"
             type="text"
+            className="form-control"
             placeholder="Tìm kiếm học sinh..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            style={{ minWidth: 220, background: '#fff', height: 40, borderRadius: 6, border: '1px solid #ccc', fontSize: 16, color: '#222', marginLeft: 8 }}
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            style={{ background: '#fff', color: '#222' }}
           />
         </div>
       </div>
