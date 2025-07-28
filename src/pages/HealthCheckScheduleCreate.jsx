@@ -113,6 +113,7 @@ const HealthCheckScheduleCreate = () => {
                 label="Chọn ngày giờ khám"
                 value={form.checkDate ? new Date(form.checkDate) : null}
                 onChange={handleDateChange}
+                minDate={new Date()}
                 slotProps={{
                   textField: { required: true, className: "form-control", name: "checkDate" },
                   paper: { sx: { minWidth: 140, maxWidth: 180 } }
