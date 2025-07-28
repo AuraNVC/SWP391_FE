@@ -60,13 +60,7 @@ export async function getAcceptedStudentsBySchedule(schedule, API_SERVICE) {
   const studentsInClass = allStudentsRaw.filter(stu => stu.className === className);
   console.log("Students in class", className, ":", studentsInClass);
   
-  // Nếu là form khám sức khỏe, trả về tất cả học sinh trong lớp
-  if (formDetail.type === "HealthCheck") {
-    console.log("This is a HealthCheck form, returning all students in class");
-    return studentsInClass;
-  }
-  
-  // Nếu là form tiêm vaccine hoặc loại khác, kiểm tra sự đồng ý của phụ huynh
+  // Kiểm tra sự đồng ý của phụ huynh cho tất cả loại form
   console.log("This is a", formDetail.type, "form, checking parent consent");
   
   // Lấy parentId của tất cả học sinh trong lớp

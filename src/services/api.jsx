@@ -34,6 +34,7 @@ const API = {
     FORM_DETAIL: (id) => `${API_BASE_URL}/form/${id}`,
     FORM_LIST: `${API_BASE_URL}/form/search`,
     FORM_CREATE: `${API_BASE_URL}/form/add`,
+    FORM_UPDATE: `${API_BASE_URL}/form/update`,
     FORM_DELETE: (id) => `${API_BASE_URL}/form/${id}`,
     HEALTH_CHECK_SCHEDULE_LIST: `${API_BASE_URL}/healthCheckSchedule/search`,
     HEALTH_CHECK_SCHEDULE_CREATE: `${API_BASE_URL}/healthCheckSchedule/create`,
@@ -307,10 +308,10 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        update: (id, data) => callApi(API.FORM_UPDATE(id), {
+        update: (id, data) => callApi(API.FORM_UPDATE, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+            body: JSON.stringify({ ...data, formId: id })
         }),
         delete: (id) => callApi(API.FORM_DELETE(id), {
             method: "DELETE",
