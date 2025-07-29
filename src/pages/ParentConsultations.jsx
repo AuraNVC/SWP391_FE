@@ -91,30 +91,56 @@ export default function ParentConsultations() {
 
         // Fetch students for the parent
         const studentData = await API_SERVICE.parentAPI.getParent(parentId);
+        console.log("Student data fetched:", studentData);
         setStudents(studentData);
 
         // Fetch all consultation forms for the parent
         const numericParentId = parseInt(parentId, 10);
+        console.log("Fetching consultation forms for parent ID:", numericParentId);
         const consultationData = await API_SERVICE.consultationFormAPI.getByParent(numericParentId);
+        console.log("Consultation data fetched:", consultationData);
 
-        // Map student names to consultations
-        if (Array.isArray(consultationData) && Array.isArray(studentData) && consultationData.length > 0) {
-            const enrichedConsultations = await Promise.all(consultationData.map(async form => {
+        // Kiểm tra dữ liệu và xử lý
+        if (Array.isArray(consultationData)) {
+          if (consultationData.length > 0) {
+            // Map student names to consultations
+            try {
+              const enrichedConsultations = await Promise.all(consultationData.map(async form => {
                 if (!form.consultationSchedule?.consultationScheduleId) {
-                    return { ...form, studentName: 'Không rõ' };
+                  console.log("No schedule ID for form:", form.consultationFormId);
+                  return { ...form, studentName: 'Không rõ' };
                 }
                 // Fetch full schedule details to get studentId
-                const scheduleData = await API_SERVICE.consultationScheduleAPI.get(form.consultationSchedule.consultationScheduleId);
-                const student = studentData.find(s => s.studentId === scheduleData.studentId);
-                return {
+                try {
+                  const scheduleData = await API_SERVICE.consultationScheduleAPI.get(form.consultationSchedule.consultationScheduleId);
+                  console.log("Schedule data for form", form.consultationFormId, ":", scheduleData);
+                  
+                  const student = Array.isArray(studentData) ? 
+                    studentData.find(s => s.studentId === scheduleData.studentId) : null;
+                  
+                  return {
                     ...form,
                     consultationSchedule: scheduleData, // Replace placeholder with full data
                     studentName: student ? student.fullName : 'Không rõ'
-                };
-            }));
-            setConsultations(enrichedConsultations);
+                  };
+                } catch (scheduleError) {
+                  console.error("Error fetching schedule data:", scheduleError);
+                  return { ...form, studentName: 'Không rõ' };
+                }
+              }));
+              console.log("Enriched consultations:", enrichedConsultations);
+              setConsultations(enrichedConsultations);
+            } catch (enrichError) {
+              console.error("Error enriching consultation data:", enrichError);
+              setConsultations(consultationData);
+            }
+          } else {
+            console.log("Consultation data is an empty array");
+            setConsultations([]);
+          }
         } else {
-            setConsultations(consultationData);
+          console.warn("Consultation data is not an array:", consultationData);
+          setConsultations([]);
         }
 
       } catch (err) {

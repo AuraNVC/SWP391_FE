@@ -781,14 +781,22 @@ const ConsultSchedules = () => {
     // Kiểm tra trường học sinh
     if (!formData.studentId) {
       setNotif({
-        message: "Vui lòng chọn học sinh",
+        message: "Vui lòng chọn học sinh cần tư vấn",
         type: "error"
       });
       return false;
     }
     
-    // Bắt buộc kiểm tra thông tin form tư vấn
-    // Kiểm tra tiêu đề form
+    // Kiểm tra trường y tá
+    if (!formData.nurseId) {
+      setNotif({
+        message: "Vui lòng chọn y tá phụ trách",
+        type: "error"
+      });
+      return false;
+    }
+    
+    // Kiểm tra thông tin form tư vấn
     if (!formData.formTitle) {
       setNotif({
         message: "Vui lòng nhập tiêu đề form tư vấn",
@@ -797,13 +805,17 @@ const ConsultSchedules = () => {
       return false;
     }
     
-    // Kiểm tra nội dung form
     if (!formData.formContent) {
       setNotif({
-        message: "Vui lòng nhập nội dung tư vấn",
+        message: "Vui lòng nhập nội dung form tư vấn",
         type: "error"
       });
       return false;
+    }
+    
+    // Cảnh báo nếu không tìm thấy phụ huynh
+    if (!formData.parentId) {
+      console.warn("No parent ID found for student. Consultation form may not be properly linked to parent.");
     }
     
     return true;
@@ -870,6 +882,7 @@ const ConsultSchedules = () => {
       
       // Tìm studentId từ tên học sinh đã nhập
       let studentId = formData.studentId;
+      let studentName = "";
       if (!studentId && formData.studentSearchTerm) {
         const foundStudent = students.find(s => 
           s.fullName === formData.studentSearchTerm || 
@@ -877,13 +890,21 @@ const ConsultSchedules = () => {
         );
         if (foundStudent) {
           studentId = foundStudent.studentId;
+          studentName = foundStudent.fullName;
         } else {
           throw new Error("Không tìm thấy học sinh. Vui lòng chọn học sinh từ danh sách.");
-      }
+        }
+      } else {
+        // Tìm tên học sinh từ ID
+        const foundStudent = students.find(s => s.studentId === parseInt(studentId));
+        if (foundStudent) {
+          studentName = foundStudent.fullName;
+        }
       }
       
       // Tìm nurseId từ tên y tá đã nhập
       let nurseId = formData.nurseId;
+      let nurseName = "";
       if (!nurseId && formData.nurseSearchTerm) {
         const foundNurse = nurses.find(n => 
           n.fullName === formData.nurseSearchTerm || 
@@ -891,24 +912,80 @@ const ConsultSchedules = () => {
         );
         if (foundNurse) {
           nurseId = foundNurse.nurseId;
+          nurseName = foundNurse.fullName;
         } else {
           throw new Error("Không tìm thấy y tá. Vui lòng chọn y tá từ danh sách.");
         }
-      }
-      
-      // Tìm parentId từ danh sách học sinh nếu có
-      let parentId = formData.parentId;
-      if (!parentId && studentId) {
-        try {
-          // Tìm thông tin học sinh để lấy parentId
-          const studentInfo = await API_SERVICE.studentAPI.getById(studentId);
-          if (studentInfo && studentInfo.parentId) {
-            parentId = studentInfo.parentId;
-          }
-        } catch (err) {
-          console.warn("Could not fetch student info for parent ID:", err);
+      } else {
+        // Tìm tên y tá từ ID
+        const foundNurse = nurses.find(n => n.nurseId === parseInt(nurseId));
+        if (foundNurse) {
+          nurseName = foundNurse.fullName;
         }
       }
+      
+      // Tìm parentId từ formData hoặc từ danh sách học sinh nếu có
+      let parentId = formData.parentId;
+      let parentName = formData.parentName || "";
+      
+      // Nếu không có parentId, tìm từ thông tin học sinh
+      if (!parentId && studentId) {
+        try {
+          console.log("Looking up parent ID for student:", studentId);
+          
+          // Tìm trong danh sách học sinh đã có
+          const studentInList = students.find(s => s.studentId === parseInt(studentId));
+          if (studentInList && studentInList.parentId) {
+            parentId = studentInList.parentId;
+            parentName = studentInList.parentName || "";
+            console.log("Parent ID found from student list:", parentId);
+          } else {
+            // Nếu không tìm thấy trong danh sách, gọi API
+            const studentInfo = await API_SERVICE.studentAPI.getById(studentId);
+            console.log("Student info retrieved:", studentInfo);
+            
+            if (studentInfo && studentInfo.parentId) {
+              parentId = studentInfo.parentId;
+              parentName = studentInfo.parent?.fullName || "";
+              console.log("Parent ID retrieved from student API:", parentId);
+            } else if (studentInfo && studentInfo.parent) {
+              parentId = studentInfo.parent.parentId;
+              parentName = studentInfo.parent.fullName || "";
+              console.log("Parent ID retrieved from student.parent:", parentId);
+            } else {
+              console.warn("Student does not have associated parent ID");
+              
+              // Thử tìm phụ huynh từ API khác nếu cần
+              try {
+                const parentData = await API_SERVICE.parentAPI.search({ studentId: parseInt(studentId) });
+                console.log("Parent search result:", parentData);
+                
+                if (Array.isArray(parentData) && parentData.length > 0) {
+                  parentId = parentData[0].parentId;
+                  parentName = parentData[0].fullName || "";
+                  console.log("Parent ID found from parent search:", parentId);
+                }
+              } catch (parentSearchError) {
+                console.error("Error searching for parent:", parentSearchError);
+              }
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching student info for parent ID:", err);
+        }
+      }
+      
+      // Ghi log thông tin trước khi tạo lịch tư vấn
+      console.log("Creating consultation schedule with data:", {
+        studentId,
+        studentName,
+        nurseId,
+        nurseName,
+        parentId,
+        parentName,
+        consultDateTime,
+        location: formData.location
+      });
       
       // Chuẩn bị dữ liệu để gửi
       const scheduleData = {
@@ -928,20 +1005,52 @@ const ConsultSchedules = () => {
       
       // Luôn tạo form tư vấn sau khi tạo lịch tư vấn thành công
       try {
-        // Chuẩn bị dữ liệu form
+        // Tạo tiêu đề form tư vấn với thông tin học sinh và y tá
+        const formTitle = formData.formTitle || 
+          `Tư vấn cho học sinh ${studentName} với y tá ${nurseName}`;
+        
+        // Chuẩn bị dữ liệu form và đảm bảo parentId được truyền đúng cách
         const consultationFormData = {
           consultationScheduleId: scheduleId,
           parentId: parentId ? parseInt(parentId) : null,
-          title: formData.formTitle || "Form tư vấn: " + new Date(consultDateTime).toLocaleDateString('vi-VN'),
-          content: formData.formContent || "Nội dung tư vấn sẽ được cập nhật sau.",
-          status: 0, // Pending
-          nurseId: parseInt(nurseId),
-          studentId: parseInt(studentId)
+          title: formTitle,
+          content: formData.formContent || `Nội dung tư vấn cho học sinh ${studentName}`
         };
       
+        console.log("Creating consultation form with data:", JSON.stringify(consultationFormData, null, 2));
+        
         // Gọi API để tạo form tư vấn
         const formResponse = await API_SERVICE.consultationFormAPI.create(consultationFormData);
         console.log("Form API response:", formResponse);
+        
+        // Xác thực xem form đã được tạo chính xác hay chưa
+        try {
+          // Truy xuất lại form vừa tạo để kiểm tra
+          if (formResponse && formResponse.consultationFormId) {
+            const createdForm = await API_SERVICE.consultationFormAPI.getById(formResponse.consultationFormId);
+            console.log("Verification - Created form retrieved:", createdForm);
+            
+            // Nếu form tạo nhưng không có parentId, thử cập nhật lại
+            if (createdForm && !createdForm.parentId && parentId) {
+              console.log("Form created without parentId, attempting to update with correct parentId:", parentId);
+              // Tạo dữ liệu cập nhật
+              const updateData = {
+                consultationFormId: createdForm.consultationFormId,
+                consultationScheduleId: scheduleId,
+                parentId: parseInt(parentId),
+                title: createdForm.title,
+                content: createdForm.content,
+                status: createdForm.status
+              };
+              
+              // Gửi yêu cầu cập nhật
+              const updateResponse = await API_SERVICE.consultationFormAPI.update(createdForm.consultationFormId, updateData);
+              console.log("Form update response:", updateResponse);
+            }
+          }
+        } catch (verifyError) {
+          console.error("Error verifying form creation:", verifyError);
+        }
       } catch (formError) {
         console.error("Error creating consultation form:", formError);
         // Không throw lỗi ở đây vì lịch tư vấn đã được tạo thành công
@@ -973,16 +1082,13 @@ const ConsultSchedules = () => {
           type: "success"
         });
       
-      // Đóng modal và tải lại dữ liệu
+      // Đóng modal và làm mới dữ liệu
       setShowAddModal(false);
       fetchConsultationSchedules();
-      
-      // Reset form data
-      resetAddForm();
     } catch (error) {
-      console.error("Error adding consultation schedule:", error);
+      console.error("Error adding schedule:", error);
       setNotif({
-        message: error.message || "Không thể thêm lịch tư vấn. Vui lòng thử lại.",
+        message: error.message || "Có lỗi xảy ra khi thêm lịch tư vấn",
         type: "error"
       });
     } finally {
@@ -1751,12 +1857,103 @@ const ConsultSchedules = () => {
 
   // Hàm xử lý khi người dùng chọn một học sinh từ dropdown
   const handleSelectStudent = (student) => {
-    setFormData({
-      ...formData,
+    console.log("Selected student:", student);
+    
+    // Lưu thông tin học sinh đã chọn và cập nhật form data
+    setFormData(prev => ({
+      ...prev,
       studentId: student.studentId,
-      studentSearchTerm: student.fullName || `${student.firstName || ''} ${student.lastName || ''}`.trim() || `Học sinh ID: ${student.studentId}`
-    });
+      studentSearchTerm: `${student.fullName} (ID: ${student.studentId})`,
+    }));
+    
+    // Kiểm tra và lấy thông tin phụ huynh
+    if (student.parentId) {
+      // Nếu thông tin parentId có sẵn trong đối tượng student
+      console.log("Parent ID found directly from student selection:", student.parentId);
+      setFormData(prev => ({
+        ...prev,
+        parentId: student.parentId,
+        parentName: student.parentName || ""
+      }));
+    } else if (student.parent) {
+      // Nếu có đối tượng parent lồng trong student
+      console.log("Parent found in nested object:", student.parent);
+      setFormData(prev => ({
+        ...prev,
+        parentId: student.parent.parentId,
+        parentName: student.parent.fullName || ""
+      }));
+    } else {
+      // Nếu không có thông tin phụ huynh, thử lấy thông tin chi tiết của học sinh
+      fetchStudentDetails(student.studentId);
+    }
+    
+    setFilteredStudents([]);
     setShowStudentDropdown(false);
+  };
+  
+  // Thêm hàm mới để lấy thông tin chi tiết của học sinh bao gồm parentId
+  const fetchStudentDetails = async (studentId) => {
+    try {
+      console.log("Fetching details for student ID:", studentId);
+      const studentDetails = await API_SERVICE.studentAPI.getById(studentId);
+      console.log("Fetched student details:", studentDetails);
+      
+      let parentId = null;
+      let parentName = "";
+      
+      // Kiểm tra các trường hợp khác nhau để lấy parentId
+      if (studentDetails) {
+        if (studentDetails.parentId) {
+          // Trường hợp 1: parentId có sẵn trong đối tượng student
+          parentId = studentDetails.parentId;
+          console.log("Parent ID found directly in student object:", parentId);
+          
+          // Thử lấy tên phụ huynh nếu có
+          if (studentDetails.parent && studentDetails.parent.fullName) {
+            parentName = studentDetails.parent.fullName;
+          }
+        } else if (studentDetails.parent) {
+          // Trường hợp 2: Có đối tượng parent lồng trong student
+          parentId = studentDetails.parent.parentId;
+          parentName = studentDetails.parent.fullName || "";
+          console.log("Parent ID found in nested parent object:", parentId);
+        }
+        
+        if (parentId) {
+          // Cập nhật parentId trong formData
+          setFormData(prev => ({
+            ...prev,
+            parentId: parentId,
+            parentName: parentName
+          }));
+        } else {
+          console.warn("No parent ID found in student details");
+          
+          // Thử tìm phụ huynh từ API khác
+          try {
+            const parentData = await API_SERVICE.parentAPI.search({ studentId: parseInt(studentId) });
+            console.log("Parent search result:", parentData);
+            
+            if (Array.isArray(parentData) && parentData.length > 0) {
+              const foundParent = parentData[0];
+              setFormData(prev => ({
+                ...prev,
+                parentId: foundParent.parentId,
+                parentName: foundParent.fullName || ""
+              }));
+              console.log("Parent ID found from parent search:", foundParent.parentId);
+            }
+          } catch (parentError) {
+            console.error("Error searching for parent:", parentError);
+          }
+        }
+      } else {
+        console.warn("No student details returned for ID:", studentId);
+      }
+    } catch (error) {
+      console.error("Error fetching student details:", error);
+    }
   };
 
   // Hàm xử lý khi người dùng chọn một y tá từ dropdown
@@ -2042,6 +2239,22 @@ const ConsultSchedules = () => {
                 )}
               </div>
               </div>
+              
+              {/* Hiển thị thông tin phụ huynh nếu có */}
+              {formData.parentId && (
+                <div className="mb-3">
+                  <label className="form-label">Thông tin phụ huynh</label>
+                  <div className="border rounded p-2 bg-light">
+                    {formData.parentName ? (
+                      <p className="mb-0">Phụ huynh: {formData.parentName} (ID: {formData.parentId})</p>
+                    ) : (
+                      <p className="mb-0">ID phụ huynh: {formData.parentId}</p>
+                    )}
+                    <small className="text-muted">Form tư vấn sẽ được gửi cho phụ huynh này</small>
+                  </div>
+                </div>
+              )}
+              
               <div className="mb-3">
                 <label htmlFor="consultDate" className="form-label">Ngày tư vấn <span className="text-danger">*</span></label>
                 <input
