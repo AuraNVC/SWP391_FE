@@ -103,33 +103,33 @@ export default function ParentConsultations() {
         // Kiểm tra dữ liệu và xử lý
         if (Array.isArray(consultationData)) {
           if (consultationData.length > 0) {
-            // Map student names to consultations
+        // Map student names to consultations
             try {
-              const enrichedConsultations = await Promise.all(consultationData.map(async form => {
+            const enrichedConsultations = await Promise.all(consultationData.map(async form => {
                 if (!form.consultationSchedule?.consultationScheduleId) {
                   console.log("No schedule ID for form:", form.consultationFormId);
-                  return { ...form, studentName: 'Không rõ' };
+                    return { ...form, studentName: 'Không rõ' };
                 }
                 // Fetch full schedule details to get studentId
                 try {
-                  const scheduleData = await API_SERVICE.consultationScheduleAPI.get(form.consultationSchedule.consultationScheduleId);
+                const scheduleData = await API_SERVICE.consultationScheduleAPI.get(form.consultationSchedule.consultationScheduleId);
                   console.log("Schedule data for form", form.consultationFormId, ":", scheduleData);
                   
                   const student = Array.isArray(studentData) ? 
                     studentData.find(s => s.studentId === scheduleData.studentId) : null;
                   
-                  return {
+                return {
                     ...form,
                     consultationSchedule: scheduleData, // Replace placeholder with full data
                     studentName: student ? student.fullName : 'Không rõ'
-                  };
+                };
                 } catch (scheduleError) {
                   console.error("Error fetching schedule data:", scheduleError);
                   return { ...form, studentName: 'Không rõ' };
                 }
-              }));
+            }));
               console.log("Enriched consultations:", enrichedConsultations);
-              setConsultations(enrichedConsultations);
+            setConsultations(enrichedConsultations);
             } catch (enrichError) {
               console.error("Error enriching consultation data:", enrichError);
               setConsultations(consultationData);

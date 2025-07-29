@@ -109,7 +109,7 @@ const ConsultSchedules = () => {
       )
     },
     { 
-      title: "Y tá phụ trách", 
+      title: "Y tá", 
       dataIndex: "nurseName", 
       render: (name, record) => (
         <span style={{ cursor: 'pointer' }} onClick={() => handleSort("nurseName")}>
@@ -163,6 +163,46 @@ const ConsultSchedules = () => {
           )}
         </span>
       )
+    },
+    {
+      title: "Trạng thái",
+      dataIndex: "formStatus",
+      render: (status) => {
+        let statusText = "Đang chờ";
+        let badgeStyle = {
+          padding: '4px 8px',
+          borderRadius: '4px',
+          fontSize: '0.85rem',
+          fontWeight: '500',
+          backgroundColor: '#ffc107',
+          color: '#212529',
+          display: 'inline-block',
+          width: '100%',
+          textAlign: 'center'
+        };
+        
+        if (status === "Accepted" || status === 2) {
+          statusText = "Đã duyệt";
+          badgeStyle = {
+            ...badgeStyle,
+            backgroundColor: '#28a745',
+            color: '#fff'
+          };
+        } else if (status === "Rejected" || status === 3) {
+          statusText = "Đã từ chối";
+          badgeStyle = {
+            ...badgeStyle,
+            backgroundColor: '#dc3545',
+            color: '#fff'
+          };
+        }
+        
+        return (
+          <div style={{ backgroundColor: '#e9ecef', padding: '2px', borderRadius: '4px' }}>
+            <div style={badgeStyle}>{statusText}</div>
+          </div>
+        );
+      }
     }
   ];
 
@@ -478,15 +518,14 @@ const ConsultSchedules = () => {
               const parentData = parents.find(p => p.parentId === parentId);
               if (parentData) {
                 parentName = parentData.fullName || `${parentData.firstName || ''} ${parentData.lastName || ''}`.trim();
-                console.log(`Found parent in cached list: ${parentName} (ID: ${parentId})`);
+                console.log(`Found parent info from parents array: ${parentName} (ID: ${parentId})`);
               } else {
                 // Nếu không tìm thấy, thử tải thông tin phụ huynh từ API
                 try {
                   const parentResponse = await API_SERVICE.parentAPI.getById(parentId);
-                  console.log(`Parent API response for ID ${parentId}:`, parentResponse);
                   if (parentResponse) {
                     parentName = parentResponse.fullName || `${parentResponse.firstName || ''} ${parentResponse.lastName || ''}`.trim();
-                    console.log(`Found parent from API: ${parentName} (ID: ${parentId})`);
+                    console.log(`Found parent info from API: ${parentName} (ID: ${parentId})`);
                   }
                 } catch (parentError) {
                   console.error(`Error fetching parent with ID ${parentId}:`, parentError);
@@ -496,22 +535,75 @@ const ConsultSchedules = () => {
           }
         }
         
+        // Lấy thông tin trạng thái form tư vấn
+        let formStatus = null;
+        try {
+          // Thử lấy form tư vấn theo ID lịch
+          try {
+            const form = await API_SERVICE.consultationFormAPI.getById(scheduleId);
+            if (form && form.status !== undefined) {
+              formStatus = form.status;
+              console.log(`Found form status for schedule ${scheduleId}:`, formStatus);
+            }
+          } catch (e) {
+            console.log(`No direct form found for schedule ${scheduleId}`);
+          }
+          
+          // Nếu không tìm thấy trực tiếp, thử tìm qua studentId
+          if (formStatus === null && studentId) {
+            try {
+              const studentForms = await API_SERVICE.consultationFormAPI.getByStudent(studentId);
+              if (Array.isArray(studentForms) && studentForms.length > 0) {
+                const matchingForm = studentForms.find(form => 
+                  form.consultationScheduleId === scheduleId || 
+                  (form.consultationSchedule && form.consultationSchedule.consultationScheduleId === scheduleId)
+                );
+                if (matchingForm) {
+                  formStatus = matchingForm.status;
+                  console.log(`Found form status via student for schedule ${scheduleId}:`, formStatus);
+                }
+              }
+            } catch (e) {
+              console.log(`Error getting forms by student for schedule ${scheduleId}:`, e);
+            }
+          }
+          
+          // Nếu vẫn không tìm thấy và có parentId, thử tìm qua parentId
+          if (formStatus === null && parentId) {
+            try {
+              const parentForms = await API_SERVICE.consultationFormAPI.getByParent(parentId);
+              if (Array.isArray(parentForms) && parentForms.length > 0) {
+                const matchingForm = parentForms.find(form => 
+                  form.consultationScheduleId === scheduleId || 
+                  (form.consultationSchedule && form.consultationSchedule.consultationScheduleId === scheduleId)
+                );
+                if (matchingForm) {
+                  formStatus = matchingForm.status;
+                  console.log(`Found form status via parent for schedule ${scheduleId}:`, formStatus);
+                }
+              }
+            } catch (e) {
+              console.log(`Error getting forms by parent for schedule ${scheduleId}:`, e);
+            }
+          }
+        } catch (error) {
+          console.error(`Error checking form status for schedule ${scheduleId}:`, error);
+        }
+        
         const consultDateTime = schedule.consultDate ? new Date(schedule.consultDate) : null;
         
         return {
-          ...schedule,
+          key: scheduleId,
           consultationScheduleId: scheduleId,
           studentId: studentId,
+          studentName: studentName,
           nurseId: nurseId,
-          parentId: parentId,
-          studentName: studentName || `ID: ${studentId || "N/A"}`,
-          nurseName: nurseName || (nurseId ? `ID: ${nurseId}` : "Chưa phân công"),
-          parentName: parentName || (parentId ? `ID: ${parentId}` : "Không có"),
-          // Đảm bảo các trường dữ liệu
+          nurseName: nurseName,
           location: schedule.location || "Không xác định",
           consultDate: schedule.consultDate,
           consultTime: consultDateTime ? consultDateTime.toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}) : null,
-          hasParentInfo: !!parentName
+          hasParentInfo: !!parentName,
+          formStatus: formStatus
         };
       }));
       
