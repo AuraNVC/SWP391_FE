@@ -1024,30 +1024,6 @@ const Medications = () => {
                 >
                   <FaEye style={iconStyle.view} size={18} />
                 </button>
-                {(row.status === "Pending" || row.status === 1) && (
-                  <>
-                    <button
-                      className="admin-action-btn admin-action-accept admin-action-btn-reset"
-                      title="Chấp nhận"
-                      onClick={() => {
-                        setSelectedMedication(row);
-                        setShowConfirmAccept(true);
-                      }}
-                    >
-                      <FaCheck style={{ color: "#28a745" }} size={18} />
-                    </button>
-                    <button
-                      className="admin-action-btn admin-action-reject admin-action-btn-reset"
-                      title="Từ chối"
-                      onClick={() => {
-                        setSelectedMedication(row);
-                        setShowConfirmReject(true);
-                      }}
-                    >
-                      <FaTimes style={{ color: "#dc3545" }} size={18} />
-                    </button>
-                  </>
-                )}
                 {(row.status === "Accepted" || row.status === 2) && (
                   <button
                     className="admin-action-btn admin-action-edit admin-action-btn-reset"
