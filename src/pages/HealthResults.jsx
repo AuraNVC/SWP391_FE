@@ -937,10 +937,6 @@ const HealthResults = () => {
       await Promise.all([fetchStudents(), fetchNurses()]);
       // Sau đó tải lịch khám và kết quả khám
       await Promise.all([fetchHealthCheckSchedules(), fetchHealthCheckResults("")]);
-      setNotif({
-        message: "Dữ liệu đã được làm mới",
-        type: "success"
-      });
     } catch (error) {
       console.error("Error refreshing data:", error);
       setNotif({
@@ -1896,7 +1892,19 @@ const HealthResults = () => {
     // Tạo một timeout để đảm bảo component đã render xong
     const refreshTimer = setTimeout(() => {
       console.log("Auto refreshing data after component mount");
-      handleRefresh();
+      // Gọi trực tiếp API thay vì dùng handleRefresh để không hiển thị thông báo
+      const autoRefresh = async () => {
+        setLoading(true);
+        try {
+          await Promise.all([fetchStudents(), fetchNurses()]);
+          await Promise.all([fetchHealthCheckSchedules(), fetchHealthCheckResults("")]);
+        } catch (error) {
+          console.error("Error auto refreshing data:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      autoRefresh();
     }, 500);
     
     // Thêm sự kiện click toàn cục để đóng dropdown khi click ra ngoài

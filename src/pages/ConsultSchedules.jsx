@@ -706,10 +706,6 @@ const ConsultSchedules = () => {
         fetchStudents(),
         fetchNurses()
       ]);
-      setNotif({
-        message: "Dữ liệu đã được làm mới",
-        type: "success"
-      });
     } catch (error) {
       console.error("Error refreshing data:", error);
       setNotif({

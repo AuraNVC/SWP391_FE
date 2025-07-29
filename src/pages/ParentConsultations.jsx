@@ -35,17 +35,13 @@ export default function ParentConsultations() {
         await API_SERVICE.consultationFormAPI.reject(consultationFormId);
       }
 
-      const action = isAccept ? 'chấp nhận' : 'từ chối';
-      setSuccessMessage(`Đã ${action} lịch tư vấn thành công!`);
-      setNotif({ message: `Đã ${action} lịch tư vấn thành công!`, type: 'success' });
-
       // Refresh the list after update
       const parentId = localStorage.getItem('userId');
       const numericParentId = parseInt(parentId, 10);
       const updatedData = await API_SERVICE.consultationFormAPI.getByParent(numericParentId);
       setConsultations(updatedData);
 
-      setTimeout(() => setSuccessMessage(null), 3000);
+      // Đã xóa timeout setSuccessMessage ở đây
     } catch (err) {
       console.error('Error updating status:', err);
       setError('Không thể cập nhật trạng thái. Vui lòng thử lại sau.');
