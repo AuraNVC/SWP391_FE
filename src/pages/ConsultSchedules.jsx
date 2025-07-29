@@ -33,12 +33,10 @@ const ConsultSchedules = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showEditFormModal, setShowEditFormModal] = useState(false); // State mới cho modal chỉnh sửa form
-  const [showHistoryModal, setShowHistoryModal] = useState(false); // State mới cho modal lịch sử chỉnh sửa
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [consultationForm, setConsultationForm] = useState(null);
   const [showFormModal, setShowFormModal] = useState(false);
   const [editFormData, setEditFormData] = useState(null); // State mới cho dữ liệu form đang chỉnh sửa
-  const [formHistory, setFormHistory] = useState([]); // State mới để lưu lịch sử chỉnh sửa form
   const [formData, setFormData] = useState({
     consultDate: new Date().toISOString().split('T')[0],
     consultTime: "08:00",
@@ -1933,20 +1931,6 @@ const ConsultSchedules = () => {
     }
   };
 
-  // Hàm hiển thị lịch sử chỉnh sửa form
-  const viewFormHistory = () => {
-    if (formHistory.length === 0) {
-      setNotif({
-        message: "Chưa có lịch sử chỉnh sửa cho form này",
-        type: "info"
-      });
-      return;
-    }
-    
-    // Hiển thị modal lịch sử chỉnh sửa
-    setShowHistoryModal(true);
-  };
-
   // Hàm xử lý khi người dùng chọn một học sinh từ dropdown
   const handleSelectStudent = (student) => {
     console.log("Selected student:", student);
@@ -2635,18 +2619,6 @@ const ConsultSchedules = () => {
               <button className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowFormModal(false)}>
                 Đóng
               </button>
-              {consultationForm && consultationForm.consultationFormId && (
-                <>
-              
-                  <button
-                    className="admin-btn"
-                    style={{ background: '#17a2b8' }}
-                    onClick={viewFormHistory}
-                  >
-                    Xem lịch sử chỉnh sửa
-                  </button>
-                </>
-              )}
             </div>
           </div>
         </div>
@@ -2999,74 +2971,7 @@ const ConsultSchedules = () => {
         </div>
       )}
 
-      {/* Modal lịch sử chỉnh sửa form tư vấn */}
-      {showHistoryModal && (
-        <div className="student-dialog-overlay">
-          <div className="student-dialog-content" style={{ width: '700px', maxWidth: '90%' }}>
-            <div className="student-dialog-header">
-              <h2>Lịch sử chỉnh sửa form tư vấn</h2>
-              <button className="student-dialog-close" onClick={() => setShowHistoryModal(false)}>×</button>
-            </div>
-            <div className="student-dialog-body">
-              {formHistory.length > 0 ? (
-                <div className="form-history-container">
-                  <div className="alert alert-info mb-3">
-                    <small>
-                      <strong>Lưu ý:</strong> Hiển thị {formHistory.length} phiên bản chỉnh sửa trước đó của form này.
-                      Phiên bản mới nhất được hiển thị đầu tiên.
-                    </small>
-                  </div>
-                  
-                  {formHistory.map((historyItem, index) => (
-                    <div key={index} className="form-history-item mb-4 p-3 border rounded">
-                      <div className="d-flex justify-content-between mb-2">
-                        <h5 className="mb-0">{historyItem.title || "Không có tiêu đề"}</h5>
-                        <span className="badge bg-secondary">
-                          Phiên bản {formHistory.length - index}/{formHistory.length}
-                        </span>
-                      </div>
-                      
-                      <div className="form-history-meta text-muted mb-2">
-                        <small>
-                          Chỉnh sửa bởi: {historyItem.modifiedByName || "Y tá"} • 
-                          Thời gian: {new Date(historyItem.modifiedDate).toLocaleString('vi-VN')}
-                        </small>
-                      </div>
-                      
-                      <div className="form-history-content p-2 bg-light rounded mb-2" style={{ whiteSpace: "pre-wrap" }}>
-                        {historyItem.content || "Không có nội dung"}
-                      </div>
-                      
-                      <div className="form-history-status">
-                        <span className="me-2">Trạng thái:</span>
-                        <span className={`badge ${
-                          historyItem.status === 0 || historyItem.status === "Pending" ? "bg-warning" :
-                          historyItem.status === 1 || historyItem.status === "Accepted" ? "bg-success" :
-                          historyItem.status === 2 || historyItem.status === "Rejected" ? "bg-danger" : "bg-secondary"
-                        }`}>
-                          {historyItem.status === 0 || historyItem.status === "Pending" ? "Đang chờ" :
-                           historyItem.status === 1 || historyItem.status === "Accepted" ? "Đã chấp nhận" :
-                           historyItem.status === 2 || historyItem.status === "Rejected" ? "Đã từ chối" : 
-                           historyItem.status || "Không xác định"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-5">
-                  <p>Chưa có lịch sử chỉnh sửa cho form này.</p>
-                </div>
-              )}
-            </div>
-            <div className="student-dialog-footer">
-              <button className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowHistoryModal(false)}>
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Confirm Add Dialog */}
       {showConfirmAdd && (
