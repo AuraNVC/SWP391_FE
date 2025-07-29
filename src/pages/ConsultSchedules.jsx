@@ -1399,16 +1399,165 @@ const ConsultSchedules = () => {
 
   const handleView = (schedule) => {
     console.log("Viewing schedule:", schedule);
+    
+    // Lưu thông tin lịch đã chọn
     setSelectedSchedule(schedule);
-    setActiveTab('schedule'); // Reset về tab thông tin lịch
+    
+    // Tìm form tư vấn trước khi hiển thị modal
+    const loadFormData = async () => {
+      try {
+        // Lấy thông tin lịch tư vấn
+        const scheduleId = schedule.consultationScheduleId;
+        console.log("Loading form data for schedule ID:", scheduleId);
+        
+        // Biến lưu form tư vấn
+        let matchingForm = null;
+        
+        // Thử nhiều cách để lấy form tư vấn
+        try {
+          // Cách 1: Thử lấy form theo ID của form (nếu trùng với ID lịch)
+          const directForm = await API_SERVICE.consultationFormAPI.getById(scheduleId);
+          if (directForm && !directForm.error) {
+            matchingForm = directForm;
+          }
+        } catch (directError) {
+          console.log("Could not get form directly by ID:", directError);
+        }
+        
+        // Cách 2: Nếu không tìm thấy và có studentId, thử lấy form theo studentId
+        if (!matchingForm && schedule.studentId) {
+          try {
+            const studentForms = await API_SERVICE.consultationFormAPI.getByStudent(schedule.studentId);
+            
+            if (Array.isArray(studentForms) && studentForms.length > 0) {
+              // Tìm form có consultationScheduleId khớp với scheduleId
+              matchingForm = studentForms.find(form => {
+                const formSchedule = form.consultationSchedule;
+                return formSchedule && formSchedule.consultationScheduleId === scheduleId;
+              });
+              
+              // Nếu không tìm thấy theo consultationSchedule, thử tìm theo consultationScheduleId
+              if (!matchingForm) {
+                matchingForm = studentForms.find(form => form.consultationScheduleId === scheduleId);
+              }
+            }
+          } catch (studentError) {
+            console.log("Error getting forms by student:", studentError);
+          }
+        }
+        
+        // Cách 3: Nếu có parentId, thử lấy form theo parentId
+        if (!matchingForm && schedule.parentId) {
+          try {
+            const parentForms = await API_SERVICE.consultationFormAPI.getByParent(schedule.parentId);
+            
+            if (Array.isArray(parentForms) && parentForms.length > 0) {
+              // Tìm form có consultationScheduleId khớp với scheduleId
+              matchingForm = parentForms.find(form => {
+                const formSchedule = form.consultationSchedule;
+                return formSchedule && formSchedule.consultationScheduleId === scheduleId;
+              });
+              
+              // Nếu không tìm thấy theo consultationSchedule, thử tìm theo consultationScheduleId
+              if (!matchingForm) {
+                matchingForm = parentForms.find(form => form.consultationScheduleId === scheduleId);
+              }
+            }
+          } catch (parentError) {
+            console.log("Error getting forms by parent:", parentError);
+          }
+        }
+        
+        // Xử lý thông tin form tư vấn
+        if (matchingForm) {
+          console.log("Found matching consultation form:", matchingForm);
+          
+          // Lưu ID của các đối tượng liên quan
+          const studentId = matchingForm.studentId || (schedule ? schedule.studentId : null);
+          const nurseId = matchingForm.nurseId || (schedule ? schedule.nurseId : null);
+          const parentId = matchingForm.parentId || (schedule && schedule.parentId ? schedule.parentId : null);
+          
+          // Tìm thông tin học sinh, y tá, phụ huynh nếu cần
+          let studentName = "";
+          let nurseName = "";
+          let parentName = "";
+          
+          // Lấy tên học sinh
+          if (studentId) {
+            studentName = getStudentNameById(studentId);
+            if (!studentName || studentName.startsWith("ID:")) {
+              try {
+                const studentResponse = await API_SERVICE.studentAPI.getById(studentId);
+                if (studentResponse) {
+                  studentName = studentResponse.fullName || `${studentResponse.firstName || ''} ${studentResponse.lastName || ''}`.trim();
+                }
+              } catch (studentError) {
+                console.error("Error fetching student info:", studentError);
+                studentName = `ID: ${studentId}`;
+              }
+            }
+          }
+          
+          // Lấy tên y tá
+          if (nurseId) {
+            nurseName = getNurseNameById(nurseId);
+            if (!nurseName || nurseName.startsWith("ID:")) {
+              try {
+                const nurseResponse = await API_SERVICE.nurseAPI.getById(nurseId);
+                if (nurseResponse) {
+                  nurseName = nurseResponse.fullName || `${nurseResponse.firstName || ''} ${nurseResponse.lastName || ''}`.trim();
+                }
+              } catch (nurseError) {
+                console.error("Error fetching nurse info:", nurseError);
+                nurseName = `ID: ${nurseId}`;
+              }
+            }
+          }
+          
+          // Lấy tên phụ huynh
+          if (parentId) {
+            try {
+              const parentResponse = await API_SERVICE.parentAPI.getById(parentId);
+              if (parentResponse) {
+                parentName = parentResponse.fullName || `${parentResponse.firstName || ''} ${parentResponse.lastName || ''}`.trim();
+              }
+            } catch (parentError) {
+              console.error("Error fetching parent info:", parentError);
+              parentName = `ID: ${parentId}`;
+            }
+          }
+          
+          // Cập nhật state với dữ liệu từ API và thông tin phụ huynh/y tá/học sinh
+          const formData = {
+            ...matchingForm,
+            studentId: studentId,
+            nurseId: nurseId,
+            parentId: parentId,
+            studentName: studentName || (studentId ? `ID: ${studentId}` : "Không có"),
+            parentName: parentName || (parentId ? `ID: ${parentId}` : "Không có"),
+            nurseName: nurseName || (nurseId ? `ID: ${nurseId}` : "Không có"),
+            // Đảm bảo các trường dữ liệu quan trọng
+            consultationScheduleId: scheduleId
+          };
+          
+          setConsultationForm(formData);
+        } else {
+          console.log("No matching consultation form found");
+          setConsultationForm(null);
+        }
+      } catch (error) {
+        console.error("Error loading form data:", error);
+        setConsultationForm(null);
+      }
+    };
+    
+    // Hiển thị modal ngay lập tức và tải dữ liệu form ngầm
     setShowViewModal(true);
     
-    // Tự động tải form tư vấn khi mở modal
-    fetchConsultationForm(schedule.consultationScheduleId);
+    // Tải dữ liệu form mà không hiển thị loading
+    loadFormData();
   };
-  
-  // Hàm lấy danh sách phụ huynh đã được định nghĩa ở trên
-  
+
   const fetchConsultationForm = async (scheduleId, showModal = false) => {
     setLoading(true);
     try {
@@ -2697,10 +2846,6 @@ const ConsultSchedules = () => {
                     <span>{selectedSchedule.nurseName || getNurseNameById(selectedSchedule.nurseId) || "Chưa phân công"} (ID: {selectedSchedule.nurseId || "N/A"})</span>
                   </div>
                   <div className="info-item">
-                    <label>Phụ huynh:</label>
-                    <span>{selectedSchedule.parentName || "Không có thông tin"} (ID: {selectedSchedule.parentId || "N/A"})</span>
-                  </div>
-                  <div className="info-item">
                     <label>Ngày tư vấn:</label>
                     <span>{selectedSchedule.consultDate ? new Date(selectedSchedule.consultDate).toLocaleDateString('vi-VN') : "Không có"}</span>
                   </div>
@@ -2718,19 +2863,21 @@ const ConsultSchedules = () => {
               {/* Thông tin form tư vấn */}
               <div className="student-info-section mt-4">
                 <h3>Thông tin form tư vấn</h3>
-                {loading ? (
-                  <FormSkeleton />
-                ) : consultationForm ? (
+                {consultationForm ? (
                   <div className="info-grid">
                     <div className="info-item">
                       <label>Form ID:</label>
-                      <span>{consultationForm.consultationFormId}</span>
+                      <span>{consultationForm.consultationFormId || "Chưa có ID"}</span>
+                    </div>
+                    <div className="info-item">
+                      <label>Phụ huynh:</label>
+                      <span>{consultationForm.parentName || "Chưa có thông tin"} (ID: {consultationForm.parentId || "N/A"})</span>
                     </div>
                     <div className="info-item">
                       <label>Tiêu đề:</label>
                       <span>{consultationForm.title || "Không có tiêu đề"}</span>
                     </div>
-                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+                    <div className="info-item">
                       <label>Trạng thái:</label>
                       <span>
                         {consultationForm.status === 0 || consultationForm.status === "Pending" ? "Đang chờ" :
