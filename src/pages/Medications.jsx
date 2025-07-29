@@ -707,10 +707,7 @@ const Medications = () => {
       // Cập nhật thông tin thuốc đang được xem
       setSelectedMedication(prev => ({ ...prev, remainingQuantity: newQuantity }));
 
-      setNotif({
-        message: "Cập nhật số lượng thuốc thành công",
-        type: "success"
-      });
+      // Đã xóa thông báo "Cập nhật số lượng thuốc thành công"
 
       // Đóng modal cập nhật
       setShowUpdateQuantityModal(false);
@@ -764,10 +761,7 @@ const Medications = () => {
 
       setSelectedMedication(prev => ({ ...prev, status: "Accepted", acceptedDate: new Date().toISOString() }));
 
-      setNotif({
-        message: "Đã duyệt đơn thuốc thành công",
-        type: "success"
-      });
+      // Đã xóa thông báo "Đã duyệt đơn thuốc thành công"
 
       setShowViewModal(false);
     } catch (error) {
@@ -806,10 +800,7 @@ const Medications = () => {
 
       setSelectedMedication(prev => ({ ...prev, status: "Rejected", rejectedDate: new Date().toISOString() }));
 
-      setNotif({
-        message: "Đã từ chối đơn thuốc thành công",
-        type: "success"
-      });
+      // Đã xóa thông báo "Đã từ chối đơn thuốc thành công"
 
       setShowViewModal(false);
     } catch (error) {
