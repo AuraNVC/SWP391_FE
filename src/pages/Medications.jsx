@@ -51,75 +51,30 @@ const Medications = () => {
   const columns = [
     { 
       title: "ID", 
-      dataIndex: "prescriptionId",
-      render: (id) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("prescriptionId")}>
-          {id}
-          {sortConfig.key === "prescriptionId" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      dataIndex: "prescriptionId", 
+      render: (id) => <span>{id}</span>
     },
     { 
       title: "Phụ huynh", 
-      dataIndex: "parentName",
-      render: (name) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("parentName")}>
-          {name}
-          {sortConfig.key === "parentName" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      dataIndex: "parentName", 
+      render: (name, record) => <span>{name || "Không có"}</span>
     },
     { 
       title: "Học sinh", 
-      dataIndex: "studentName",
-      render: (name) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
-          {name}
-          {sortConfig.key === "studentName" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      dataIndex: "studentName", 
+      render: (name, record) => <span>{name || "Không có"}</span>
     },
     { 
       title: "Tên thuốc", 
-      dataIndex: "medicationName",
-      render: (name) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("medicationName")}>
-          {name}
-          {sortConfig.key === "medicationName" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      dataIndex: "medicationName", 
+      render: (name) => <span>{name}</span>
     },
     { title: "Liều lượng", dataIndex: "dosage" },
     { title: "Lịch uống", dataIndex: "schedule" },
     { 
       title: "Ngày gửi", 
       dataIndex: "createdDate", 
-      render: (date) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("createdDate")}>
-          {date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}
-          {sortConfig.key === "createdDate" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (date) => <span>{date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}</span>
     },
     {
       title: "Trạng thái",
@@ -160,19 +115,7 @@ const Medications = () => {
           };
         }
         
-        return (
-          <span 
-            style={{ cursor: 'pointer' }} 
-            onClick={() => handleSort("status")}
-          >
-            <span style={badgeStyle}>{statusText}</span>
-            {sortConfig.key === "status" && (
-              <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-                {sortConfig.direction === 'asc' ? '▲' : '▼'}
-              </span>
-            )}
-          </span>
-        );
+        return <span style={badgeStyle}>{statusText}</span>;
       }
     },
     { 
@@ -197,14 +140,9 @@ const Medications = () => {
         }
         
         return (
-          <div onClick={() => handleSort("remainingQuantity")} style={{ cursor: 'pointer' }}>
+          <div>
             <div>
               {remainingQty}/{total}
-              {sortConfig.key === "remainingQuantity" && (
-                <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-                  {sortConfig.direction === 'asc' ? '▲' : '▼'}
-                </span>
-              )}
             </div>
             <div style={{ 
               width: '100%', 

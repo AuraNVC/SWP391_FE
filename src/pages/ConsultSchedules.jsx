@@ -79,90 +79,37 @@ const ConsultSchedules = () => {
 
   const { setNotif } = useNotification();
 
+  // Định nghĩa các cột cho bảng
   const columns = [
     { 
-      title: "ID", 
-      dataIndex: "consultationScheduleId",
-      render: (id) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("consultationScheduleId")}>
-          {id}
-          {sortConfig.key === "consultationScheduleId" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      title: "ID lịch tư vấn", 
+      dataIndex: "consultationScheduleId", 
+      render: (id) => <span>{id}</span>
     },
     { 
       title: "Học sinh", 
       dataIndex: "studentName", 
-      render: (name, record) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
-          {name || "Không có"} 
-          {sortConfig.key === "studentName" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (name, record) => <span>{name || "Không có"}</span>
     },
     { 
       title: "Y tá", 
       dataIndex: "nurseName", 
-      render: (name, record) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("nurseName")}>
-          {name || "Chưa phân công"} 
-          {sortConfig.key === "nurseName" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (name, record) => <span>{name || "Chưa phân công"}</span>
     },
     { 
       title: "Địa điểm", 
       dataIndex: "location",
-      render: (location) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("location")}>
-          {location}
-          {sortConfig.key === "location" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (location) => <span>{location}</span>
     },
     { 
       title: "Ngày tư vấn", 
       dataIndex: "consultDate", 
-      render: (date) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("consultDate")}>
-          {date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}
-          {sortConfig.key === "consultDate" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (date) => <span>{date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}</span>
     },
     { 
       title: "Giờ tư vấn", 
       dataIndex: "consultTime", 
-      render: (_, record) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("consultTime")}>
-          {record.consultDate ? new Date(record.consultDate).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}) : "N/A"}
-          {sortConfig.key === "consultTime" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (_, record) => <span>{record.consultDate ? new Date(record.consultDate).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}) : "N/A"}</span>
     },
     {
       title: "Trạng thái",
