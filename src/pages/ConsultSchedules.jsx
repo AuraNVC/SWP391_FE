@@ -75,6 +75,8 @@ const ConsultSchedules = () => {
     direction: "desc"
   });
 
+  const [activeTab, setActiveTab] = useState('schedule'); // State để quản lý tab đang active trong modal chi tiết
+
   const { setNotif } = useNotification();
 
   const columns = [
@@ -536,7 +538,7 @@ const ConsultSchedules = () => {
         // Lấy thông tin trạng thái form tư vấn
         let formStatus = null;
         try {
-          // Thử lấy form tư vấn theo ID lịch
+          // Thử lấy form tư vấn theo ID lịch tư vấn
           try {
             const form = await API_SERVICE.consultationFormAPI.getById(scheduleId);
             if (form && form.status !== undefined) {
@@ -1398,18 +1400,24 @@ const ConsultSchedules = () => {
   const handleView = (schedule) => {
     console.log("Viewing schedule:", schedule);
     setSelectedSchedule(schedule);
+    setActiveTab('schedule'); // Reset về tab thông tin lịch
     setShowViewModal(true);
+    
+    // Tự động tải form tư vấn khi mở modal
+    fetchConsultationForm(schedule.consultationScheduleId);
   };
   
   // Hàm lấy danh sách phụ huynh đã được định nghĩa ở trên
   
-  const fetchConsultationForm = async (scheduleId) => {
+  const fetchConsultationForm = async (scheduleId, showModal = false) => {
     setLoading(true);
     try {
       console.log("Fetching consultation form for schedule ID:", scheduleId);
       
-      // Hiển thị loading trước khi có dữ liệu
-      setShowFormModal(true);
+      // Hiển thị modal nếu được yêu cầu
+      if (showModal) {
+        setShowFormModal(true);
+      }
       
       // Lấy thông tin lịch tư vấn
       const schedule = schedules.find(s => s.consultationScheduleId === scheduleId);
@@ -2042,6 +2050,188 @@ const ConsultSchedules = () => {
     setShowNurseDropdown(false);
   };
 
+  // Thêm CSS cho các badge trạng thái
+  const statusStyles = `
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-align: center;
+      width: 100%;
+    }
+    
+    .status-pending {
+      background-color: #ffc107;
+      color: #000;
+    }
+    
+    .status-accepted {
+      background-color: #28a745;
+      color: white;
+    }
+    
+    .status-rejected {
+      background-color: #dc3545;
+      color: white;
+    }
+    
+    .status-container {
+      background-color: #e9ecef;
+      padding: 2px;
+      border-radius: 4px;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+    
+    .action-buttons button {
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+    
+    .view-btn {
+      color: #007bff;
+    }
+    
+    .edit-btn {
+      color: #28a745;
+    }
+    
+    .delete-btn {
+      color: #dc3545;
+    }
+    
+    .action-buttons button:hover {
+      background-color: rgba(0, 0, 0, 0.05);
+    }
+
+    /* CSS cho skeleton loading */
+    .skeleton-item {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: loading 1.5s infinite;
+      border-radius: 4px;
+      margin-bottom: 8px;
+      height: 20px;
+    }
+    
+    .skeleton-title {
+      height: 24px;
+      width: 50%;
+      margin-bottom: 16px;
+    }
+    
+    .skeleton-text {
+      height: 16px;
+    }
+    
+    .skeleton-content {
+      height: 100px;
+      margin-top: 16px;
+    }
+    
+    @keyframes loading {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* CSS cho tabs */
+    .tabs-container {
+      margin-bottom: 20px;
+    }
+    
+    .tabs-header {
+      display: flex;
+      border-bottom: 1px solid #dee2e6;
+      margin-bottom: 15px;
+    }
+    
+    .tab-button {
+      padding: 10px 15px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    
+    .tab-button.active {
+      border-bottom: 2px solid #007bff;
+      color: #007bff;
+    }
+    
+    .tab-button:hover:not(.active) {
+      border-bottom: 2px solid #e9ecef;
+    }
+    
+    /* CSS cho spacing */
+    .mt-4 {
+      margin-top: 1.5rem;
+    }
+    
+    .student-info-section + .student-info-section {
+      margin-top: 2rem;
+      border-top: 1px solid #dee2e6;
+      padding-top: 1.5rem;
+    }
+  `;
+
+  // Component hiển thị skeleton loading cho form
+  const FormSkeleton = () => {
+    return (
+      <div className="form-skeleton">
+        <div className="skeleton-item skeleton-title"></div>
+        <div className="info-grid">
+          <div className="info-item">
+            <label>Form ID:</label>
+            <div className="skeleton-item skeleton-text"></div>
+          </div>
+          <div className="info-item">
+            <label>Schedule ID:</label>
+            <div className="skeleton-item skeleton-text"></div>
+          </div>
+          <div className="info-item">
+            <label>Phụ huynh:</label>
+            <div className="skeleton-item skeleton-text"></div>
+          </div>
+          <div className="info-item">
+            <label>Học sinh:</label>
+            <div className="skeleton-item skeleton-text"></div>
+          </div>
+          <div className="info-item">
+            <label>Y tá phụ trách:</label>
+            <div className="skeleton-item skeleton-text"></div>
+          </div>
+          <div className="info-item">
+            <label>Tiêu đề:</label>
+            <div className="skeleton-item skeleton-text"></div>
+          </div>
+          <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+            <label>Trạng thái:</label>
+            <div className="skeleton-item skeleton-text"></div>
+          </div>
+          <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+            <label>Nội dung:</label>
+            <div className="skeleton-item skeleton-content"></div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="admin-main">
       <h2 className="dashboard-title">Lịch tư vấn</h2>
@@ -2490,139 +2680,97 @@ const ConsultSchedules = () => {
               <button className="student-dialog-close" onClick={() => setShowViewModal(false)}>×</button>
             </div>
             <div className="student-dialog-body">
+              {/* Thông tin lịch tư vấn */}
               <div className="student-info-section">
                 <h3>Thông tin lịch tư vấn</h3>
-              <div className="info-grid">
-                <div className="info-item">
+                <div className="info-grid">
+                  <div className="info-item">
                     <label>ID lịch tư vấn:</label>
                     <span>{selectedSchedule.consultationScheduleId}</span>
-                </div>
-                <div className="info-item">
+                  </div>
+                  <div className="info-item">
                     <label>Học sinh:</label>
                     <span>{selectedSchedule.studentName || getStudentNameById(selectedSchedule.studentId) || "Không có"} (ID: {selectedSchedule.studentId || "N/A"})</span>
-                </div>
-                <div className="info-item">
+                  </div>
+                  <div className="info-item">
                     <label>Y tá phụ trách:</label>
                     <span>{selectedSchedule.nurseName || getNurseNameById(selectedSchedule.nurseId) || "Chưa phân công"} (ID: {selectedSchedule.nurseId || "N/A"})</span>
-                </div>
-                <div className="info-item">
+                  </div>
+                  <div className="info-item">
                     <label>Phụ huynh:</label>
                     <span>{selectedSchedule.parentName || "Không có thông tin"} (ID: {selectedSchedule.parentId || "N/A"})</span>
-                </div>
-                <div className="info-item">
+                  </div>
+                  <div className="info-item">
                     <label>Ngày tư vấn:</label>
                     <span>{selectedSchedule.consultDate ? new Date(selectedSchedule.consultDate).toLocaleDateString('vi-VN') : "Không có"}</span>
-                </div>
-                <div className="info-item">
+                  </div>
+                  <div className="info-item">
                     <label>Giờ tư vấn:</label>
                     <span>{selectedSchedule.consultTime || (selectedSchedule.consultDate ? new Date(selectedSchedule.consultDate).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'}) : "Không có")}</span>
-                </div>
+                  </div>
                   <div className="info-item">
                     <label>Địa điểm:</label>
                     <span>{selectedSchedule.location || "Không có"}</span>
+                  </div>
+                </div>
               </div>
-            </div>
+
+              {/* Thông tin form tư vấn */}
+              <div className="student-info-section mt-4">
+                <h3>Thông tin form tư vấn</h3>
+                {loading ? (
+                  <FormSkeleton />
+                ) : consultationForm ? (
+                  <div className="info-grid">
+                    <div className="info-item">
+                      <label>Form ID:</label>
+                      <span>{consultationForm.consultationFormId}</span>
+                    </div>
+                    <div className="info-item">
+                      <label>Tiêu đề:</label>
+                      <span>{consultationForm.title || "Không có tiêu đề"}</span>
+                    </div>
+                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+                      <label>Trạng thái:</label>
+                      <span>
+                        {consultationForm.status === 0 || consultationForm.status === "Pending" ? "Đang chờ" :
+                        consultationForm.status === 1 || consultationForm.status === "Accepted" ? "Đã chấp nhận" :
+                        consultationForm.status === 2 || consultationForm.status === "Rejected" ? "Đã từ chối" : 
+                          consultationForm.status || "Không xác định"}
+                      </span>
+                    </div>
+                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
+                      <label>Nội dung:</label>
+                      <div style={{ 
+                        padding: "15px", 
+                        backgroundColor: "#f8f9fa", 
+                        borderRadius: "5px", 
+                        marginTop: "10px", 
+                        whiteSpace: "pre-wrap",
+                        border: "1px solid #dee2e6",
+                        minHeight: "100px"
+                      }}>
+                        {consultationForm.content || "Không có nội dung"}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-3">
+                    <p>Không tìm thấy thông tin form tư vấn.</p>
+                  </div>
+                )}
               </div>
             </div>
             <div className="student-dialog-footer">
-              <button 
-                className="admin-btn" 
-                onClick={() => fetchConsultationForm(selectedSchedule.consultationScheduleId)}
-              >
-                Xem form tư vấn
-              </button>
               <button className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowViewModal(false)}>
                 Đóng
               </button>
-              
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal hiển thị form tư vấn */}
-      {showFormModal && (
-        <div className="student-dialog-overlay">
-          <div className="student-dialog-content" style={{ width: '700px', maxWidth: '90%' }}>
-            <div className="student-dialog-header">
-              <h2>Chi tiết form tư vấn</h2>
-              <button className="student-dialog-close" onClick={() => setShowFormModal(false)}>×</button>
-            </div>
-            <div className="student-dialog-body">
-              {loading ? (
-                <div className="loading-container">
-                  <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Đang tải...</span>
-                  </div>
-                  <p>Đang tải thông tin form tư vấn...</p>
-                </div>
-              ) : consultationForm ? (
-                <div className="student-info-section">
-                  <h3>Thông tin form tư vấn</h3>
-                <div className="info-grid">
-                    <div className="info-item">
-                      <label>Form ID:</label>
-                      <span>{consultationForm.consultationFormId}</span>
-                  </div>
-                    <div className="info-item">
-                      <label>Schedule ID:</label>
-                      <span>{consultationForm.consultationScheduleId}</span>
-                  </div>
-                    <div className="info-item">
-                      <label>Phụ huynh:</label>
-                      <span>{consultationForm.parentName || "Chưa có thông tin"} (ID: {consultationForm.parentId || "N/A"})</span>
-                  </div>
-                    <div className="info-item">
-                      <label>Học sinh:</label>
-                      <span>{consultationForm.studentName || "Chưa có thông tin"} (ID: {consultationForm.studentId || "N/A"})</span>
-                  </div>
-                    <div className="info-item">
-                      <label>Y tá phụ trách:</label>
-                      <span>{consultationForm.nurseName || "Chưa phân công"} (ID: {consultationForm.nurseId || "N/A"})</span>
-                  </div>
-                    <div className="info-item">
-                      <label>Tiêu đề:</label>
-                      <span>{consultationForm.title || "Không có tiêu đề"}</span>
-                  </div>
-                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                      <label>Trạng thái:</label>
-                      <span>
-                        {consultationForm.status === 0 || consultationForm.status === "Pending" ? "Đang chờ" :
-                      consultationForm.status === 1 || consultationForm.status === "Accepted" ? "Đã chấp nhận" :
-                      consultationForm.status === 2 || consultationForm.status === "Rejected" ? "Đã từ chối" : 
-                         consultationForm.status || "Không xác định"}
-                      </span>
-                  </div>
-                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                      <label>Nội dung:</label>
-                    <div style={{ 
-                      padding: "15px", 
-                      backgroundColor: "#f8f9fa", 
-                      borderRadius: "5px", 
-                      marginTop: "10px", 
-                      whiteSpace: "pre-wrap",
-                      border: "1px solid #dee2e6",
-                      minHeight: "100px"
-                    }}>
-                      {consultationForm.content || "Không có nội dung"}
-                    </div>
-                  </div>
-                    </div>
-                </div>
-              ) : (
-                <div className="text-center py-5">
-                  <p>Không tìm thấy thông tin form tư vấn.</p>
-                </div>
-              )}
-            </div>
-            <div className="student-dialog-footer">
-              <button className="admin-btn" style={{ background: '#6c757d' }} onClick={() => setShowFormModal(false)}>
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Modal chỉnh sửa lịch tư vấn */}
       {showEditModal && selectedSchedule && (
