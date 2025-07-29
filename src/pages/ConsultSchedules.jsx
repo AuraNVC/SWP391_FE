@@ -52,7 +52,8 @@ const ConsultSchedules = () => {
     formTitle: "",
     formContent: "",
     sendNotification: true,
-    showFormSection: false
+    showFormSection: false,
+    createForm: true // Luôn tạo form tư vấn theo mặc định
   });
   const [filteredStudents, setFilteredStudents] = useState([]);
   const [filteredNurses, setFilteredNurses] = useState([]);
@@ -786,25 +787,23 @@ const ConsultSchedules = () => {
       return false;
     }
     
-    // Nếu hiển thị phần form tư vấn, kiểm tra các trường của form
-    if (formData.showFormSection) {
-      // Kiểm tra tiêu đề form
-      if (!formData.formTitle) {
-        setNotif({
-          message: "Vui lòng nhập tiêu đề form tư vấn",
-          type: "error"
-        });
-        return false;
-      }
-      
-      // Kiểm tra nội dung form
-      if (!formData.formContent) {
-        setNotif({
-          message: "Vui lòng nhập nội dung tư vấn",
-          type: "error"
-        });
-        return false;
-      }
+    // Bắt buộc kiểm tra thông tin form tư vấn
+    // Kiểm tra tiêu đề form
+    if (!formData.formTitle) {
+      setNotif({
+        message: "Vui lòng nhập tiêu đề form tư vấn",
+        type: "error"
+      });
+      return false;
+    }
+    
+    // Kiểm tra nội dung form
+    if (!formData.formContent) {
+      setNotif({
+        message: "Vui lòng nhập nội dung tư vấn",
+        type: "error"
+      });
+      return false;
     }
     
     return true;
@@ -836,7 +835,8 @@ const ConsultSchedules = () => {
       formTitle: "",
       formContent: "",
       sendNotification: true,
-      showFormSection: false
+      showFormSection: true, // Luôn hiển thị form tư vấn
+      createForm: true // Luôn tạo form tư vấn theo mặc định
     });
     
     // Reset danh sách học sinh đã lọc
@@ -923,30 +923,28 @@ const ConsultSchedules = () => {
       const response = await API_SERVICE.consultationScheduleAPI.create(scheduleData);
       console.log("API response:", response);
       
-      // Nếu người dùng muốn tạo form tư vấn và có parentId
-      if (formData.createForm && parentId) {
-        try {
-          // Lấy ID lịch tư vấn vừa tạo
-          const scheduleId = response.consultationScheduleId || response.id;
-          
-          // Chuẩn bị dữ liệu form
-          const formData = {
-            consultationScheduleId: scheduleId,
-            title: "Form tư vấn: " + new Date(consultDateTime).toLocaleDateString('vi-VN'),
-            content: "Nội dung tư vấn sẽ được cập nhật sau.",
-            status: 0, // Pending
-            nurseId: parseInt(nurseId),
-            studentId: parseInt(studentId),
-            parentId: parseInt(parentId)
-          };
-        
+      // Lấy ID lịch tư vấn vừa tạo
+      const scheduleId = response.consultationScheduleId || response.id;
+      
+      // Luôn tạo form tư vấn sau khi tạo lịch tư vấn thành công
+      try {
+        // Chuẩn bị dữ liệu form
+        const consultationFormData = {
+          consultationScheduleId: scheduleId,
+          parentId: parentId ? parseInt(parentId) : null,
+          title: formData.formTitle || "Form tư vấn: " + new Date(consultDateTime).toLocaleDateString('vi-VN'),
+          content: formData.formContent || "Nội dung tư vấn sẽ được cập nhật sau.",
+          status: 0, // Pending
+          nurseId: parseInt(nurseId),
+          studentId: parseInt(studentId)
+        };
+      
         // Gọi API để tạo form tư vấn
-          const formResponse = await API_SERVICE.consultationFormAPI.create(formData);
+        const formResponse = await API_SERVICE.consultationFormAPI.create(consultationFormData);
         console.log("Form API response:", formResponse);
-        } catch (formError) {
-          console.error("Error creating consultation form:", formError);
-          // Không throw lỗi ở đây vì lịch tư vấn đã được tạo thành công
-        }
+      } catch (formError) {
+        console.error("Error creating consultation form:", formError);
+        // Không throw lỗi ở đây vì lịch tư vấn đã được tạo thành công
       }
       
       // Gửi thông báo đến phụ huynh nếu có thông tin phụ huynh
@@ -2143,51 +2141,38 @@ const ConsultSchedules = () => {
                 </div>
               </div>
               
-              {/* Nút hiển thị/ẩn form tư vấn */}
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <button 
-                  type="button" 
-                  className="btn btn-outline-primary" 
-                  onClick={() => setFormData({...formData, showFormSection: !formData.showFormSection})}
-                >
-                  {formData.showFormSection ? "Ẩn form tư vấn" : "Hiển thị form tư vấn"}
-                </button>
-              </div>
-              
-              {/* Thông tin form tư vấn - hiển thị khi nhấn nút */}
-              {formData.showFormSection && (
-                <div className="border rounded p-3 mb-3 bg-light">
-                  <h5 className="mb-3">Thông tin form tư vấn</h5>
-                  
-                  <div className="mb-3">
-                    <label htmlFor="formTitle" className="form-label">Tiêu đề form tư vấn <span className="text-danger">*</span></label>
-                    <input
-                      type="text"
-                      className="form-control"
-                      id="formTitle"
-                      name="formTitle"
-                      value={formData.formTitle || ""}
-                      onChange={handleInputChange}
-                      required={formData.showFormSection}
-                      placeholder="Nhập tiêu đề form tư vấn"
-                    />
-                  </div>
-                  
-                  <div className="mb-3">
-                    <label htmlFor="formContent" className="form-label">Nội dung tư vấn <span className="text-danger">*</span></label>
-                    <textarea
-                      className="form-control"
-                      id="formContent"
-                      name="formContent"
-                      value={formData.formContent || ""}
-                      onChange={handleInputChange}
-                      rows={5}
-                      required={formData.showFormSection}
-                      placeholder="Nhập nội dung chi tiết về buổi tư vấn"
-                    ></textarea>
-                  </div>
+              {/* Thông tin form tư vấn - luôn hiển thị */}
+              <div className="border rounded p-3 mb-3 bg-light">
+                <h5 className="mb-3">Thông tin form tư vấn</h5>
+                
+                <div className="mb-3">
+                  <label htmlFor="formTitle" className="form-label">Tiêu đề form tư vấn <span className="text-danger">*</span></label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    id="formTitle"
+                    name="formTitle"
+                    value={formData.formTitle || ""}
+                    onChange={handleInputChange}
+                    required
+                    placeholder="Nhập tiêu đề form tư vấn"
+                  />
                 </div>
-              )}
+                
+                <div className="mb-3">
+                  <label htmlFor="formContent" className="form-label">Nội dung tư vấn <span className="text-danger">*</span></label>
+                  <textarea
+                    className="form-control"
+                    id="formContent"
+                    name="formContent"
+                    value={formData.formContent || ""}
+                    onChange={handleInputChange}
+                    rows={5}
+                    required
+                    placeholder="Nhập nội dung chi tiết về buổi tư vấn"
+                  ></textarea>
+                </div>
+              </div>
               
               <div className="modal-footer">
                 <button type="submit" className="btn btn-primary" disabled={loading}>
@@ -2521,19 +2506,7 @@ const ConsultSchedules = () => {
                 </div>
               </div>
               
-              {/* Nút hiển thị/ẩn form tư vấn */}
-              <div className="d-flex justify-content-between align-items-center mb-3">
-                <button 
-                  type="button" 
-                  className="btn btn-outline-primary" 
-                  onClick={() => setFormData({...formData, showFormSection: !formData.showFormSection})}
-                >
-                  {formData.showFormSection ? "Ẩn form tư vấn" : "Hiển thị form tư vấn"}
-                </button>
-              </div>
-              
-              {/* Thông tin form tư vấn - hiển thị khi nhấn nút */}
-              {formData.showFormSection && (
+              {/* Thông tin form tư vấn */}
                 <div className="border rounded p-3 mb-3 bg-light">
                   <h5 className="mb-3">Thông tin form tư vấn</h5>
                   
@@ -2594,7 +2567,6 @@ const ConsultSchedules = () => {
                     ></textarea>
                   </div>
                 </div>
-              )}
               
               <div className="modal-footer">
                 <button type="submit" className="btn btn-primary" disabled={loading}>
