@@ -5,7 +5,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5273
 const API = {
     BLOG_LIST: `${API_BASE_URL}/blog/search`,
     BLOG_CREATE: `${API_BASE_URL}/blog/add`,
-    BLOG_UPDATE: (id) => `${API_BASE_URL}/blog/${id}`,
+    BLOG_UPDATE: `${API_BASE_URL}/blog/update`,
     BLOG_DETAIL: (id) => `${API_BASE_URL}/blog/${id}`,
     BLOG_DELETE: (id) => `${API_BASE_URL}/blog/${id}`,
     LOGIN_MANAGER: `${API_BASE_URL}/manager/authorize`,
@@ -23,7 +23,7 @@ const API = {
     PARENT_LIST: `${API_BASE_URL}/parent/search`,
     PARENT_SEARCH: `${API_BASE_URL}/parent/search`,
     PARENT_CREATE: `${API_BASE_URL}/parent/add`,
-    PARENT_UPDATE: (id) => `${API_BASE_URL}/parent/${id}`,
+    PARENT_UPDATE: `${API_BASE_URL}/parent/update`,
     PARENT_DELETE: (id) => `${API_BASE_URL}/parent/${id}`,
     PARENT_GET_BY_ID: (id) => `${API_BASE_URL}/parent/${id}`,
     NURSE_LIST: `${API_BASE_URL}/nurse/search`,
@@ -83,6 +83,7 @@ const API = {
     CONSULTATION_FORM_BY_STUDENT: (studentId) => `${API_BASE_URL}/consultationForm/getByStudent?studentId=${studentId}`,
     CONSULTATION_FORM_DETAIL: (endpoint, id) => `${API_BASE_URL}/consultationForm/${endpoint}/${id}`,
     CONSULTATION_FORM_BY_PARENT: (parentId) => `${API_BASE_URL}/consultationForm/getByParent?parentId=${parentId}`,
+    CONSULTATION_FORM_SEARCH: `${API_BASE_URL}/consultationForm/search`,
     CONSULTATION_FORM_ADD: `${API_BASE_URL}/consultationForm/add`,
     CONSULTATION_FORM_UPDATE: `${API_BASE_URL}/consultationForm/update`,
     CONSULTATION_FORM_GET: (id) => `${API_BASE_URL}/consultationForm/${id}`,
@@ -92,13 +93,13 @@ const API = {
     CONSULTATION_SCHEDULE_UPDATE: `${API_BASE_URL}/consultationSchedule/update`,
     CONSULTATION_SCHEDULE_DELETE: (id) => `${API_BASE_URL}/consultationSchedule/${id}`,
     HEALTH_CHECK_SCHEDULE_BY_FORM: (formId) => `${API_BASE_URL}/healthCheckSchedule/getByForm${formId}`,
-    VACCINATION_SCHEDULE_LIST: `${API_BASE_URL}/vaccinationschedule/search`,
-    VACCINATION_SCHEDULE_CREATE: `${API_BASE_URL}/vaccinationschedule/create`,
-    VACCINATION_SCHEDULE_UPDATE: (id) => `${API_BASE_URL}/vaccinationschedule/${id}`,
-    VACCINATION_SCHEDULE_DETAIL: (id) => `${API_BASE_URL}/vaccinationschedule/${id}`,
-    VACCINATION_SCHEDULE_DELETE: (id) => `${API_BASE_URL}/vaccinationschedule/${id}`,
-    VACCINATION_SCHEDULE_BY_FORM: (formId) => `${API_BASE_URL}/vaccinationschedule/getByForm${formId}`,
-    VACCINATION_SCHEDULE: (scheduleId) => `${API_BASE_URL}/vaccinationschedule/${scheduleId}`,
+    VACCINATION_SCHEDULE_LIST: `${API_BASE_URL}/vaccinationSchedule/search`,
+    VACCINATION_SCHEDULE_CREATE: `${API_BASE_URL}/vaccinationSchedule/create`,
+    VACCINATION_SCHEDULE_UPDATE: `${API_BASE_URL}/vaccinationSchedule/update`,
+    VACCINATION_SCHEDULE_DETAIL: (id) => `${API_BASE_URL}/vaccinationSchedule/${id}`,
+    VACCINATION_SCHEDULE_DELETE: (id) => `${API_BASE_URL}/vaccinationSchedule/${id}`,
+    VACCINATION_SCHEDULE_BY_FORM: (formId) => `${API_BASE_URL}/vaccinationSchedule/getByForm${formId}`,
+    VACCINATION_SCHEDULE: (scheduleId) => `${API_BASE_URL}/vaccinationSchedule/${scheduleId}`,
     HEALTH_CHECK_RESULT_LIST: `${API_BASE_URL}/healthCheckResult/search`,
     HEALTH_CHECK_RESULT_ADD: `${API_BASE_URL}/healthCheckResult/add`,
     HEALTH_CHECK_RESULT_UPDATE: `${API_BASE_URL}/healthCheckResult/update`,
@@ -170,9 +171,10 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data),
         }),
-        update: (id, formData) => callApi(API.BLOG_UPDATE(id), {
+        update: (formData) => callApi(API.BLOG_UPDATE, {
             method: "PUT",
-            body: formData, // Don't set Content-Type for FormData
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData), // Don't set Content-Type for FormData
         }),
         uploadImage: (formData) => callApi(API.BLOG_UPLOAD_IMAGE, {
             method: "POST",
@@ -255,7 +257,7 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        update: (id, data) => callApi(API.PARENT_UPDATE(id), {
+        update: (id, data) => callApi(API.PARENT_UPDATE, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
@@ -443,7 +445,7 @@ export const API_SERVICE = {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
         }),
-        update: (id, data) => callApi(API.VACCINATION_SCHEDULE_UPDATE(id), {
+        update: (data) => callApi(API.VACCINATION_SCHEDULE_UPDATE, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(data)
@@ -523,6 +525,11 @@ export const API_SERVICE = {
         getByStudent: (studentId) => callApi(API.CONSULTATION_FORM_BY_STUDENT(studentId)),
         getDetail: (endpoint, id) => callApi(API.CONSULTATION_FORM_DETAIL(endpoint, id)),
         getByParent: (parentId) => callApi(API.CONSULTATION_FORM_BY_PARENT(parentId)),
+        search: (keyword) => callApi(API.CONSULTATION_FORM_SEARCH, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(keyword)
+        }),
         accept: (id) => callApi(API.CONSULTATION_FORM_ACCEPT(id), { method: 'POST' }),
         reject: (id) => callApi(API.CONSULTATION_FORM_REJECT(id), { method: 'POST' }),
         create: (data) => callApi(API.CONSULTATION_FORM_ADD, {

@@ -123,7 +123,6 @@ const ManagerHealthCheckStudents = () => {
       <div className="admin-table-container">
         <TableWithPaging
           columns={[
-            { title: "STT", dataIndex: "stt", render: (_, __, idx) => (page - 1) * PAGE_SIZE + idx + 1 },
             { title: "Họ tên", dataIndex: "fullName", render: (val, row) => val || (row.firstName + ' ' + row.lastName) },
             { title: "Mã học sinh", dataIndex: "studentId" },
             { title: "Lớp", dataIndex: "className" },

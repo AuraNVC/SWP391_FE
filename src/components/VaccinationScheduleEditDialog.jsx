@@ -1,11 +1,13 @@
 import React, { useState } from "react";
 import { API_SERVICE } from "../services/api";
 import "../styles/HealthCheckScheduleDialog.css";
+import { formatDateForInput, formatFormType } from "../services/utils";
 
 const VaccinationScheduleEditDialog = ({ open, onClose, data, onUpdated }) => {
   const [form, setForm] = useState(data);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
 
   if (!open || !data) return null;
 
@@ -16,7 +18,7 @@ const VaccinationScheduleEditDialog = ({ open, onClose, data, onUpdated }) => {
     setLoading(true);
     setErrorMsg("");
     try {
-      await API_SERVICE.vaccinationScheduleAPI.update(data.vaccinationScheduleId, {
+      await API_SERVICE.vaccinationScheduleAPI.update({
         vaccinationScheduleId: data.vaccinationScheduleId,
         name: form.name,
         scheduleDate: form.scheduleDate,
@@ -56,7 +58,7 @@ const VaccinationScheduleEditDialog = ({ open, onClose, data, onUpdated }) => {
             </div>
             <div className="info-item">
               <label>Ngày tiêm:</label>
-              <input type="datetime-local" name="scheduleDate" value={form.scheduleDate} onChange={handleChange} required className="form-control" />
+              <input type="datetime-local" name="scheduleDate" value={formatDateForInput(form.scheduleDate)} onChange={handleChange} required className="form-control" />
             </div>
             <div className="info-item">
               <label>Địa điểm:</label>

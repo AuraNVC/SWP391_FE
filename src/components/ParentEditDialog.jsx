@@ -6,6 +6,7 @@ import { useNotification } from "../contexts/NotificationContext";
 
 const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
   const [form, setForm] = useState({
+    parentId: "",
     fullName: "",
     email: "",
     phoneNumber: "",
@@ -17,7 +18,9 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
 
   useEffect(() => {
     if (parent) {
+      console.log(parent.parentId)
       setForm({
+        parentId: parent.parentId || "",
         fullName: parent.fullName || "",
         email: parent.email || "",
         phoneNumber: parent.phoneNumber || "",
@@ -36,6 +39,7 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
     setLoading(true);
     try {
       const payload = {
+        parentId: form.parentId,
         fullName: form.fullName,
         email: form.email,
         phoneNumber: form.phoneNumber,
@@ -71,7 +75,7 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
         
         <form className="parent-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Họ và tên<span className="required">*</span></label>
+            <label>Họ và tên<span className="required"></span></label>
             <input
               type="text"
               name="fullName"
@@ -82,7 +86,7 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Email<span className="required">*</span></label>
+            <label>Email<span className="required"></span></label>
             <input
               type="email"
               name="email"
@@ -93,7 +97,7 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Số điện thoại<span className="required">*</span></label>
+            <label>Số điện thoại<span className="required"></span></label>
             <input
               type="text"
               name="phoneNumber"
@@ -102,7 +106,7 @@ const ParentEditDialog = ({ parent, onClose, onSuccess }) => {
               required
               className="form-control"
               inputMode="numeric"
-              pattern="[0-9]*"
+              pattern="[0-9]"
               onInput={e => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
             />
           </div>

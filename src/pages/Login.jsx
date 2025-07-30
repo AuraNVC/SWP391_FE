@@ -119,7 +119,6 @@ export default function Login({ setNotif }) {
         token: data.user.accessToken,
         id: data.user.id,
       });
-      setNotif({ message: "Đăng nhập thành công!", type: "success" });
       navigate(redirectPath);
     } catch {
       setUsernameError("Tên đăng nhập hoặc mật khẩu không đúng.");

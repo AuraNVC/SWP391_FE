@@ -25,7 +25,6 @@ export function NotificationProvider({ children }) {
 
     // Set the notification
     setNotifState(notification);
-
     // If notification is not null, set a timer with default duration of 3000ms
     // unless autoDismiss is explicitly set to false
     if (notification && notification.autoDismiss !== false) {

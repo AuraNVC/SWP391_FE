@@ -82,7 +82,7 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
         
         <form className="student-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Họ và tên<span className="required">*</span></label>
+            <label>Họ và tên<span className="required"></span></label>
             <input
               type="text"
               name="fullName"
@@ -93,7 +93,7 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="dateOfBirth">Ngày tháng năm sinh<span className="required">*</span></label>
+            <label htmlFor="dateOfBirth">Ngày tháng năm sinh<span className="required"></span></label>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Ngày sinh"
@@ -110,7 +110,7 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
             </LocalizationProvider>
           </div>
           <div className="form-group">
-            <label>Lớp<span className="required">*</span></label>
+            <label>Lớp<span className="required"></span></label>
             <input
               type="text"
               name="className"
@@ -122,7 +122,7 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Giới tính<span className="required">*</span></label>
+            <label>Giới tính<span className="required"></span></label>
             <select
               name="gender"
               value={form.gender}
@@ -136,7 +136,7 @@ const StudentEditDialog = ({ student, onClose, onSuccess }) => {
             </select>
           </div>
           <div className="form-group">
-            <label>Tên đăng nhập<span className="required">*</span></label>
+            <label>Mã số học sinh<span className="required"></span></label>
             <input
               type="text"
               name="studentNumber"

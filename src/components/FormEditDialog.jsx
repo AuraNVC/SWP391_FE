@@ -71,7 +71,7 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
         
         <form className="form-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Tiêu đề<span className="required">*</span></label>
+            <label>Tiêu đề<span className="required"></span></label>
             <input
               type="text"
               name="title"
@@ -83,7 +83,7 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Lớp<span className="required">*</span></label>
+            <label>Lớp<span className="required"></span></label>
             <input
               type="text"
               name="className"
@@ -96,7 +96,7 @@ const FormEditDialog = ({ form, onClose, onSuccess }) => {
           </div>
 
           <div className="form-group">
-            <label>Nội dung<span className="required">*</span></label>
+            <label>Nội dung<span className="required"></span></label>
             <textarea
               name="content"
               value={formData.content}

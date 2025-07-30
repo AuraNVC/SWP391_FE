@@ -196,8 +196,8 @@ const ParentHealthProfile = () => {
     // Hide health check and medical events when viewing vaccination results
     setSelectedStudentForResults(null);
     setHealthResults([]);
-    setSelectedStudentForMedicalEvents(null);
-    setMedicalEvents([]);
+    setSelectedStudentForVaccination(null);
+    setVaccinationResults([]);
     if (!profile || !profile.healthProfileId) {
       setNotif({ message: 'Không tìm thấy hồ sơ sức khỏe cho học sinh này.', type: 'error' });
       return;
@@ -300,7 +300,6 @@ const ParentHealthProfile = () => {
         }
       }));
       setShowModal(false);
-      setNotif({ message: 'Cập nhật thành công!', type: 'success' });
     } catch (err) {
       setNotif({ message: err.message, type: 'error' });
     }
