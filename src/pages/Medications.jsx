@@ -420,7 +420,6 @@ const Medications = () => {
 
   const fetchMedications = async (keyword = "") => {
     setLoading(true);
-    
     try {
       const params = {
         keyword: keyword,
@@ -437,96 +436,124 @@ const Medications = () => {
       });
       
       // Xử lý dữ liệu để hiển thị
-      const processedMedications = await Promise.all(
-        prescriptionsResponse.map(async (prescription) => {
-          // Lấy thông tin thuốc từ đơn thuốc
-          let medicationName = prescription.parentNote || "Không có tên thuốc";
-          let studentName = "Không xác định";
-          let dosage = "Không có";
-          let quantity = null;
-          let remainingQuantity = null;
-          let medicationId = null;
-          let studentId = null;
+      const allMedicationsPromises = [];
+      
+      // Lấy danh sách thuốc cho mỗi đơn thuốc
+      for (const prescription of prescriptionsResponse) {
+        try {
+          const medicationsResponse = await API_SERVICE.medicationAPI.getByPrescription(prescription.prescriptionId);
+          console.log(`Medications for prescription ${prescription.prescriptionId}:`, medicationsResponse);
           
-          try {
-            // Lấy danh sách thuốc theo đơn thuốc
-            const medicationsResponse = await API_SERVICE.medicationAPI.getByPrescription(prescription.prescriptionId);
-            console.log(`Medications for prescription ${prescription.prescriptionId}:`, medicationsResponse);
-            
-            // Nếu có thuốc, lấy tên thuốc đầu tiên
-            if (medicationsResponse && medicationsResponse.length > 0) {
-              const medication = medicationsResponse[0];
-              medicationName = medication.medicationName || prescription.parentNote || "Không có tên thuốc";
-              dosage = medication.dosage || "Không có";
-              quantity = medication.quantity;
-              remainingQuantity = medication.remainingQuantity;
-              medicationId = medication.medicationId;
-              studentId = medication.studentId;
-              
-              console.log(`Medication details - ID: ${medicationId}, Name: ${medicationName}, Remaining: ${remainingQuantity}`);
-              
-              // Lấy thông tin học sinh từ thuốc
-              if (medication.studentId) {
-                try {
-                  const studentResponse = await fetch(`${API_BASE_URL}/student/${medication.studentId}`);
-                  if (studentResponse.ok) {
-                    const studentData = await studentResponse.json();
-                    studentName = studentData.fullName || "Không xác định";
-                  }
-                } catch (studentError) {
-                  console.error("Error fetching student:", studentError);
-                }
-              }
-            }
-          } catch (medError) {
-            console.error("Error fetching medications:", medError);
+          // Lưu trữ thông tin thuốc và đơn thuốc
+          if (medicationsResponse && medicationsResponse.length > 0) {
+            // Nếu có thuốc, lưu tất cả thuốc
+            allMedicationsPromises.push({
+              prescription,
+              medications: medicationsResponse
+            });
+          } else {
+            // Nếu không có thuốc, vẫn lưu đơn thuốc với mảng thuốc rỗng
+            allMedicationsPromises.push({
+              prescription,
+              medications: []
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching medications for prescription ${prescription.prescriptionId}:`, error);
+          // Vẫn lưu đơn thuốc với mảng thuốc rỗng nếu có lỗi
+          allMedicationsPromises.push({
+            prescription,
+            medications: []
+          });
+        }
       }
       
-          // Lấy thông tin phụ huynh
-          let parentName = "Không xác định";
-          if (prescription.parentId) {
-            try {
-              const parentResponse = await fetch(`${API_BASE_URL}/parent/${prescription.parentId}`);
-              if (parentResponse.ok) {
-                const parentData = await parentResponse.json();
-                parentName = parentData.fullName || "Không xác định";
-              }
-            } catch (parentError) {
-              console.error("Error fetching parent:", parentError);
+      // Xử lý tất cả dữ liệu thuốc và đơn thuốc
+      const processedMedications = [];
+      
+      for (const { prescription, medications } of allMedicationsPromises) {
+        // Lấy thông tin phụ huynh
+        let parentName = "Không xác định";
+        if (prescription.parentId) {
+          try {
+            const parentResponse = await fetch(`${API_BASE_URL}/parent/${prescription.parentId}`);
+            if (parentResponse.ok) {
+              const parentData = await parentResponse.json();
+              parentName = parentData.fullName || "Không xác định";
             }
+          } catch (parentError) {
+            console.error("Error fetching parent:", parentError);
           }
-          
-          // Xử lý ngày kê đơn
-          let submittedDate = prescription.submittedDate;
-          if (submittedDate) {
-            // Nếu là string dạng "yyyy-MM-dd", chuyển đổi thành đối tượng Date
-            if (typeof submittedDate === 'string' && submittedDate.includes('-')) {
-              submittedDate = new Date(submittedDate);
-            } 
-            // Nếu là đối tượng DateOnly từ API, chuyển đổi thành đối tượng Date
-            else if (typeof submittedDate === 'object' && submittedDate.year && submittedDate.month && submittedDate.day) {
-              submittedDate = new Date(submittedDate.year, submittedDate.month - 1, submittedDate.day);
-            }
+        }
+        
+        // Xử lý ngày kê đơn
+        let submittedDate = prescription.submittedDate;
+        if (submittedDate) {
+          // Nếu là string dạng "yyyy-MM-dd", chuyển đổi thành đối tượng Date
+          if (typeof submittedDate === 'string' && submittedDate.includes('-')) {
+            submittedDate = new Date(submittedDate);
+          } 
+          // Nếu là đối tượng DateOnly từ API, chuyển đổi thành đối tượng Date
+          else if (typeof submittedDate === 'object' && submittedDate.year && submittedDate.month && submittedDate.day) {
+            submittedDate = new Date(submittedDate.year, submittedDate.month - 1, submittedDate.day);
           }
-          
-          // Trả về dữ liệu đã xử lý
-          return {
+        }
+        
+        // Nếu không có thuốc nào, tạo một bản ghi chung cho đơn thuốc
+        if (medications.length === 0) {
+          processedMedications.push({
             ...prescription,
-            medicationName,
-            studentName,
+            medicationName: prescription.parentNote || "Không có tên thuốc",
+            studentName: "Không xác định",
             parentName,
             createdDate: submittedDate,
-            submittedDate: submittedDate,
-            dosage,
-            quantity,
-            remainingQuantity,
-            medicationId,
-            studentId,
+            submittedDate,
+            dosage: "Không có",
+            quantity: null,
+            remainingQuantity: null,
+            medicationId: null,
+            studentId: null,
             schedule: prescription.schedule || "Không có",
-            status: prescription.status || 1 // Mặc định là Pending (1) nếu không có thông tin
-          };
-        })
-      );
+            status: prescription.status || 1, // Mặc định là Pending (1) nếu không có thông tin
+            allMedications: [] // Không có thuốc nào
+          });
+        } else {
+          // Xử lý từng thuốc trong đơn thuốc
+          for (const medication of medications) {
+            // Lấy thông tin học sinh từ thuốc
+            let studentName = "Không xác định";
+            if (medication.studentId) {
+              try {
+                const studentResponse = await fetch(`${API_BASE_URL}/student/${medication.studentId}`);
+                if (studentResponse.ok) {
+                  const studentData = await studentResponse.json();
+                  studentName = studentData.fullName || "Không xác định";
+                }
+              } catch (studentError) {
+                console.error("Error fetching student:", studentError);
+              }
+            }
+            
+            // Thêm thông tin thuốc vào danh sách
+            processedMedications.push({
+              ...prescription,
+              medicationName: medication.medicationName || prescription.parentNote || "Không có tên thuốc",
+              studentName,
+              parentName,
+              createdDate: submittedDate,
+              submittedDate,
+              dosage: medication.dosage || "Không có",
+              quantity: medication.quantity,
+              remainingQuantity: medication.remainingQuantity,
+              medicationId: medication.medicationId,
+              studentId: medication.studentId,
+              schedule: medication.schedule || prescription.schedule || "Không có",
+              status: prescription.status || 1, // Mặc định là Pending (1) nếu không có thông tin
+              allMedications: medications // Lưu tất cả thuốc vào mỗi bản ghi
+            });
+          }
+        }
+      }
       
       console.log("Processed medications:", processedMedications);
       setMedications(processedMedications);
@@ -1035,6 +1062,8 @@ const Medications = () => {
                   color: '#333',
                   fontSize: '1.1rem'
                 }}>Thông tin thuốc</h3>
+                
+                {/* Hiển thị thuốc hiện tại */}
                 <div className="info-grid">
                   <div className="info-item">
                     <strong>Tên thuốc:</strong> {selectedMedication.medicationName || "Không có"}
@@ -1054,32 +1083,73 @@ const Medications = () => {
                   <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
                     <strong>Ghi chú phụ huynh:</strong> {selectedMedication.parentNote || "Không có"}
                 </div>
-                  {selectedMedication.prescriptionFile && (
-                    <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
-                      <strong>Tệp đơn thuốc:</strong>
-                      <div>
-                        {console.log("Prescription file path:", selectedMedication.prescriptionFile)}
-                        {console.log("Full URL:", getPrescriptionFileUrl(selectedMedication.prescriptionFile))}
-                        <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-                          <a 
-                            onClick={handleViewPrescriptionImage}
-                            style={{ 
-                              color: '#fff', 
-                              backgroundColor: '#007bff', 
-                              padding: '6px 12px', 
-                              borderRadius: '4px',
-                              textDecoration: 'none',
-                              display: 'inline-block',
-                              cursor: 'pointer'
-                            }}
-                        >
-                          Xem đơn thuốc
-                        </a>
-                        </div>
+                </div>
+                
+                {/* Hiển thị tất cả các thuốc khác trong đơn thuốc */}
+                {selectedMedication.allMedications && selectedMedication.allMedications.length > 1 && (
+                  <div style={{ marginTop: '20px' }}>
+                    <h4 style={{ 
+                      borderBottom: '1px solid #dee2e6',
+                      paddingBottom: '8px',
+                      margin: '16px 0',
+                      color: '#555',
+                      fontSize: '1rem'
+                    }}>Tất cả thuốc trong đơn ({selectedMedication.allMedications.length})</h4>
+                    
+                    <div className="table-responsive">
+                      <table className="table table-striped table-bordered">
+                        <thead>
+                          <tr>
+                            <th>Tên thuốc</th>
+                            <th>Liều lượng</th>
+                            <th>Lịch uống</th>
+                            <th>Số lượng</th>
+                            <th>Còn lại</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedMedication.allMedications.map((med, index) => (
+                            <tr key={med.medicationId || index} 
+                                style={med.medicationId === selectedMedication.medicationId ? 
+                                      { backgroundColor: '#e2f0ff' } : {}}>
+                              <td>{med.medicationName || "Không có"}</td>
+                              <td>{med.dosage || "Không có"}</td>
+                              <td>{med.schedule || "Không có"}</td>
+                              <td>{med.quantity || "N/A"}</td>
+                              <td>{med.remainingQuantity !== undefined ? med.remainingQuantity : "N/A"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+                
+                {selectedMedication.prescriptionFile && (
+                  <div className="info-item" style={{ gridColumn: "1 / span 2", marginTop: '20px' }}>
+                    <strong>Tệp đơn thuốc:</strong>
+                    <div>
+                      {console.log("Prescription file path:", selectedMedication.prescriptionFile)}
+                      {console.log("Full URL:", getPrescriptionFileUrl(selectedMedication.prescriptionFile))}
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+                        <a 
+                          onClick={handleViewPrescriptionImage}
+                          style={{ 
+                            color: '#fff', 
+                            backgroundColor: '#007bff', 
+                            padding: '6px 12px', 
+                            borderRadius: '4px',
+                            textDecoration: 'none',
+                            display: 'inline-block',
+                            cursor: 'pointer'
+                          }}
+                      >
+                        Xem đơn thuốc
+                      </a>
+                      </div>
                 </div>
                 </div>
-                  )}
-                </div>
+                )}
               </div>
 
               {selectedMedication.medicationId && selectedMedication.quantity > 0 && (
