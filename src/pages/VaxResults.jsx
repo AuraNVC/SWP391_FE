@@ -10,12 +10,22 @@ import "../styles/VaxResults.css";
 // Component riêng để hiển thị tên học sinh
 const StudentNameCell = ({ studentId, initialName, healthProfileId }) => {
   const [studentName, setStudentName] = useState(initialName || `Học sinh ID: ${studentId || "N/A"}`);
-  const [loading, setLoading] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
+    // Nếu đã có tên hợp lệ, không cần gọi API
+    if (initialName && !initialName.includes("ID:") && !initialName.includes("Học sinh ID")) {
+      setStudentName(initialName);
+      setDisplayName(`${initialName} (ID: ${studentId || "N/A"})`);
+      setHasLoaded(true);
+      return;
+    }
+
+    // Nếu đã load dữ liệu rồi, không cần load lại
+    if (hasLoaded) return;
+
     const fetchName = async () => {
-      setLoading(true);
       try {
         // Nếu có studentId, gọi API để lấy thông tin học sinh
         if (studentId) {
@@ -26,10 +36,9 @@ const StudentNameCell = ({ studentId, initialName, healthProfileId }) => {
                         response.name || 
                         `Học sinh ID: ${studentId}`;
             
-            console.log(`Fetched student name for ID ${studentId}: ${name}`);
             setStudentName(name);
             setDisplayName(`${name} (ID: ${studentId})`);
-            setLoading(false);
+            setHasLoaded(true);
             return;
           }
         }
@@ -45,33 +54,30 @@ const StudentNameCell = ({ studentId, initialName, healthProfileId }) => {
                           studentResponse.name || 
                           `Học sinh ID: ${profileResponse.studentId}`;
               
-              console.log(`Fetched student name from health profile: ${name}`);
               setStudentName(name);
               setDisplayName(`${name} (ID: ${profileResponse.studentId})`);
-              setLoading(false);
+              setHasLoaded(true);
               return;
             }
           }
         }
       } catch (error) {
-        console.error(`Error fetching student name:`, error);
         // Nếu có lỗi nhưng có initialName hợp lệ, sử dụng initialName
         if (initialName && !initialName.includes("ID:") && !initialName.includes("Học sinh ID")) {
           setStudentName(initialName);
           setDisplayName(`${initialName} (ID: ${studentId || "N/A"})`);
+          setHasLoaded(true);
         }
-      } finally {
-        setLoading(false);
       }
     };
     
-    // Luôn gọi API để lấy tên học sinh từ ID
+    // Gọi API để lấy tên học sinh từ ID
     fetchName();
-  }, [studentId, healthProfileId, initialName]);
+  }, [studentId, healthProfileId, initialName, hasLoaded]);
 
   return (
     <span>
-      {loading ? "Đang tải..." : (displayName || studentName)}
+      {displayName || studentName}
     </span>
   );
 };
@@ -79,12 +85,22 @@ const StudentNameCell = ({ studentId, initialName, healthProfileId }) => {
 // Component riêng để hiển thị tên y tá
 const NurseNameCell = ({ nurseId, initialName }) => {
   const [nurseName, setNurseName] = useState(initialName || `Y tá ID: ${nurseId || "N/A"}`);
-  const [loading, setLoading] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
+    // Nếu đã có tên hợp lệ, không cần gọi API
+    if (initialName && !initialName.includes("ID:") && !initialName.includes("Y tá ID")) {
+      setNurseName(initialName);
+      setDisplayName(`${initialName} (ID: ${nurseId || "N/A"})`);
+      setHasLoaded(true);
+      return;
+    }
+
+    // Nếu đã load dữ liệu rồi, không cần load lại
+    if (hasLoaded) return;
+
     const fetchName = async () => {
-      setLoading(true);
       try {
         // Nếu có nurseId, gọi API để lấy thông tin y tá
         if (nurseId) {
@@ -101,33 +117,30 @@ const NurseNameCell = ({ nurseId, initialName }) => {
                           nurse.name || 
                           `Y tá ID: ${nurseId}`;
               
-              console.log(`Fetched nurse name for ID ${nurseId}: ${name}`);
               setNurseName(`${name}`);
               setDisplayName(`${name} (ID: ${nurseId})`);
-              setLoading(false);
+              setHasLoaded(true);
               return;
             }
           }
         }
       } catch (error) {
-        console.error(`Error fetching nurse name:`, error);
         // Nếu có lỗi nhưng có initialName hợp lệ, sử dụng initialName
         if (initialName && !initialName.includes("ID:") && !initialName.includes("Y tá ID")) {
           setNurseName(initialName);
           setDisplayName(`${initialName} (ID: ${nurseId || "N/A"})`);
+          setHasLoaded(true);
         }
-      } finally {
-        setLoading(false);
       }
     };
     
-    // Luôn gọi API để lấy tên y tá từ ID
+    // Gọi API để lấy tên y tá từ ID
     fetchName();
-  }, [nurseId, initialName]);
+  }, [nurseId, initialName, hasLoaded]);
 
   return (
     <span>
-      {loading ? "Đang tải..." : (displayName || nurseName)}
+      {displayName || nurseName}
     </span>
   );
 };
@@ -201,7 +214,7 @@ const VaxResults = () => {
       title: "", 
       dataIndex: "select", 
       key: "select",
-      width: "40px",
+      width: 40,
       render: (_, record) => (
         record.status === "1" || record.status === "Pending" ? (
           <input 
@@ -217,12 +230,14 @@ const VaxResults = () => {
       title: "ID", 
       dataIndex: "vaccinationResultId", 
       key: "resultId",
+      width: 70,
       render: (id) => <span>{id}</span>
     },
     { 
       title: "Học sinh", 
       dataIndex: "studentName", 
       key: "studentName",
+      width: 160,
       render: (name, record) => (
         <span>
           <StudentNameCell 
@@ -237,24 +252,28 @@ const VaxResults = () => {
       title: "Vaccine", 
       dataIndex: "vaccineName", 
       key: "vaccineName",
+      width: 140,
       render: (name) => <span>{name}</span>
     },
     { 
       title: "Mũi số", 
       dataIndex: "doseNumber", 
       key: "doseNumber",
+      width: 80,
       render: (dose) => <span>{dose}</span>
     },
     { 
       title: "Ngày tiêm", 
       dataIndex: "injectionDate", 
       key: "injectionDate",
+      width: 120,
       render: (date) => <span>{date ? formatDate(date) : "N/A"}</span>
     },
     { 
       title: "Trạng thái", 
       dataIndex: "status", 
       key: "status",
+      width: 120,
       render: (status) => {
         const statusInfo = getStatusText(status);
         return <span className={`status-badge ${statusInfo.className}`}>{statusInfo.text}</span>;
@@ -264,6 +283,7 @@ const VaxResults = () => {
       title: "Y tá phụ trách", 
       dataIndex: "nurseName", 
       key: "nurseName",
+      width: 150,
       render: (name, record) => (
         <span>
           <NurseNameCell 
@@ -277,6 +297,7 @@ const VaxResults = () => {
       title: "Phản ứng sau tiêm", 
       dataIndex: "reactionAfterInjection", 
       key: "reactionAfterInjection",
+      width: 180,
       render: (reaction) => <span>{reaction || "Không có"}</span>
     }
   ];
@@ -305,11 +326,9 @@ const VaxResults = () => {
   };
 
   useEffect(() => {
-    console.log("VaxResults component mounted");
     const fetchAllData = async () => {
       setLoading(true);
       try {
-        console.log("Fetching all data...");
         await Promise.all([
           fetchNurses(),
           fetchStudents(),
@@ -371,10 +390,8 @@ const VaxResults = () => {
     fetchAllData();
   }, []);
 
-  // Debug function to check state after it's set
+  // Check for and remove any duplicate results
   useEffect(() => {
-    console.log("Results state updated:", results);
-    
     // Check for and remove any duplicate results that might have slipped through
     const ids = new Set();
     const uniqueResults = results.filter(result => {
@@ -392,19 +409,13 @@ const VaxResults = () => {
       setResults(uniqueResults);
     }
     
-    // Check if studentName is correctly set in each result
-    uniqueResults.forEach((result, index) => {
-      console.log(`Result ${index} studentName:`, result.studentName);
-    });
   }, [results]);
 
   const fetchNurses = async () => {
     try {
-      console.log("Fetching nurses...");
       const response = await API_SERVICE.nurseAPI.getAll({
         keyword: ""
       });
-      console.log("Nurses API response:", response);
       if (Array.isArray(response)) {
         setNurses(response);
         localStorage.setItem('nursesList', JSON.stringify(response));
@@ -428,11 +439,9 @@ const VaxResults = () => {
 
   const fetchStudents = async () => {
     try {
-      console.log("Fetching students...");
       const response = await API_SERVICE.studentAPI.getAll({
         keyword: ""
       });
-      console.log("Students API response:", response);
       if (Array.isArray(response)) {
         setStudents(response);
         localStorage.setItem('studentsList', JSON.stringify(response));
@@ -454,18 +463,13 @@ const VaxResults = () => {
     }
   };
 
-  // Khôi phục lại hàm fetchVaccinationResults và sửa lỗi
+  // Hàm fetchVaccinationResults để lấy kết quả tiêm chủng
   const fetchVaccinationResults = async (keyword = "") => {
-    console.log("Fetching vaccination results with keyword:", keyword);
-    setLoading(true);
-    
     try {
       // API endpoint expects only keyword parameter
       const response = await API_SERVICE.vaccinationResultAPI.getAll({
         keyword: keyword
       });
-      
-      console.log("Raw vaccination results response:", response);
       
       if (!response || !Array.isArray(response)) {
         console.error("Invalid response format:", response);
@@ -646,7 +650,6 @@ const VaxResults = () => {
       // Sort results by ID in ascending order (smallest to largest)
       const sortedResults = enrichedResults.sort((a, b) => a.vaccinationResultId - b.vaccinationResultId);
       
-      console.log("All enriched and sorted results:", sortedResults);
       setResults(sortedResults);
       
       // Reset to first page when results change
@@ -659,12 +662,9 @@ const VaxResults = () => {
 
   const fetchVaccinationSchedules = async () => {
     try {
-      console.log("Fetching vaccination schedules");
       const response = await API_SERVICE.vaccinationScheduleAPI.getAll({
         keyword: "" // Chỉ cần gửi keyword, không cần gửi status
       });
-      
-      console.log("Raw vaccination schedules response:", response);
       
       if (!response || !Array.isArray(response)) {
         console.error("Invalid schedules response format:", response);
@@ -721,7 +721,6 @@ const VaxResults = () => {
       // Sort schedules by ID in ascending order (smallest to largest)
       const sortedSchedules = enrichedSchedules.sort((a, b) => a.vaccinationScheduleId - b.vaccinationScheduleId);
       
-      console.log("Enriched and sorted schedules:", sortedSchedules);
       setSchedules(sortedSchedules);
     } catch (error) {
       console.error("Error fetching vaccination schedules:", error);
@@ -736,7 +735,6 @@ const VaxResults = () => {
   const handleSearch = async () => {
     setSearchLoading(true);
     try {
-      console.log("Tìm kiếm với từ khóa:", searchKeyword);
       
       // Kiểm tra xem searchKeyword có phải là ID không
       const isNumeric = /^\d+$/.test(searchKeyword);
@@ -2051,8 +2049,13 @@ const VaxResults = () => {
   }, [showAddModal]);
 
   return (
-    <div className="admin-main">
+    <div className="admin-main" style={{ position: "relative" }}>
       <h2 className="dashboard-title">Kết quả tiêm chủng</h2>
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+        </div>
+      )}
 
       <div className="admin-header">
         <button className="admin-btn" onClick={() => setShowAddModal(true)}>

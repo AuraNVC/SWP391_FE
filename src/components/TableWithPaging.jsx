@@ -67,9 +67,6 @@ export default function TableWithPaging({
     // Simple validation
     if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
     
-    // Log the page change
-    console.log("TableWithPaging: Changing page to", newPage);
-    
     // Call the onPageChange callback
     onPageChange(newPage);
   };
@@ -77,7 +74,6 @@ export default function TableWithPaging({
   // Ensure page is valid when data changes
   useEffect(() => {
     if (page > totalPages && totalPages > 0) {
-      console.log("TableWithPaging: Page", page, "exceeds total pages", totalPages, ", adjusting to", totalPages);
       onPageChange(totalPages);
     }
   }, [data, page, totalPages, onPageChange]);

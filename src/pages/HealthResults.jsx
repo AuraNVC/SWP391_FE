@@ -28,8 +28,20 @@ const StudentNameCell = ({
   );
   const [loading, setLoading] = useState(false);
   const [displayName, setDisplayName] = useState("");
+  const [hasLoaded, setHasLoaded] = useState(false);
 
   useEffect(() => {
+    // Nếu đã có tên hợp lệ, không cần gọi API
+    if (initialName && !initialName.includes("ID:") && !initialName.includes("Học sinh ID")) {
+      setStudentName(initialName);
+      setDisplayName(initialName);
+      setHasLoaded(true);
+      return;
+    }
+
+    // Nếu đã load dữ liệu rồi, không cần load lại
+    if (hasLoaded) return;
+
     const fetchName = async () => {
       setLoading(true);
       try {
@@ -44,21 +56,17 @@ const StudentNameCell = ({
               response.name ||
               `Học sinh ID: ${studentId}`;
 
-            console.log(`Fetched student name for ID ${studentId}: ${name}`);
             // Lưu tên đầy đủ có ID
             setStudentName(`${name}`);
             // Lưu tên hiển thị (có thể không có ID)
             setDisplayName(name);
-            setLoading(false);
+            setHasLoaded(true);
             return;
           }
         }
 
         // Nếu không có studentId hoặc không tìm được thông tin học sinh, thử dùng healthProfileId
         if (healthProfileId) {
-          console.log(
-            `Trying to get student info from health profile ID: ${healthProfileId}`
-          );
           try {
             // Sử dụng API.HEALTH_PROFILE thay vì healthProfileAPI.getById
             const profileData = await API_SERVICE.healthProfileAPI.get(
@@ -78,15 +86,14 @@ const StudentNameCell = ({
                   }`.trim() ||
                   studentResponse.name;
 
-                console.log(
-                  `Fetched student name from health profile: ${name}`
-                );
                 setStudentName(name);
                 setDisplayName(name);
+                setHasLoaded(true);
               } else if (profileData.student && profileData.student.fullName) {
                 // Nếu health profile có chứa thông tin học sinh
                 setStudentName(profileData.student.fullName);
                 setDisplayName(profileData.student.fullName);
+                setHasLoaded(true);
               }
             } else if (profileData && profileData.student) {
               // Nếu health profile có chứa thông tin học sinh trực tiếp
@@ -99,12 +106,9 @@ const StudentNameCell = ({
                 studentInfo.name;
               setStudentName(name);
               setDisplayName(name);
+              setHasLoaded(true);
             }
           } catch (profileError) {
-            console.error(
-              `Error fetching health profile ${healthProfileId}:`,
-              profileError
-            );
             if (
               initialName &&
               !initialName.includes("ID:") &&
@@ -112,11 +116,11 @@ const StudentNameCell = ({
             ) {
               setStudentName(initialName);
               setDisplayName(initialName);
+              setHasLoaded(true);
             }
           }
         }
       } catch (error) {
-        console.error(`Error fetching student name:`, error);
         // Nếu có lỗi nhưng có initialName hợp lệ, sử dụng initialName
         if (
           initialName &&
@@ -125,17 +129,19 @@ const StudentNameCell = ({
         ) {
           setStudentName(initialName);
           setDisplayName(initialName);
+          setHasLoaded(true);
         }
       } finally {
         setLoading(false);
       }
     };
 
-    // Luôn gọi API để lấy tên học sinh từ ID
+    // Gọi API để lấy tên học sinh từ ID
     fetchName();
-  }, [studentId, initialName, healthProfileId]);
+  }, [studentId, initialName, healthProfileId, hasLoaded]);
 
-  return <span>{loading ? "Đang tải..." : displayName || studentName}</span>;
+  // Trả về tên học sinh hoặc giá trị mặc định nếu đang tải
+  return <span>{displayName || studentName}</span>;
 };
 
 const HealthResults = () => {
@@ -2308,26 +2314,30 @@ const HealthResults = () => {
 
   // Thêm useEffect để tự động làm mới dữ liệu sau khi component đã mount
   useEffect(() => {
+    // Đặt loading state trước khi bắt đầu tải dữ liệu
+    setLoading(true);
+    
     // Tạo một timeout để đảm bảo component đã render xong
-    const refreshTimer = setTimeout(() => {
-      console.log("Auto refreshing data after component mount");
-      // Gọi trực tiếp API thay vì dùng handleRefresh để không hiển thị thông báo
-      const autoRefresh = async () => {
-        setLoading(true);
-        try {
-          await Promise.all([fetchStudents(), fetchNurses()]);
-          await Promise.all([
-            fetchHealthCheckSchedules(),
-            fetchHealthCheckResults(""),
-          ]);
-        } catch (error) {
-          console.error("Error auto refreshing data:", error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      autoRefresh();
-    }, 500);
+    const refreshTimer = setTimeout(async () => {
+      try {
+        // Tải tất cả dữ liệu cần thiết trong một lần duy nhất
+        const [studentsData, nursesData] = await Promise.all([
+          fetchStudents(), 
+          fetchNurses()
+        ]);
+        
+        await Promise.all([
+          fetchHealthCheckSchedules(),
+          fetchHealthCheckResults(""),
+        ]);
+        
+      } catch (error) {
+        console.error("Error loading initial data:", error);
+      } finally {
+        // Đảm bảo loading state được tắt sau khi tải xong
+        setLoading(false);
+      }
+    }, 800);
 
     // Thêm sự kiện click toàn cục để đóng dropdown khi click ra ngoài
     const handleClickOutside = (event) => {
@@ -2353,43 +2363,12 @@ const HealthResults = () => {
     };
   }, [showScheduleDropdown, showStudentDropdown]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Thêm useEffect để tải lại danh sách học sinh trước khi hiển thị kết quả
+  // Khởi tạo danh sách lịch khám đã lọc khi schedules thay đổi
   useEffect(() => {
-    const loadStudentsFirst = async () => {
-      if (students.length === 0) {
-        console.log("Loading students before displaying results");
-        await fetchStudents();
-      }
-    };
-
-    loadStudentsFirst();
-  }, [students.length]);
-
-  // Thêm useEffect để debug thông tin học sinh
-  useEffect(() => {
-    if (students.length > 0) {
-      console.log("Current students in state:", students);
-      console.log(
-        "Student IDs:",
-        students.map((s) => s.studentId)
-      );
+    if (schedules.length > 0) {
+      setFilteredSchedules(schedules);
     }
-  }, [students]);
-
-  // Thêm useEffect để debug thông tin kết quả khám
-  useEffect(() => {
-    if (results.length > 0) {
-      console.log("Current results in state:", results);
-      console.log(
-        "Result student IDs:",
-        results.map((r) => r.studentId)
-      );
-      console.log(
-        "Result student names:",
-        results.map((r) => r.studentName)
-      );
-    }
-  }, [results]);
+  }, [schedules]);
 
   // Khởi tạo danh sách lịch khám đã lọc khi schedules thay đổi
   useEffect(() => {
@@ -2781,8 +2760,13 @@ const HealthResults = () => {
   };
 
   return (
-    <div className="admin-main">
+    <div className="admin-main" style={{ position: "relative" }}>
       <h2 className="dashboard-title">Kết quả khám sức khỏe</h2>
+      {loading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+        </div>
+      )}
       <div className="admin-header">
         <button
           className="admin-btn"
