@@ -217,110 +217,67 @@ const VaxResults = () => {
       title: "ID", 
       dataIndex: "vaccinationResultId", 
       key: "resultId",
-      render: (id) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("vaccinationResultId")}>
-          {id}
-          {sortConfig.key === "vaccinationResultId" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (id) => <span>{id}</span>
     },
     { 
       title: "Học sinh", 
       dataIndex: "studentName", 
       key: "studentName",
-      render: (name, record) => {
-        return (
-          <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
-            <StudentNameCell 
-                 studentId={record.studentId} 
-                 initialName={record.studentName} 
-                 healthProfileId={record.healthProfileId} 
-            />
-            {sortConfig.key === "studentName" && (
-              <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-                {sortConfig.direction === 'asc' ? '▲' : '▼'}
-              </span>
-            )}
-          </span>
-        );
-      }
+      render: (name, record) => (
+        <span>
+          <StudentNameCell 
+            studentId={record.studentId} 
+            initialName={record.studentName} 
+            healthProfileId={record.healthProfileId} 
+          />
+        </span>
+      )
     },
     { 
       title: "Vaccine", 
       dataIndex: "vaccineName", 
       key: "vaccineName",
-      render: (name) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("vaccineName")}>
-          {name}
-          {sortConfig.key === "vaccineName" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (name) => <span>{name}</span>
     },
     { 
       title: "Mũi số", 
       dataIndex: "doseNumber", 
       key: "doseNumber",
-      render: (dose) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("doseNumber")}>
-          {dose}
-          {sortConfig.key === "doseNumber" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (dose) => <span>{dose}</span>
     },
     { 
       title: "Ngày tiêm", 
       dataIndex: "injectionDate", 
       key: "injectionDate",
-      render: (date) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("injectionDate")}>
-          {date ? formatDate(date) : "N/A"}
-          {sortConfig.key === "injectionDate" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (date) => <span>{date ? formatDate(date) : "N/A"}</span>
     },
     { 
       title: "Trạng thái", 
       dataIndex: "status", 
       key: "status",
       render: (status) => {
-        const statusText = getStatusText(status);
-        const isPending = status === "1" || status === "Pending";
-        const badgeStyle = {
-          padding: '4px 8px',
-          borderRadius: '4px',
-          fontSize: '0.85rem',
-          fontWeight: '500',
-          backgroundColor: isPending ? '#ffc107' : '#28a745',
-          color: isPending ? '#212529' : '#fff'
-        };
-        
-        return (
-          <span style={{ cursor: 'pointer' }} onClick={() => handleSort("status")}>
-            <span style={badgeStyle}>{statusText}</span>
-            {sortConfig.key === "status" && (
-              <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-                {sortConfig.direction === 'asc' ? '▲' : '▼'}
-              </span>
-            )}
-          </span>
-        );
+        const statusInfo = getStatusText(status);
+        return <span className={`status-badge ${statusInfo.className}`}>{statusInfo.text}</span>;
       }
+    },
+    { 
+      title: "Y tá phụ trách", 
+      dataIndex: "nurseName", 
+      key: "nurseName",
+      render: (name, record) => (
+        <span>
+          <NurseNameCell 
+            nurseId={record.nurseId} 
+            initialName={record.nurseName} 
+          />
+        </span>
+      )
+    },
+    { 
+      title: "Phản ứng sau tiêm", 
+      dataIndex: "reactionAfterInjection", 
+      key: "reactionAfterInjection",
+      render: (reaction) => <span>{reaction || "Không có"}</span>
     }
   ];
 
@@ -332,8 +289,8 @@ const VaxResults = () => {
 
   const getStatusText = (status) => {
     // Xử lý khi status là chuỗi "Pending" hoặc "Completed"
-    if (status === "Pending") return "Chưa hoàn thành";
-    if (status === "Completed") return "Đã hoàn thành";
+    if (status === "Pending") return { text: "Chưa hoàn thành", className: "pending" };
+    if (status === "Completed") return { text: "Đã hoàn thành", className: "completed" };
     
     // Xử lý khi status là số 1 hoặc 2, hoặc chuỗi "1" hoặc "2"
     const statusMap = {
@@ -344,7 +301,7 @@ const VaxResults = () => {
     // Chuyển đổi status thành chuỗi để đảm bảo lookup hoạt động đúng
     const statusStr = String(status);
     
-    return statusMap[statusStr] || "Không xác định";
+    return { text: statusMap[statusStr] || "Không xác định", className: "unknown" };
   };
 
   useEffect(() => {
@@ -2399,7 +2356,7 @@ const VaxResults = () => {
                 </div>
                 <div className="info-item">
                     <label>Trạng thái:</label>
-                    <span>{getStatusText(selectedResult.status)}</span>
+                    <span>{getStatusText(selectedResult.status).text}</span>
                 </div>
                   <div className="info-item" style={{ gridColumn: "1 / span 2" }}>
                     <label>Phản ứng sau tiêm:</label>

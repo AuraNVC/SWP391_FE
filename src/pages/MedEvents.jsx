@@ -68,87 +68,33 @@ const MedEvents = () => {
   const columns = [
     { 
       title: "ID", 
-      dataIndex: "medicalEventId",
-      render: (id) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("medicalEventId")}>
-          {id}
-          {sortConfig.key === "medicalEventId" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      dataIndex: "medicalEventId", 
+      render: (id) => <span>{id}</span>
     },
     { 
       title: "Ngày", 
       dataIndex: "eventDate", 
-      render: (date) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("eventDate")}>
-          {date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}
-          {sortConfig.key === "eventDate" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (date) => <span>{date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}</span>
     },
     { 
       title: "Học sinh", 
       dataIndex: "studentId", 
-      render: (id, record) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
-          {record.studentName || getStudentName(id) || "Không xác định"}
-          {sortConfig.key === "studentName" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (id, record) => <span>{record.studentName || getStudentName(id) || "Không xác định"}</span>
     },
     { 
       title: "Y tá", 
       dataIndex: "nurseId", 
-      render: (id, record) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("nurseName")}>
-          {record.nurseName || getNurseName(id) || "Không xác định"}
-          {sortConfig.key === "nurseName" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (id, record) => <span>{record.nurseName || getNurseName(id) || "Không xác định"}</span>
     },
     { 
       title: "Triệu chứng", 
       dataIndex: "symptoms",
-      render: (symptoms) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("symptoms")}>
-          {symptoms}
-          {sortConfig.key === "symptoms" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (symptoms) => <span>{symptoms}</span>
     },
     { 
       title: "Ghi chú", 
       dataIndex: "actionTaken",
-      render: (actionTaken) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("actionTaken")}>
-          {actionTaken}
-          {sortConfig.key === "actionTaken" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (actionTaken) => <span>{actionTaken}</span>
     }
   ];
 

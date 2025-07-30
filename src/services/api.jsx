@@ -83,6 +83,7 @@ const API = {
     CONSULTATION_FORM_BY_STUDENT: (studentId) => `${API_BASE_URL}/consultationForm/getByStudent?studentId=${studentId}`,
     CONSULTATION_FORM_DETAIL: (endpoint, id) => `${API_BASE_URL}/consultationForm/${endpoint}/${id}`,
     CONSULTATION_FORM_BY_PARENT: (parentId) => `${API_BASE_URL}/consultationForm/getByParent?parentId=${parentId}`,
+    CONSULTATION_FORM_SEARCH: `${API_BASE_URL}/consultationForm/search`,
     CONSULTATION_FORM_ADD: `${API_BASE_URL}/consultationForm/add`,
     CONSULTATION_FORM_UPDATE: `${API_BASE_URL}/consultationForm/update`,
     CONSULTATION_FORM_GET: (id) => `${API_BASE_URL}/consultationForm/${id}`,
@@ -524,6 +525,11 @@ export const API_SERVICE = {
         getByStudent: (studentId) => callApi(API.CONSULTATION_FORM_BY_STUDENT(studentId)),
         getDetail: (endpoint, id) => callApi(API.CONSULTATION_FORM_DETAIL(endpoint, id)),
         getByParent: (parentId) => callApi(API.CONSULTATION_FORM_BY_PARENT(parentId)),
+        search: (keyword) => callApi(API.CONSULTATION_FORM_SEARCH, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(keyword)
+        }),
         accept: (id) => callApi(API.CONSULTATION_FORM_ACCEPT(id), { method: 'POST' }),
         reject: (id) => callApi(API.CONSULTATION_FORM_REJECT(id), { method: 'POST' }),
         create: (data) => callApi(API.CONSULTATION_FORM_ADD, {

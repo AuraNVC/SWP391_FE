@@ -215,68 +215,33 @@ const HealthResults = () => {
       title: "ID", 
       dataIndex: "healthCheckupRecordId", 
       key: "recordId",
-      render: (id) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("healthCheckupRecordId")}>
-          {id}
-          {sortConfig.key === "healthCheckupRecordId" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (id) => <span>{id}</span>
     },
     { 
       title: "Học sinh", 
       dataIndex: "studentName", 
       key: "studentName", 
-      render: (name, record) => {
-      // Luôn sử dụng StudentNameCell để hiển thị tên học sinh
-        return (
-          <span style={{ cursor: 'pointer' }} onClick={() => handleSort("studentName")}>
-            <StudentNameCell 
-               studentId={record.studentId} 
-               initialName={record.studentName} 
-               healthProfileId={record.healthProfileId} 
-            />
-            {sortConfig.key === "studentName" && (
-              <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-                {sortConfig.direction === 'asc' ? '▲' : '▼'}
-              </span>
-            )}
-          </span>
-        );
-      }
+      render: (name, record) => (
+        <span>
+          <StudentNameCell 
+             studentId={record.studentId} 
+             initialName={record.studentName} 
+             healthProfileId={record.healthProfileId} 
+          />
+        </span>
+      )
     },
     { 
       title: "Chiều cao", 
       dataIndex: "height", 
       key: "heightValue", 
-      render: (height) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("height")}>
-          {height ? `${height} cm` : "N/A"}
-          {sortConfig.key === "height" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (height) => <span>{height ? `${height} cm` : "N/A"}</span>
     },
     { 
       title: "Cân nặng", 
       dataIndex: "weight", 
       key: "weightValue", 
-      render: (weight) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("weight")}>
-          {weight ? `${weight} kg` : "N/A"}
-          {sortConfig.key === "weight" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      render: (weight) => <span>{weight ? `${weight} kg` : "N/A"}</span>
     },
     { 
       title: "Thị lực", 
@@ -300,32 +265,26 @@ const HealthResults = () => {
           rightVision = rightVision.replace(/\/10\/10$/, "/10");
         }
         
-        return (
-          <span style={{ cursor: 'pointer' }} onClick={() => handleSort("leftVision")}>
-            {`Trái: ${leftVision} - Phải: ${rightVision}`}
-            {sortConfig.key === "leftVision" && (
-              <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-                {sortConfig.direction === 'asc' ? '▲' : '▼'}
-              </span>
-            )}
-          </span>
-        );
+        return <span>{`T: ${leftVision}, P: ${rightVision}`}</span>;
       }
     },
     { 
       title: "Kết quả", 
       dataIndex: "result", 
-      key: "resultValue",
-      render: (result) => (
-        <span style={{ cursor: 'pointer' }} onClick={() => handleSort("result")}>
-          {result}
-          {sortConfig.key === "result" && (
-            <span style={{ marginLeft: '5px', fontSize: '0.8rem' }}>
-              {sortConfig.direction === 'asc' ? '▲' : '▼'}
-            </span>
-          )}
-        </span>
-      )
+      key: "resultText", 
+      render: (result) => <span>{result || "Không có kết quả"}</span>
+    },
+    { 
+      title: "Y tá", 
+      dataIndex: "nurseName", 
+      key: "nurseName", 
+      render: (name, record) => <span>{name || getNurseName(record.nurseId) || "Không xác định"}</span>
+    },
+    { 
+      title: "Ngày khám", 
+      dataIndex: "checkupDate", 
+      key: "checkupDate", 
+      render: (date) => <span>{date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}</span>
     }
   ]);
 
@@ -937,10 +896,6 @@ const HealthResults = () => {
       await Promise.all([fetchStudents(), fetchNurses()]);
       // Sau đó tải lịch khám và kết quả khám
       await Promise.all([fetchHealthCheckSchedules(), fetchHealthCheckResults("")]);
-      setNotif({
-        message: "Dữ liệu đã được làm mới",
-        type: "success"
-      });
     } catch (error) {
       console.error("Error refreshing data:", error);
       setNotif({
@@ -1896,7 +1851,19 @@ const HealthResults = () => {
     // Tạo một timeout để đảm bảo component đã render xong
     const refreshTimer = setTimeout(() => {
       console.log("Auto refreshing data after component mount");
-      handleRefresh();
+      // Gọi trực tiếp API thay vì dùng handleRefresh để không hiển thị thông báo
+      const autoRefresh = async () => {
+        setLoading(true);
+        try {
+          await Promise.all([fetchStudents(), fetchNurses()]);
+          await Promise.all([fetchHealthCheckSchedules(), fetchHealthCheckResults("")]);
+        } catch (error) {
+          console.error("Error auto refreshing data:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+      autoRefresh();
     }, 500);
     
     // Thêm sự kiện click toàn cục để đóng dropdown khi click ra ngoài

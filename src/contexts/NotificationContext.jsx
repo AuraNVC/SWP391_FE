@@ -28,7 +28,7 @@ export function NotificationProvider({ children }) {
 
     // If notification is not null and has autoDismiss property, set a timer
     if (notification && (notification.autoDismiss || notification.duration)) {
-      const duration = notification.duration || 3000; // Default 3 seconds if not specified
+      const duration = notification.duration || 1500; // Default 1.5 seconds (thay vì 3 seconds)
       timerRef.current = setTimeout(() => {
         setNotifState(null);
       }, duration);

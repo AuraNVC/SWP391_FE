@@ -35,17 +35,13 @@ export default function ParentConsultations() {
         await API_SERVICE.consultationFormAPI.reject(consultationFormId);
       }
 
-      const action = isAccept ? 'chấp nhận' : 'từ chối';
-      setSuccessMessage(`Đã ${action} lịch tư vấn thành công!`);
-      setNotif({ message: `Đã ${action} lịch tư vấn thành công!`, type: 'success' });
-
       // Refresh the list after update
       const parentId = localStorage.getItem('userId');
       const numericParentId = parseInt(parentId, 10);
       const updatedData = await API_SERVICE.consultationFormAPI.getByParent(numericParentId);
       setConsultations(updatedData);
 
-      setTimeout(() => setSuccessMessage(null), 3000);
+      // Đã xóa timeout setSuccessMessage ở đây
     } catch (err) {
       console.error('Error updating status:', err);
       setError('Không thể cập nhật trạng thái. Vui lòng thử lại sau.');
@@ -95,30 +91,55 @@ export default function ParentConsultations() {
 
         // Fetch students for the parent
         const studentData = await API_SERVICE.parentAPI.getParent(parentId);
+        console.log("Student data fetched:", studentData);
         setStudents(studentData);
 
         // Fetch all consultation forms for the parent
         const numericParentId = parseInt(parentId, 10);
+        console.log("Fetching consultation forms for parent ID:", numericParentId);
         const consultationData = await API_SERVICE.consultationFormAPI.getByParent(numericParentId);
+        console.log("Consultation data fetched:", consultationData);
 
+        // Kiểm tra dữ liệu và xử lý
+        if (Array.isArray(consultationData)) {
+          if (consultationData.length > 0) {
         // Map student names to consultations
-        if (Array.isArray(consultationData) && Array.isArray(studentData) && consultationData.length > 0) {
+            try {
             const enrichedConsultations = await Promise.all(consultationData.map(async form => {
                 if (!form.consultationSchedule?.consultationScheduleId) {
+                  console.log("No schedule ID for form:", form.consultationFormId);
                     return { ...form, studentName: 'Không rõ' };
                 }
                 // Fetch full schedule details to get studentId
+                try {
                 const scheduleData = await API_SERVICE.consultationScheduleAPI.get(form.consultationSchedule.consultationScheduleId);
-                const student = studentData.find(s => s.studentId === scheduleData.studentId);
+                  console.log("Schedule data for form", form.consultationFormId, ":", scheduleData);
+                  
+                  const student = await API_SERVICE.studentAPI.getById(form.consultationSchedule.studentId)
+                  
                 return {
                     ...form,
                     consultationSchedule: scheduleData, // Replace placeholder with full data
                     studentName: student ? student.fullName : 'Không rõ'
                 };
+                } catch (scheduleError) {
+                  console.error("Error fetching schedule data:", scheduleError);
+                  return { ...form, studentName: 'Không rõ' };
+                }
             }));
+              console.log("Enriched consultations:", enrichedConsultations);
             setConsultations(enrichedConsultations);
+            } catch (enrichError) {
+              console.error("Error enriching consultation data:", enrichError);
+              setConsultations(consultationData);
+            }
+          } else {
+            console.log("Consultation data is an empty array");
+            setConsultations([]);
+          }
         } else {
-            setConsultations(consultationData);
+          console.warn("Consultation data is not an array:", consultationData);
+          setConsultations([]);
         }
 
       } catch (err) {
