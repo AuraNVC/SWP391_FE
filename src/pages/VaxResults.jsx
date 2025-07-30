@@ -2416,10 +2416,11 @@ const VaxResults = () => {
                   <input
                     type="number"
                     className="form-control"
+                    style={{ backgroundColor: "#e9ecef" }}
                     id="doseNumber"
                     name="doseNumber"
                     value={formData.doseNumber}
-                    onChange={handleInputChange}
+                    readOnly
                     required
                     min="1"
                     placeholder="Nhập số mũi tiêm"
@@ -2639,10 +2640,11 @@ const VaxResults = () => {
                   <input
                     type="number"
                     className="form-control"
+                    style={{ backgroundColor: "#e9ecef" }}
                     id="doseNumber"
                     name="doseNumber"
                     value={formData.doseNumber}
-                    onChange={handleInputChange}
+                    readOnly
                     required
                     min="1"
                   />
