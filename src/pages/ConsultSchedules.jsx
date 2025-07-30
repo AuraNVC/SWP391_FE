@@ -942,7 +942,7 @@ const ConsultSchedules = () => {
         const foundStudent = students.find(s => s.studentId === parseInt(studentId));
         if (foundStudent) {
           studentName = foundStudent.fullName;
-        }
+      }
       }
       
       // Tìm nurseId từ tên y tá đã nhập

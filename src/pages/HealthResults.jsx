@@ -1176,12 +1176,8 @@ const HealthResults = () => {
   const validateForm = () => {
     // Check for required fields
     const requiredFields = [
-      { field: "healthCheckScheduleId", message: "Vui lòng chọn lịch khám" },
-      { field: "studentId", message: "Vui lòng chọn học sinh" },
       { field: "height", message: "Vui lòng nhập chiều cao" },
       { field: "weight", message: "Vui lòng nhập cân nặng" },
-      { field: "leftVision", message: "Vui lòng nhập thị lực mắt trái" },
-      { field: "rightVision", message: "Vui lòng nhập thị lực mắt phải" },
       { field: "result", message: "Vui lòng nhập kết quả khám" },
     ];
 
@@ -1198,7 +1194,7 @@ const HealthResults = () => {
     }
 
     // Validate vision format
-    if (formData.leftVision && !formData.leftVision.includes("/10")) {
+    if (formData.leftVision && formData.leftVision.trim() !== "" && !formData.leftVision.includes("/10")) {
       setNotif({
         message: "Thị lực mắt trái phải có định dạng X/10",
         type: "error",
@@ -1208,7 +1204,7 @@ const HealthResults = () => {
       return false;
     }
 
-    if (formData.rightVision && !formData.rightVision.includes("/10")) {
+    if (formData.rightVision && formData.rightVision.trim() !== "" && !formData.rightVision.includes("/10")) {
       setNotif({
         message: "Thị lực mắt phải phải có định dạng X/10",
         type: "error",
@@ -1218,7 +1214,13 @@ const HealthResults = () => {
       return false;
     }
 
-    // Validate check date
+    // Khi chỉnh sửa, không cần validate lịch khám vì đã có sẵn
+    if (formData.healthCheckupRecordId) {
+      // Đây là trường hợp chỉnh sửa, không cần kiểm tra lịch khám
+      return true;
+    }
+    
+    // Validate check date - chỉ áp dụng khi thêm mới
     const selectedSchedule = schedules.find(
       (s) =>
         String(s.healthCheckScheduleId) ===
@@ -1394,6 +1396,9 @@ const HealthResults = () => {
   const handleUpdateResult = async (e) => {
     e.preventDefault();
 
+    console.log("Validating form for update...");
+    console.log("Current form data:", formData);
+    
     if (!validateForm()) {
       setNotif({
         message: "Vui lòng điền đầy đủ thông tin bắt buộc",
@@ -1434,20 +1439,27 @@ const HealthResults = () => {
 
       console.log("Sending data to update health check result:", resultData);
 
-      // Gọi API để cập nhật kết quả khám
-      await API_SERVICE.healthCheckResultAPI.update(resultData);
+      try {
+        // Gọi API để cập nhật kết quả khám
+        const response = await API_SERVICE.healthCheckResultAPI.update(resultData);
+        console.log("Update response:", response);
+        
+        // Nếu API thành công, cập nhật UI
+        setNotif({
+          message: "Cập nhật kết quả khám sức khỏe thành công!",
+          type: "success",
+        });
 
-      // Nếu API thành công, cập nhật UI
-      setNotif({
-        message: "Cập nhật kết quả khám sức khỏe thành công!",
-        type: "success",
-      });
-
-      // Đóng modal và tải lại dữ liệu
-      setShowEditModal(false);
-      fetchHealthCheckResults(searchKeyword);
+        // Đóng modal và tải lại dữ liệu
+        setShowEditModal(false);
+        fetchHealthCheckResults(searchKeyword);
+      } catch (apiError) {
+        console.error("API Error details:", apiError);
+        throw apiError;
+      }
     } catch (error) {
       console.error("Error updating health check result:", error);
+      console.error("Error stack:", error.stack);
       setNotif({
         message:
           error.message ||
