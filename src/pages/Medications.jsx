@@ -53,25 +53,25 @@ const Medications = () => {
     { 
       title: "ID Đơn", 
       dataIndex: "prescriptionId",
-      width: 90, 
+      width: 70, 
       render: (id) => <span>{id}</span>
     },
     { 
       title: "Phụ huynh", 
       dataIndex: "parentName",
-      width: 250,
+      width: 180,
       render: (name, record) => <span>{name || "Không có"}</span>
     },
     { 
       title: "Học sinh", 
       dataIndex: "studentName",
-      width: 300,
+      width: 180,
       render: (name, record) => <span>{name || "Không có"}</span>
     },
     { 
       title: "Thuốc", 
       dataIndex: "medicationName",
-      width: 220,
+      width: 180,
       render: (name, record) => (
         <span>
           {name}
@@ -94,20 +94,79 @@ const Medications = () => {
     { 
       title: "Ngày gửi", 
       dataIndex: "createdDate",
-      width: 120, 
+      width: 100, 
       render: (date) => <span>{date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}</span>
     },
     { 
       title: "Lịch uống", 
       dataIndex: "schedule",
-      width: 150, 
+      width: 120, 
       render: (schedule) => <span>{schedule || "Không có"}</span>
     },
     {
       title: "Ghi chú",
       dataIndex: "parentNote",
-      width: 180,
+      width: 150,
       render: (note) => <span>{note || "Không có"}</span>
+    },
+    {
+      title: "Còn lại",
+      dataIndex: "medications",
+      width: 100,
+      render: (medications) => {
+        if (!medications || medications.length === 0) return <span>N/A</span>;
+        
+        // Tính tổng số lượng và số lượng còn lại
+        let totalQuantity = 0;
+        let totalRemaining = 0;
+        let validMedications = 0;
+        
+        medications.forEach(med => {
+          if (med.quantity !== undefined && med.remainingQuantity !== undefined) {
+            totalQuantity += med.quantity;
+            totalRemaining += med.remainingQuantity;
+            validMedications++;
+          }
+        });
+        
+        if (validMedications === 0) return <span>N/A</span>;
+        
+        // Tính phần trăm còn lại
+        const percentage = Math.round((totalRemaining / totalQuantity) * 100);
+        
+        // Xác định màu sắc dựa trên phần trăm
+        let color = '#28a745'; // Xanh lá (>50%)
+        if (percentage < 20) {
+          color = '#dc3545'; // Đỏ (<20%)
+        } else if (percentage < 50) {
+          color = '#ffc107'; // Vàng (20-50%)
+        }
+        
+        return (
+          <div>
+            <div>{totalRemaining}/{totalQuantity}</div>
+            <div style={{ 
+              width: '100%', 
+              backgroundColor: '#e9ecef', 
+              borderRadius: '4px',
+              height: '6px',
+              marginTop: '4px',
+              position: 'relative',
+              zIndex: 1,
+              overflow: 'hidden'
+            }}>
+              <div style={{ 
+                width: `${percentage}%`, 
+                backgroundColor: color, 
+                height: '6px',
+                borderRadius: '4px',
+                position: 'relative',
+                zIndex: 2
+              }}></div>
+            </div>
+          </div>
+        );
+      }
     },
     {
       title: "Trạng thái",
@@ -290,25 +349,32 @@ const Medications = () => {
         
         // So sánh với giá trị filter
         const filterValue = parseInt(currentFilters.status, 10);
+        console.log(`Comparing status: ${statusValue} with filter: ${filterValue}, result: ${statusValue === filterValue}`);
         return statusValue === filterValue;
       });
     }
     
     if (currentFilters.remainingQuantity !== "all") {
       result = result.filter(med => {
-        if (!med.quantity) return false;
-        const percentage = Math.round((med.remainingQuantity / med.quantity) * 100);
+        // Lọc theo thuốc có thông tin số lượng
+        if (!med.medications || med.medications.length === 0) return false;
         
-        switch (currentFilters.remainingQuantity) {
-          case "low": // Dưới 20%
-            return percentage < 20;
-          case "medium": // 20% đến 50%
-            return percentage >= 20 && percentage <= 50;
-          case "high": // Trên 50%
-            return percentage > 50;
-          default:
-            return true;
-        }
+        // Kiểm tra từng thuốc trong đơn
+        return med.medications.some(medication => {
+          if (!medication.quantity || medication.remainingQuantity === undefined) return false;
+          const percentage = Math.round((medication.remainingQuantity / medication.quantity) * 100);
+          
+          switch (currentFilters.remainingQuantity) {
+            case "low": // Dưới 20%
+              return percentage < 20;
+            case "medium": // 20% đến 50%
+              return percentage >= 20 && percentage <= 50;
+            case "high": // Trên 50%
+              return percentage > 50;
+            default:
+              return true;
+          }
+        });
       });
     }
     
@@ -317,9 +383,27 @@ const Medications = () => {
       result.sort((a, b) => {
         // Xử lý các trường hợp đặc biệt
         if (currentSortConfig.key === "remainingQuantity") {
-          // Tính phần trăm còn lại để so sánh
-          const percentA = a.quantity ? (a.remainingQuantity / a.quantity) * 100 : 0;
-          const percentB = b.quantity ? (b.remainingQuantity / b.quantity) * 100 : 0;
+          // Tính phần trăm còn lại trung bình của tất cả thuốc trong đơn
+          const getAveragePercentage = (prescription) => {
+            if (!prescription.medications || prescription.medications.length === 0) return 0;
+            
+            let totalPercentage = 0;
+            let validMedications = 0;
+            
+            prescription.medications.forEach(med => {
+              if (med.quantity && med.remainingQuantity !== undefined) {
+                totalPercentage += (med.remainingQuantity / med.quantity) * 100;
+                validMedications++;
+              }
+            });
+            
+            return validMedications > 0 ? totalPercentage / validMedications : 0;
+          };
+          
+          const percentA = getAveragePercentage(a);
+          const percentB = getAveragePercentage(b);
+          
+          console.log(`Sorting by remaining: ${a.prescriptionId} (${percentA.toFixed(1)}%) vs ${b.prescriptionId} (${percentB.toFixed(1)}%)`);
           
           if (currentSortConfig.direction === "asc") {
             return percentA - percentB;
@@ -593,7 +677,19 @@ const Medications = () => {
     const value = e.target.value;
     // Chỉ cho phép nhập số
     if (/^\d*$/.test(value)) {
-      setUpdatedQuantity(value);
+      // Đảm bảo số lượng mới không lớn hơn số lượng hiện tại
+      const currentRemaining = selectedMedication?.remainingQuantity || 0;
+      const newValue = parseInt(value) || 0;
+      
+      if (newValue <= currentRemaining) {
+        setUpdatedQuantity(value);
+      } else {
+        setUpdatedQuantity(currentRemaining.toString());
+        setNotif({
+          message: `Số lượng không thể lớn hơn số lượng hiện tại (${currentRemaining})`,
+          type: "warning"
+        });
+      }
     }
   };
 
@@ -610,9 +706,19 @@ const Medications = () => {
     
     // Kiểm tra số lượng hợp lệ
     const newQuantity = parseInt(updatedQuantity);
-    if (isNaN(newQuantity) || newQuantity < 0 || newQuantity > selectedMedication.quantity) {
+    const currentRemaining = selectedMedication.remainingQuantity || 0;
+    
+    if (isNaN(newQuantity) || newQuantity < 0) {
       setNotif({
-        message: `Số lượng không hợp lệ. Vui lòng nhập số từ 0 đến ${selectedMedication.quantity}`,
+        message: "Số lượng không hợp lệ. Vui lòng nhập số dương",
+        type: "error"
+      });
+      return;
+    }
+    
+    if (newQuantity > currentRemaining) {
+      setNotif({
+        message: `Số lượng không thể lớn hơn số lượng hiện tại (${currentRemaining})`,
         type: "error"
       });
       return;
@@ -624,6 +730,11 @@ const Medications = () => {
       // Cập nhật số lượng thuốc còn lại
       const updateData = {
         medicationId: selectedMedication.medicationId,
+        studentId: selectedMedication.studentId,
+        medicationName: selectedMedication.medicationName,
+        prescriptionId: selectedMedication.prescriptionId,
+        dosage: selectedMedication.dosage,
+        quantity: selectedMedication.quantity,
         remainingQuantity: newQuantity
       };
       
@@ -904,9 +1015,9 @@ const Medications = () => {
                 style={{ width: '100%', padding: '8px' }}
               >
                 <option value="all">Tất cả</option>
-                <option value="pending">Đang chờ</option>
-                <option value="accepted">Đã duyệt</option>
-                <option value="rejected">Đã từ chối</option>
+                <option value="1">Đang chờ</option>
+                <option value="2">Đã duyệt</option>
+                <option value="3">Đã từ chối</option>
               </select>
             </div>
             
@@ -964,6 +1075,13 @@ const Medications = () => {
           
           <div style={{ marginTop: '10px', fontSize: '0.9rem', color: '#6c757d' }}>
             <span>Đang hiển thị: <strong>{filteredMedications.length}</strong> / {medications.length} kết quả</span>
+            {filteredMedications.length > 0 && (
+              <span style={{ marginLeft: '15px' }}>
+                Đang chờ: <strong>{filteredMedications.filter(med => med.status === "Pending" || med.status === 1).length}</strong>,
+                Đã duyệt: <strong>{filteredMedications.filter(med => med.status === "Accepted" || med.status === 2).length}</strong>,
+                Đã từ chối: <strong>{filteredMedications.filter(med => med.status === "Rejected" || med.status === 3).length}</strong>
+              </span>
+            )}
           </div>
         </div>
       )}
@@ -1048,7 +1166,7 @@ const Medications = () => {
                     <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "N/A"}
                   </div>
                   <div className="info-item">
-                    <strong>Lịch uống chung:</strong> {selectedMedication.schedule || "Không có"}
+                    <strong>Lịch uống:</strong> {selectedMedication.schedule || "Không có"}
                   </div>
                   <div className="info-item">
                     <strong>Ghi chú:</strong> {selectedMedication.parentNote || "Không có"}
@@ -1103,17 +1221,16 @@ const Medications = () => {
                 
                 {selectedMedication.medications && selectedMedication.medications.length > 0 ? (
                   <div style={{ overflowX: 'auto', marginTop: '10px' }}>
-                    <table className="table table-striped table-bordered">
+                    <table className="table table-striped table-bordered" style={{ position: 'relative', zIndex: 1 }}>
                       <thead>
                         <tr>
                           <th>ID</th>
                           <th>Tên thuốc</th>
                           <th>Liều lượng</th>
-                          <th>Lịch uống</th>
                           <th>Số lượng</th>
                           <th>Còn lại</th>
                           {(selectedMedication.status === "Accepted" || selectedMedication.status === 2) && (
-                            <th>Hành động</th>
+                            <th style={{ width: '60px' }}>Hành động</th>
                           )}
                         </tr>
                       </thead>
@@ -1123,9 +1240,8 @@ const Medications = () => {
                             <td>{med.medicationId || "N/A"}</td>
                             <td>{med.medicationName || "Không có"}</td>
                             <td>{med.dosage || "Không có"}</td>
-                            <td>{med.schedule || selectedMedication.schedule || "Không có"}</td>
                             <td>{med.quantity !== undefined ? med.quantity : "N/A"}</td>
-                            <td>
+                            <td style={{ position: 'relative', overflow: 'hidden' }}>
                               {med.quantity && med.remainingQuantity !== undefined ? (
                                 <div>
                                   <div>{med.remainingQuantity}/{med.quantity}</div>
@@ -1134,13 +1250,20 @@ const Medications = () => {
                                     backgroundColor: '#e9ecef', 
                                     borderRadius: '4px',
                                     height: '6px',
-                                    marginTop: '4px'
+                                    marginTop: '4px',
+                                    position: 'relative',
+                                    zIndex: 1,
+                                    overflow: 'hidden',
+                                    maxWidth: '100%'
                                   }}>
                                     <div style={{ 
                                       width: `${Math.round((med.remainingQuantity / med.quantity) * 100)}%`, 
                                       backgroundColor: med.remainingQuantity / med.quantity > 0.5 ? '#28a745' : med.remainingQuantity / med.quantity > 0.2 ? '#ffc107' : '#dc3545', 
                                       height: '6px',
-                                      borderRadius: '4px'
+                                      borderRadius: '4px',
+                                      position: 'relative',
+                                      zIndex: 2,
+                                      maxWidth: '100%'
                                     }}></div>
                                   </div>
                                 </div>
@@ -1150,7 +1273,17 @@ const Medications = () => {
                               <td>
                                 <button
                                   className="admin-btn action-btn"
-                                  style={{ backgroundColor: '#17a2b8' }}
+                                  style={{ 
+                                    backgroundColor: '#17a2b8',
+                                    padding: '4px',
+                                    width: '24px',
+                                    height: '24px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    position: 'relative',
+                                    zIndex: 1
+                                  }}
                                   onClick={() => {
                                     setSelectedMedication({
                                       ...selectedMedication,
@@ -1167,7 +1300,7 @@ const Medications = () => {
                                   disabled={med.quantity === 0}
                                   title="Cập nhật số lượng"
                                 >
-                                  <FaEdit />
+                                  <FaEdit style={{ fontSize: '14px' }} />
                                 </button>
                               </td>
                             )}
@@ -1234,6 +1367,7 @@ const Medications = () => {
                   <p><strong>Thuốc:</strong> {selectedMedication.medicationName}</p>
                   <p><strong>Học sinh:</strong> {selectedMedication.studentName}</p>
                   <p><strong>Tổng số lượng:</strong> {selectedMedication.quantity}</p>
+                  <p><strong>Số lượng hiện tại:</strong> {selectedMedication.remainingQuantity}</p>
                   
                   <div className="info-item" style={{ marginTop: '16px' }}>
                     <label htmlFor="remainingQuantity">Số lượng còn lại <span className="text-danger">*</span></label>
@@ -1245,12 +1379,16 @@ const Medications = () => {
                       value={updatedQuantity}
                       onChange={handleQuantityChange}
                       min="0"
-                      max={selectedMedication.quantity}
+                      max={selectedMedication.remainingQuantity}
                       required
                       disabled={updatingQuantity}
                     />
-                    <small className="text-muted">Nhập số lượng thuốc còn lại sau khi sử dụng</small>
-                </div>
+                    <small className="text-muted">Nhập số lượng thuốc còn lại sau khi sử dụng (chỉ có thể giảm số lượng)</small>
+                    <div className="alert alert-warning mt-2" style={{ fontSize: '0.9rem', padding: '8px' }}>
+                      <strong>Lưu ý:</strong> Số lượng thuốc chỉ có thể giảm do học sinh đã sử dụng thuốc. 
+                      Số lượng không thể lớn hơn số lượng hiện tại ({selectedMedication.remainingQuantity}).
+                    </div>
+                  </div>
                 </div>
               </div>
               <div className="student-dialog-footer">
