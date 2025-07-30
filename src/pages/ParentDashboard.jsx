@@ -29,13 +29,12 @@ const ParentList = () => {
   const [editParent, setEditParent] = useState(null);
   const { setNotif } = useNotification();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchParentList = async () => {
       setLoading(true);
       try {
-        const response = await API_SERVICE.parentAPI.getAll({ keyword: searchTerm });
+        const response = await API_SERVICE.parentAPI.getAll({ keyword: "" });
         setParentList(response);
       } catch (error) {
         console.error("Error fetching parent list:", error);
@@ -43,7 +42,7 @@ const ParentList = () => {
       setLoading(false);
     };
     fetchParentList();
-  }, [searchTerm]);
+  }, []);
 
   const handleViewDetail = (row) => {
     setViewParent(row);
@@ -103,14 +102,7 @@ const ParentList = () => {
         <button className="admin-btn" onClick={handleCreateNew}>
           + Thêm phụ huynh mới
         </button>
-        <input
-          className="admin-search"
-          type="text"
-          placeholder="Tìm kiếm phụ huynh..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          style={{ background: '#fff', color: '#222' }}
-        />
+        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
       </div>
       <div className="admin-table-container">
         {loading ? (
