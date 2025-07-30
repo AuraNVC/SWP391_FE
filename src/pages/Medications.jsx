@@ -25,6 +25,7 @@ const Medications = () => {
     parentName: "",
     medicationName: "",
     dateFrom: "",
+    schedule: "",
     status: "all", // all, pending, accepted, rejected
     remainingQuantity: "all" // all, low, medium, high
   });
@@ -51,22 +52,26 @@ const Medications = () => {
   const columns = [
     { 
       title: "ID Đơn", 
-      dataIndex: "prescriptionId", 
+      dataIndex: "prescriptionId",
+      width: 90, 
       render: (id) => <span>{id}</span>
     },
     { 
       title: "Phụ huynh", 
-      dataIndex: "parentName", 
+      dataIndex: "parentName",
+      width: 250,
       render: (name, record) => <span>{name || "Không có"}</span>
     },
     { 
       title: "Học sinh", 
-      dataIndex: "studentName", 
+      dataIndex: "studentName",
+      width: 300,
       render: (name, record) => <span>{name || "Không có"}</span>
     },
     { 
       title: "Thuốc", 
-      dataIndex: "medicationName", 
+      dataIndex: "medicationName",
+      width: 220,
       render: (name, record) => (
         <span>
           {name}
@@ -88,17 +93,26 @@ const Medications = () => {
     },
     { 
       title: "Ngày gửi", 
-      dataIndex: "createdDate", 
+      dataIndex: "createdDate",
+      width: 120, 
       render: (date) => <span>{date ? new Date(date).toLocaleDateString('vi-VN') : "N/A"}</span>
+    },
+    { 
+      title: "Lịch uống", 
+      dataIndex: "schedule",
+      width: 150, 
+      render: (schedule) => <span>{schedule || "Không có"}</span>
     },
     {
       title: "Ghi chú",
       dataIndex: "parentNote",
+      width: 180,
       render: (note) => <span>{note || "Không có"}</span>
     },
     {
       title: "Trạng thái",
       dataIndex: "status",
+      width: 150,
       render: (status) => {
         let statusText = "Chưa xác định";
         let badgeStyle = {};
@@ -137,21 +151,6 @@ const Medications = () => {
         
         return <span style={badgeStyle}>{statusText}</span>;
       }
-    },
-    {
-      title: "Hành động",
-      key: "actions",
-      render: (_, record) => (
-        <div className="action-buttons">
-          <button
-            className="admin-btn action-btn"
-            onClick={() => handleView(record)}
-            title="Xem chi tiết"
-          >
-            <FaEye />
-          </button>
-        </div>
-      ),
     },
   ];
 
@@ -264,6 +263,13 @@ const Medications = () => {
       });
     }
     
+    if (currentFilters.schedule) {
+      result = result.filter(med => {
+        const schedule = med.schedule?.toLowerCase() || "";
+        return schedule.includes(currentFilters.schedule.toLowerCase());
+      });
+    }
+
     if (currentFilters.status !== "all") {
       result = result.filter(med => {
         // Kiểm tra giá trị status từ API
@@ -401,6 +407,7 @@ const Medications = () => {
       parentName: "",
       medicationName: "",
       dateFrom: "",
+      schedule: "",
       status: "all",
       remainingQuantity: "all"
     };
@@ -490,7 +497,8 @@ const Medications = () => {
             medicationName: medicationsResponse && medicationsResponse.length > 0 
               ? `${medicationsResponse[0].medicationName} ${medicationsResponse.length > 1 ? `(+${medicationsResponse.length - 1} loại khác)` : ''}` 
               : prescription.parentNote || "Không có thuốc",
-            parentNote: prescription.parentNote || ""
+            parentNote: prescription.parentNote || "",
+            schedule: prescription.schedule || ""
           });
           
         } catch (error) {
@@ -508,7 +516,8 @@ const Medications = () => {
             medications: [],
             medicationCount: 0,
             medicationName: prescription.parentNote || "Không có thuốc",
-            parentNote: prescription.parentNote || ""
+            parentNote: prescription.parentNote || "",
+            schedule: prescription.schedule || ""
           });
         }
       }
@@ -868,6 +877,21 @@ const Medications = () => {
               />
             </div>
             
+            {/* Lọc theo lịch uống */}
+            <div>
+              <label htmlFor="schedule" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Lịch uống</label>
+              <input
+                type="text"
+                id="schedule"
+                name="schedule"
+                value={filters.schedule}
+                onChange={handleFilterChange}
+                className="form-control"
+                placeholder="Nhập lịch uống..."
+                style={{ width: '100%', padding: '8px' }}
+              />
+            </div>
+            
             {/* Lọc theo trạng thái */}
             <div>
               <label htmlFor="status" style={{ display: 'block', marginBottom: '5px', fontSize: '0.9rem' }}>Trạng thái</label>
@@ -920,6 +944,7 @@ const Medications = () => {
                 <option value="studentName">Học sinh</option>
                 <option value="parentName">Phụ huynh</option>
                 <option value="createdDate">Ngày gửi</option>
+                <option value="schedule">Lịch uống</option>
                 <option value="status">Trạng thái</option>
                 <option value="remainingQuantity">Số lượng còn lại</option>
               </select>
@@ -943,6 +968,7 @@ const Medications = () => {
         </div>
       )}
 
+      {/* Hiển thị bảng dữ liệu */}
       <div className="admin-table-container">
         {loading ? (
           <div className="loading-container">
@@ -958,28 +984,26 @@ const Medications = () => {
             pageSize={10}
             page={page}
             onPageChange={setPage}
-            renderActions={(row) => (
-              <div className="admin-action-group">
+            renderActions={(record) => (
+              <div className="action-buttons">
                 <button
-                  className="admin-action-btn admin-action-view admin-action-btn-reset"
+                  className="admin-btn action-btn"
+                  onClick={() => handleView(record)}
                   title="Xem chi tiết"
-                  onClick={() => handleView(row)}
+                  style={{
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    padding: '0',
+                    cursor: 'pointer',
+                    width: '24px',
+                    height: '24px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
                 >
-                  <FaEye style={iconStyle.view} size={18} />
+                  <FaEye style={{ color: '#1890ff', fontSize: '14px' }} />
                 </button>
-                {(row.status === "Accepted" || row.status === 2) && (
-                  <button
-                    className="admin-action-btn admin-action-edit admin-action-btn-reset"
-                    title="Cập nhật số lượng"
-                    onClick={() => {
-                      setSelectedMedication(row);
-                      setUpdatedQuantity(row.remainingQuantity?.toString() || "");
-                      setShowUpdateQuantityModal(true);
-                    }}
-                  >
-                    <FaEdit style={iconStyle.edit} size={18} />
-                  </button>
-                )}
               </div>
             )}
           />
@@ -1022,6 +1046,9 @@ const Medications = () => {
                   </div>
                   <div className="info-item">
                     <strong>Ngày gửi:</strong> {selectedMedication.submittedDate ? new Date(selectedMedication.submittedDate).toLocaleDateString('vi-VN') : "N/A"}
+                  </div>
+                  <div className="info-item">
+                    <strong>Lịch uống chung:</strong> {selectedMedication.schedule || "Không có"}
                   </div>
                   <div className="info-item">
                     <strong>Ghi chú:</strong> {selectedMedication.parentNote || "Không có"}
@@ -1096,7 +1123,7 @@ const Medications = () => {
                             <td>{med.medicationId || "N/A"}</td>
                             <td>{med.medicationName || "Không có"}</td>
                             <td>{med.dosage || "Không có"}</td>
-                            <td>{med.schedule || "Không có"}</td>
+                            <td>{med.schedule || selectedMedication.schedule || "Không có"}</td>
                             <td>{med.quantity !== undefined ? med.quantity : "N/A"}</td>
                             <td>
                               {med.quantity && med.remainingQuantity !== undefined ? (
