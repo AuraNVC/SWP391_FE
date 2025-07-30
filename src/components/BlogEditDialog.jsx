@@ -6,8 +6,10 @@ import { useNotification } from "../contexts/NotificationContext";
 
 const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
   const [form, setForm] = useState({
+    blogId: "",
     title: "",
     content: "",
+    thumbnail: ""
   });
   const [loading, setLoading] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
@@ -17,8 +19,10 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
   useEffect(() => {
     if (blog) {
       setForm({
+        blogId: blog.blogId || "",
         title: blog.title || "",
         content: blog.content || "",
+        thumbnail: blog.thumbnail || ""
       });
     }
   }, [blog]);
@@ -39,14 +43,17 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
     e.preventDefault();
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('title', form.title);
-      formData.append('content', form.content);
-      if (selectedFile) {
-        formData.append('thumbnail', selectedFile);
-      }
+      const updatedForm = { ...form }; 
+    if (selectedFile) {
+      const imageForm = new FormData();
+      imageForm.append("imageFile", selectedFile);
 
-      await API_SERVICE.blogAPI.update(blog.blogId, formData);
+      const uploadResponse = await API_SERVICE.blogAPI.uploadImage(imageForm);
+      // Giả sử response trả về tên file ảnh
+      updatedForm.thumbnail = uploadResponse.fileName;
+      console.log(updatedForm)
+    }
+      await API_SERVICE.blogAPI.update(updatedForm);
       setNotif({
         message: "Cập nhật blog thành công!",
         type: "success",
@@ -76,7 +83,7 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
         
         <form className="blog-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Tiêu đề<span className="required">*</span></label>
+            <label>Tiêu đề<span className="required"></span></label>
             <input
               type="text"
               name="title"
@@ -88,7 +95,7 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Nội dung<span className="required">*</span></label>
+            <label>Nội dung<span className="required"></span></label>
             <textarea
               name="content"
               value={form.content}
@@ -103,7 +110,7 @@ const BlogEditDialog = ({ blog, onClose, onSuccess }) => {
             <label>Ảnh mới (không bắt buộc)</label>
             <input
               type="file"
-              accept="image/*"
+              accept="image/"
               onChange={handleFileChange}
               className="form-control"
             />

@@ -68,7 +68,7 @@ const NurseEditDialog = ({ nurse, onClose, onSuccess }) => {
         
         <form className="nurse-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Họ và tên<span className="required">*</span></label>
+            <label>Họ và tên<span className="required"></span></label>
             <input
               type="text"
               name="fullName"
@@ -79,7 +79,7 @@ const NurseEditDialog = ({ nurse, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Email<span className="required">*</span></label>
+            <label>Email<span className="required"></span></label>
             <input
               type="email"
               name="email"
@@ -90,7 +90,7 @@ const NurseEditDialog = ({ nurse, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Tên người dùng<span className="required">*</span></label>
+            <label>Tên người dùng<span className="required"></span></label>
             <input
               type="text"
               name="username"

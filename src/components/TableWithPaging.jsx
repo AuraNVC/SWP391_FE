@@ -87,6 +87,7 @@ export default function TableWithPaging({
       <table className="table table-striped">
         <thead>
           <tr>
+              <th key="header-stt">STT</th>
             {columns.map((col, colIdx) => (
               <th key={`header-${col.key || col.dataIndex || colIdx}-${colIdx}`}>{col.title}</th>
             ))}
@@ -107,6 +108,7 @@ export default function TableWithPaging({
               
               return (
                 <tr key={rowKey}>
+                  <td key={`stt-${rowKey}`}>{startIdx + idx + 1}</td> 
                   {columns.map((col, colIdx) => (
                     <td key={`cell-${col.key || col.dataIndex || colIdx}-${rowKey}`}>
                       {(() => {

@@ -12,6 +12,16 @@ export const formatDate = (dateStr) => {
     });
 };
 
+export const formatDateForInput = (dateStr) => {
+  if (!dateStr) return '';
+  // Chuyển "11:48 25/09/2025" -> [time, date]
+  const [time, date] = dateStr.split(' ');
+  const [hour, minute] = time.split(':');
+  const [day, month, year] = date.split('/');
+
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}T${hour.padStart(2, '0')}:${minute.padStart(2, '0')}`;
+};
+
 // utils/formTypeFormat.js
 
 export const formatFormType = (type) => {
