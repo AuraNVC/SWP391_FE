@@ -29,13 +29,12 @@ const NurseList = () => {
   const [editNurse, setEditNurse] = useState(null);
   const { setNotif } = useNotification();
   const navigate = useNavigate();
-  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchNurseList = async () => {
       setLoading(true);
       try {
-        const response = await API_SERVICE.nurseAPI.getAll({ keyword: searchTerm });
+        const response = await API_SERVICE.nurseAPI.getAll({ keyword: "" });
         setNurseList(response);
       } catch (error) {
         console.error("Error fetching nurse list:", error);
@@ -43,7 +42,7 @@ const NurseList = () => {
       setLoading(false);
     };
     fetchNurseList();
-  }, [searchTerm]);
+  }, []);
 
   const handleViewDetail = (row) => {
     setViewNurse(row);
@@ -103,14 +102,7 @@ const NurseList = () => {
         <button className="admin-btn" onClick={handleCreateNew}>
           + Thêm y tá mới
         </button>
-        <input
-          className="admin-search"
-          type="text"
-          placeholder="Tìm kiếm y tá..."
-          value={searchTerm}
-          onChange={e => setSearchTerm(e.target.value)}
-          style={{ background: '#fff', color: '#222' }}
-        />
+        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
       </div>
       <div className="admin-table-container">
         {loading ? (

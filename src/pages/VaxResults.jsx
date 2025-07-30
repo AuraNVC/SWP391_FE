@@ -1056,6 +1056,25 @@ const VaxResults = () => {
         throw new Error("Không tìm thấy hồ sơ sức khỏe của học sinh này. Vui lòng chọn học sinh khác.");
       }
       
+      // Tìm lịch tiêm chủng để kiểm tra ngày diễn ra
+      const schedule = schedules.find(s => s.vaccinationScheduleId.toString() === formData.vaccinationScheduleId);
+      if (schedule && schedule.scheduleDate) {
+        const scheduleDate = new Date(schedule.scheduleDate);
+        const currentDate = new Date();
+        
+        // Đặt thời gian hiện tại về đầu ngày để so sánh chính xác
+        currentDate.setHours(0, 0, 0, 0);
+        scheduleDate.setHours(0, 0, 0, 0);
+        
+        if (currentDate < scheduleDate) {
+          setNotif({
+            message: `Không thể thêm kết quả tiêm chủng. Lịch tiêm chủng sẽ diễn ra vào ngày ${scheduleDate.toLocaleDateString('vi-VN')}. Vui lòng đợi đến ngày diễn ra.`,
+            type: "error"
+          });
+          return;
+        }
+      }
+      
       // Tạo object dữ liệu đã làm sạch để gửi đến API, chỉ bao gồm các trường BE hỗ trợ
       const cleanedData = {
         vaccinationScheduleId: parseInt(formData.vaccinationScheduleId),
@@ -1085,12 +1104,22 @@ const VaxResults = () => {
         
         // Làm mới dữ liệu bảng
         await fetchVaccinationResults("");
+        
+        setNotif({
+          message: "Thêm kết quả tiêm chủng thành công",
+          type: "success"
+        });
       }
     } catch (error) {
       console.error("Error adding vaccination result:", error);
       // Log thêm chi tiết lỗi
       if (error.message) console.error("Error message:", error.message);
       if (error.response) console.error("Error response:", error.response);
+      
+      setNotif({
+        message: "Không thể thêm kết quả tiêm chủng: " + (error.message || "Lỗi không xác định"),
+        type: "error"
+      });
     } finally {
       setLoading(false);
     }
@@ -1117,6 +1146,25 @@ const VaxResults = () => {
       
       if (!selectedResult || !selectedResult.vaccinationResultId) {
         throw new Error("Không tìm thấy thông tin kết quả tiêm chủng cần cập nhật");
+      }
+      
+      // Tìm lịch tiêm chủng tương ứng để kiểm tra ngày diễn ra
+      const schedule = schedules.find(s => s.vaccinationScheduleId === selectedResult.vaccinationScheduleId);
+      if (schedule && schedule.scheduleDate) {
+        const scheduleDate = new Date(schedule.scheduleDate);
+        const currentDate = new Date();
+        
+        // Đặt thời gian hiện tại về đầu ngày để so sánh chính xác
+        currentDate.setHours(0, 0, 0, 0);
+        scheduleDate.setHours(0, 0, 0, 0);
+        
+        if (currentDate < scheduleDate) {
+          setNotif({
+            message: `Không thể cập nhật kết quả tiêm chủng. Lịch tiêm chủng sẽ diễn ra vào ngày ${scheduleDate.toLocaleDateString('vi-VN')}. Vui lòng đợi đến ngày diễn ra.`,
+            type: "error"
+          });
+          return;
+        }
       }
       
       // Tạo đối tượng dữ liệu chỉ với các trường mà backend hỗ trợ
@@ -1154,9 +1202,18 @@ const VaxResults = () => {
         // Đóng modal và làm mới dữ liệu
       setShowEditModal(false);
         await fetchVaccinationResults("");
+        
+        setNotif({
+          message: "Cập nhật kết quả tiêm chủng thành công",
+          type: "success"
+        });
       }
     } catch (error) {
       console.error("Error updating vaccination result:", error);
+      setNotif({
+        message: "Không thể cập nhật kết quả tiêm chủng: " + (error.message || "Lỗi không xác định"),
+        type: "error"
+      });
     } finally {
       setLoading(false);
     }
@@ -1165,11 +1222,40 @@ const VaxResults = () => {
   const handleDeleteResult = async () => {
     setLoading(true);
     try {
+      // Tìm lịch tiêm chủng tương ứng để kiểm tra ngày diễn ra
+      const schedule = schedules.find(s => s.vaccinationScheduleId === selectedResult.vaccinationScheduleId);
+      if (schedule && schedule.scheduleDate) {
+        const scheduleDate = new Date(schedule.scheduleDate);
+        const currentDate = new Date();
+        
+        // Đặt thời gian hiện tại về đầu ngày để so sánh chính xác
+        currentDate.setHours(0, 0, 0, 0);
+        scheduleDate.setHours(0, 0, 0, 0);
+        
+        if (currentDate < scheduleDate) {
+          setNotif({
+            message: `Không thể xóa kết quả tiêm chủng. Lịch tiêm chủng sẽ diễn ra vào ngày ${scheduleDate.toLocaleDateString('vi-VN')}. Vui lòng đợi đến ngày diễn ra.`,
+            type: "error"
+          });
+          setShowDeleteModal(false);
+          return;
+        }
+      }
+      
       await API_SERVICE.vaccinationResultAPI.delete(selectedResult.vaccinationResultId);
       setShowDeleteModal(false);
       await fetchVaccinationResults("");
+      
+      setNotif({
+        message: "Xóa kết quả tiêm chủng thành công",
+        type: "success"
+      });
     } catch (error) {
       console.error("Error deleting vaccination result:", error);
+      setNotif({
+        message: "Không thể xóa kết quả tiêm chủng: " + (error.message || "Lỗi không xác định"),
+        type: "error"
+      });
     } finally {
       setLoading(false);
     }
@@ -1179,10 +1265,58 @@ const VaxResults = () => {
   const handleCompleteResult = async (id) => {
     setLoading(true);
     try {
+      // Tìm kết quả tiêm chủng cần hoàn thành
+      const resultToComplete = results.find(result => result.vaccinationResultId === id);
+      if (!resultToComplete) {
+        setNotif({
+          message: "Không tìm thấy kết quả tiêm chủng cần hoàn thành",
+          type: "error"
+        });
+        return;
+      }
+
+      // Tìm lịch tiêm chủng tương ứng
+      const schedule = schedules.find(s => s.vaccinationScheduleId === resultToComplete.vaccinationScheduleId);
+      if (!schedule) {
+        setNotif({
+          message: "Không tìm thấy lịch tiêm chủng tương ứng",
+          type: "error"
+        });
+        return;
+      }
+
+      // Kiểm tra ngày diễn ra
+      if (schedule.scheduleDate) {
+        const scheduleDate = new Date(schedule.scheduleDate);
+        const currentDate = new Date();
+        
+        // Đặt thời gian hiện tại về đầu ngày để so sánh chính xác
+        currentDate.setHours(0, 0, 0, 0);
+        scheduleDate.setHours(0, 0, 0, 0);
+        
+        if (currentDate < scheduleDate) {
+          setNotif({
+            message: `Không thể xác nhận kết quả tiêm chủng. Lịch tiêm chủng sẽ diễn ra vào ngày ${scheduleDate.toLocaleDateString('vi-VN')}. Vui lòng đợi đến ngày diễn ra.`,
+            type: "error"
+          });
+          return;
+        }
+      }
+
+      // Nếu đã đến ngày diễn ra hoặc đã qua ngày diễn ra, cho phép hoàn thành
       await API_SERVICE.vaccinationResultAPI.complete(id);
       await fetchVaccinationResults("");
+      
+      setNotif({
+        message: "Đã đánh dấu hoàn thành kết quả tiêm chủng thành công",
+        type: "success"
+      });
     } catch (error) {
       console.error("Error completing vaccination result:", error);
+      setNotif({
+        message: "Không thể hoàn thành kết quả tiêm chủng: " + (error.message || "Lỗi không xác định"),
+        type: "error"
+      });
     } finally {
       setLoading(false);
     }
@@ -1808,9 +1942,51 @@ const VaxResults = () => {
     setLoading(true);
     
     try {
+      const completedResults = [];
+      const failedResults = [];
+      
       // Xử lý từng kết quả được chọn
       for (const resultId of selectedRows) {
-        await API_SERVICE.vaccinationResultAPI.complete(resultId);
+        try {
+          // Tìm kết quả tiêm chủng cần hoàn thành
+          const resultToComplete = results.find(result => result.vaccinationResultId === resultId);
+          if (!resultToComplete) {
+            failedResults.push({ id: resultId, reason: "Không tìm thấy kết quả tiêm chủng" });
+            continue;
+          }
+
+          // Tìm lịch tiêm chủng tương ứng
+          const schedule = schedules.find(s => s.vaccinationScheduleId === resultToComplete.vaccinationScheduleId);
+          if (!schedule) {
+            failedResults.push({ id: resultId, reason: "Không tìm thấy lịch tiêm chủng tương ứng" });
+            continue;
+          }
+
+          // Kiểm tra ngày diễn ra
+          if (schedule.scheduleDate) {
+            const scheduleDate = new Date(schedule.scheduleDate);
+            const currentDate = new Date();
+            
+            // Đặt thời gian hiện tại về đầu ngày để so sánh chính xác
+            currentDate.setHours(0, 0, 0, 0);
+            scheduleDate.setHours(0, 0, 0, 0);
+            
+            if (currentDate < scheduleDate) {
+              failedResults.push({ 
+                id: resultId, 
+                reason: `Lịch tiêm chủng sẽ diễn ra vào ngày ${scheduleDate.toLocaleDateString('vi-VN')}` 
+              });
+              continue;
+            }
+          }
+
+          // Nếu đã đến ngày diễn ra hoặc đã qua ngày diễn ra, cho phép hoàn thành
+          await API_SERVICE.vaccinationResultAPI.complete(resultId);
+          completedResults.push(resultId);
+        } catch (error) {
+          console.error(`Error completing result ${resultId}:`, error);
+          failedResults.push({ id: resultId, reason: error.message || "Lỗi không xác định" });
+        }
       }
       
       // Làm mới dữ liệu
@@ -1819,10 +1995,23 @@ const VaxResults = () => {
       // Reset danh sách đã chọn
       setSelectedRows([]);
       
-      setNotif({
-        message: `Đã đánh dấu hoàn thành ${selectedRows.length} kết quả tiêm chủng`,
-        type: "success"
-      });
+      // Hiển thị thông báo kết quả
+      if (completedResults.length > 0 && failedResults.length === 0) {
+        setNotif({
+          message: `Đã đánh dấu hoàn thành ${completedResults.length} kết quả tiêm chủng`,
+          type: "success"
+        });
+      } else if (completedResults.length > 0 && failedResults.length > 0) {
+        setNotif({
+          message: `Đã hoàn thành ${completedResults.length} kết quả, ${failedResults.length} kết quả không thể hoàn thành do chưa đến ngày diễn ra hoặc lỗi khác`,
+          type: "warning"
+        });
+      } else if (completedResults.length === 0 && failedResults.length > 0) {
+        setNotif({
+          message: `Không thể hoàn thành bất kỳ kết quả nào. ${failedResults.length} kết quả không thể hoàn thành do chưa đến ngày diễn ra hoặc lỗi khác`,
+          type: "error"
+        });
+      }
     } catch (error) {
       console.error("Error completing vaccination results:", error);
       setNotif({

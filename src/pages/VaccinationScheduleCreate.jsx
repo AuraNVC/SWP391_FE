@@ -52,6 +52,23 @@ const VaccinationScheduleCreate = () => {
     setLoading(true);
     setSuccessMsg("");
     setErrorMsg("");
+
+    // Kiểm tra ngày tiêm không được là ngày hiện tại
+    if (form.scheduleDate) {
+      const scheduleDate = new Date(form.scheduleDate);
+      const currentDate = new Date();
+      
+      // Đặt thời gian hiện tại về đầu ngày để so sánh chính xác
+      currentDate.setHours(0, 0, 0, 0);
+      scheduleDate.setHours(0, 0, 0, 0);
+      
+      if (scheduleDate.getTime() === currentDate.getTime()) {
+        setErrorMsg("Không thể tạo lịch tiêm chủng cho ngày hiện tại. Vui lòng chọn ngày khác.");
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       await API_SERVICE.vaccinationScheduleAPI.create({
         ...form,
@@ -113,7 +130,12 @@ const VaccinationScheduleCreate = () => {
                 label="Chọn ngày giờ tiêm"
                 value={form.scheduleDate ? new Date(form.scheduleDate) : null}
                 onChange={handleDateChange}
-                minDate={new Date()}
+                minDate={(() => {
+                  const tomorrow = new Date();
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  tomorrow.setHours(0, 0, 0, 0);
+                  return tomorrow;
+                })()}
                 slotProps={{
                   textField: { required: true, className: "form-control", name: "scheduleDate" },
                   paper: { sx: { minWidth: 260, maxWidth: 320 } }

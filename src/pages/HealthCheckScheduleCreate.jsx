@@ -52,6 +52,23 @@ const HealthCheckScheduleCreate = () => {
     setLoading(true);
     setSuccessMsg("");
     setErrorMsg("");
+
+    // Kiểm tra ngày khám không được là ngày hiện tại
+    if (form.checkDate) {
+      const checkDate = new Date(form.checkDate);
+      const currentDate = new Date();
+      
+      // Đặt thời gian hiện tại về đầu ngày để so sánh chính xác
+      currentDate.setHours(0, 0, 0, 0);
+      checkDate.setHours(0, 0, 0, 0);
+      
+      if (checkDate.getTime() === currentDate.getTime()) {
+        setErrorMsg("Không thể tạo lịch khám sức khỏe cho ngày hiện tại. Vui lòng chọn ngày khác.");
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       await API_SERVICE.healthCheckScheduleAPI.create({
         ...form,
@@ -113,7 +130,12 @@ const HealthCheckScheduleCreate = () => {
                 label="Chọn ngày giờ khám"
                 value={form.checkDate ? new Date(form.checkDate) : null}
                 onChange={handleDateChange}
-                minDate={new Date()}
+                minDate={(() => {
+                  const tomorrow = new Date();
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  tomorrow.setHours(0, 0, 0, 0);
+                  return tomorrow;
+                })()}
                 slotProps={{
                   textField: { required: true, className: "form-control", name: "checkDate" },
                   paper: { sx: { minWidth: 140, maxWidth: 180 } }

@@ -15,7 +15,7 @@ export function NotificationProvider({ children }) {
     };
   }, []);
 
-  // Enhanced setNotif function that supports auto-dismissing
+  // Enhanced setNotif function that supports auto-dismissing with default duration
   const setNotif = useCallback((notification) => {
     // Clear any existing timer
     if (timerRef.current) {
@@ -25,10 +25,10 @@ export function NotificationProvider({ children }) {
 
     // Set the notification
     setNotifState(notification);
-
-    // If notification is not null and has autoDismiss property, set a timer
-    if (notification && (notification.autoDismiss || notification.duration)) {
-      const duration = notification.duration || 1500; // Default 1.5 seconds (thay vì 3 seconds)
+    // If notification is not null, set a timer with default duration of 3000ms
+    // unless autoDismiss is explicitly set to false
+    if (notification && notification.autoDismiss !== false) {
+      const duration = notification.duration || 3000; // Default 3 seconds
       timerRef.current = setTimeout(() => {
         setNotifState(null);
       }, duration);
