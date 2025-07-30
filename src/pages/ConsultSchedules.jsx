@@ -1820,10 +1820,12 @@ const ConsultSchedules = () => {
     try {
       // Lưu thông tin lịch đã chọn
       setSelectedSchedule(schedule);
-      
+      let form
       // Tìm form tư vấn theo ID lịch
-      const form = await API_SERVICE.consultationFormAPI.getById(schedule.consultationScheduleId);
-      
+      const formData = await API_SERVICE.consultationFormAPI.search({ keyword: "" });
+        form = formData.find(
+          (f) => f.consultationScheduleId === schedule.consultationScheduleId
+        );
       // Nếu tìm thấy form, lưu thông tin form
       if (form && !form.error) {
         console.log("Found consultation form:", form);
@@ -3065,4 +3067,3 @@ const ConsultSchedules = () => {
 };
 
 export default ConsultSchedules;
-

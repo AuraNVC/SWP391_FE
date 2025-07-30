@@ -115,8 +115,7 @@ export default function ParentConsultations() {
                 const scheduleData = await API_SERVICE.consultationScheduleAPI.get(form.consultationSchedule.consultationScheduleId);
                   console.log("Schedule data for form", form.consultationFormId, ":", scheduleData);
                   
-                  const student = Array.isArray(studentData) ? 
-                    studentData.find(s => s.studentId === scheduleData.studentId) : null;
+                  const student = await API_SERVICE.studentAPI.getById(form.consultationSchedule.studentId)
                   
                 return {
                     ...form,
