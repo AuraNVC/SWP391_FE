@@ -6,12 +6,12 @@ import { useNotification } from "../contexts/NotificationContext";
 import BlogViewDialog from "../components/BlogViewDialog";
 import BlogEditDialog from "../components/BlogEditDialog";
 import { useNavigate } from "react-router-dom";
+import { formatBlogCategory } from "../services/utils";
 
 const columns = [
   { title: "Mã Bài", dataIndex: "blogId" },
   { title: "Tiêu đề", dataIndex: "title" },
   { title: "Chủ đề", dataIndex: "category" },
-  { title: "Nội dung", dataIndex: "content", width: 180, render: (text) => <div style={{ maxWidth: 180, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{text}</div> },
   { title: "Ngày đăng", dataIndex: "datePosted" },
   {
     title: "Ảnh",
@@ -44,20 +44,7 @@ const BlogList = () => {
   const [editBlog, setEditBlog] = useState(null);
   const { setNotif } = useNotification();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const fetchBlogList = async () => {
-      setLoading(true);
-      try {
-        const response = await API_SERVICE.blogAPI.getAll({ keyword: "" });
-        setBlogList(response);
-      } catch (error) {
-        console.error("Error fetching blog list:", error);
-      }
-      setLoading(false);
-    };
-    fetchBlogList();
-  }, []);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleViewDetail = (row) => {
     setViewBlog(row);
@@ -95,16 +82,24 @@ const BlogList = () => {
     setDeleteTarget(null);
   };
 
-  const reloadBlogList = async () => {
+  const fetchBlogList = async () => {
     setLoading(true);
     try {
-      const response = await API_SERVICE.blogAPI.getAll({ keyword: "" });
-      setBlogList(response);
+      const response = await API_SERVICE.blogAPI.getAll({ keyword: searchTerm });
+      const formatted = response.map((blog) => ({
+        ...blog,
+        category: formatBlogCategory(blog.category),
+      }));
+      setBlogList(formatted);
     } catch (error) {
       console.error("Error fetching blog list:", error);
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    fetchBlogList();
+  }, [searchTerm]);
 
   const handleCreateNew = () => {
     navigate('/manager/blog/create');
@@ -117,7 +112,14 @@ const BlogList = () => {
         <button className="admin-btn" onClick={handleCreateNew}>
           + Thêm blog mới
         </button>
-        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
+        <input
+          className="admin-search"
+          type="text"
+          placeholder="Tìm kiếm blog..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{ background: '#fff', color: '#222' }}
+        />
       </div>
       <div className="admin-table-container">
         {loading ? (
@@ -195,7 +197,7 @@ const BlogList = () => {
         <BlogEditDialog
           blog={editBlog}
           onClose={() => setEditBlog(null)}
-          onSuccess={reloadBlogList}
+          onSuccess={fetchBlogList}
         />
       )}
     </div>

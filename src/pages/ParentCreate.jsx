@@ -69,9 +69,6 @@ const ParentCreate = () => {
     <div className="admin-main">
       <div className="admin-header">
         <h2>Thêm phụ huynh mới</h2>
-        <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Quay lại danh sách phụ huynh
-        </button>
       </div>
       
       <div className="parent-create-page-container">
@@ -107,6 +104,9 @@ const ParentCreate = () => {
               onChange={handleChange}
               required
               className="form-control"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              onInput={e => e.target.value = e.target.value.replace(/[^0-9]/g, '')}
             />
           </div>
           <div className="form-group">

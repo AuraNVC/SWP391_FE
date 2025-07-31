@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../styles/StudentDashboard.css";
 import { API_SERVICE } from "../services/api";
 import { useNavigate } from "react-router-dom";
 import { useUserRole } from "../contexts/UserRoleContext";
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 
 const initialState = {
   formId: "",
@@ -17,12 +20,31 @@ const VaccinationScheduleCreate = () => {
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [forms, setForms] = useState([]); // Danh sách form loại vaccine
   const navigate = useNavigate();
   const { userId } = useUserRole();
+
+  useEffect(() => {
+    const fetchForms = async () => {
+      try {
+        const res = await API_SERVICE.formAPI.getAll({ keyword: "" });
+        // console.log(res.filter(f => f.type === "Vaccine"));
+        setForms(res.filter(f => f.type === "Vaccine"));
+      } catch {
+        setForms([]);
+      }
+    };
+    fetchForms();
+    // console.log(forms);
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleDateChange = (value) => {
+    setForm((prev) => ({ ...prev, scheduleDate: value ? value.toISOString() : "" }));
   };
 
   const handleSubmit = async (e) => {
@@ -30,6 +52,23 @@ const VaccinationScheduleCreate = () => {
     setLoading(true);
     setSuccessMsg("");
     setErrorMsg("");
+
+    // Kiểm tra ngày tiêm không được là ngày hiện tại
+    if (form.scheduleDate) {
+      const scheduleDate = new Date(form.scheduleDate);
+      const currentDate = new Date();
+      
+      // Đặt thời gian hiện tại về đầu ngày để so sánh chính xác
+      currentDate.setHours(0, 0, 0, 0);
+      scheduleDate.setHours(0, 0, 0, 0);
+      
+      if (scheduleDate.getTime() === currentDate.getTime()) {
+        setErrorMsg("Không thể tạo lịch tiêm chủng cho ngày hiện tại. Vui lòng chọn ngày khác.");
+        setLoading(false);
+        return;
+      }
+    }
+
     try {
       await API_SERVICE.vaccinationScheduleAPI.create({
         ...form,
@@ -54,23 +93,23 @@ const VaccinationScheduleCreate = () => {
     <div className="admin-main">
       <div className="admin-header">
         <h2>Tạo lịch tiêm chủng</h2>
-        <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Quay lại danh sách
-        </button>
       </div>
       <div className="healthcheck-create-page-container">
         <form className="student-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Form ID<span className="required">*</span></label>
-            <input
-              type="text"
+            <label>Biểu mẫu<span className="required">*</span></label>
+            <select
               name="formId"
               value={form.formId}
               onChange={handleChange}
               required
               className="form-control"
-              placeholder="Nhập Form ID"
-            />
+            >
+              <option value="">Chọn biểu mẫu tiêm chủng</option>
+              {forms.map(f => (
+                <option key={f.formId} value={f.formId}>{f.title} (Lớp: {f.className})</option>
+              ))}
+            </select>
           </div>
           <div className="form-group">
             <label>Tên lịch<span className="required">*</span></label>
@@ -86,14 +125,24 @@ const VaccinationScheduleCreate = () => {
           </div>
           <div className="form-group">
             <label>Ngày tiêm<span className="required">*</span></label>
-            <input
-              type="datetime-local"
-              name="scheduleDate"
-              value={form.scheduleDate}
-              onChange={handleChange}
-              required
-              className="form-control"
-            />
+            <LocalizationProvider dateAdapter={AdapterDateFns}>
+              <DateTimePicker
+                label="Chọn ngày giờ tiêm"
+                value={form.scheduleDate ? new Date(form.scheduleDate) : null}
+                onChange={handleDateChange}
+                minDate={(() => {
+                  const tomorrow = new Date();
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  tomorrow.setHours(0, 0, 0, 0);
+                  return tomorrow;
+                })()}
+                slotProps={{
+                  textField: { required: true, className: "form-control", name: "scheduleDate" },
+                  paper: { sx: { minWidth: 260, maxWidth: 320 } }
+                }}
+                format="HH:mm dd/MM/yyyy"
+              />
+            </LocalizationProvider>
           </div>
           <div className="form-group">
             <label>Địa điểm<span className="required">*</span></label>

@@ -1,12 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../styles/StudentCreateForm.css";
 import { API_SERVICE } from "../services/api";
-import TextField from '@mui/material/TextField';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import TextField from "@mui/material/TextField";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { useNotification } from "../contexts/NotificationContext";
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { useNavigate } from 'react-router-dom';
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { useNavigate } from "react-router-dom";
+import Autocomplete from "@mui/material/Autocomplete";
 
 const initialState = {
   fullName: "",
@@ -18,17 +19,55 @@ const initialState = {
   parentPhoneNumber: "",
   parentEmail: "",
   parentAddress: "",
+  password: "",
 };
 
 const StudentCreate = () => {
+  const [parentList, setParentList] = useState([]);
   const [form, setForm] = useState(initialState);
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
   const [dateOfBirth, setDateOfBirth] = React.useState(null);
-  
+
   const { setNotif } = useNotification();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchParents = async () => {
+      try {
+        const parents = await API_SERVICE.parentAPI.search({ keyword: "" });
+        setParentList(parents);
+      } catch (err) {
+        console.error("Lỗi khi tải danh sách phụ huynh:", err);
+      }
+    };
+    fetchParents();
+  }, []);
+
+  const handleParentNameBlur = async () => {
+    if (!form.parentFullName.trim()) return;
+
+    try {
+      const results = await API_SERVICE.parentAPI.search({
+        keyword: form.parentFullName.trim(),
+      });
+      const matchedParent = results.find(
+        (p) => p.fullName === form.parentFullName.trim()
+      );
+
+      if (matchedParent) {
+        setForm((prev) => ({
+          ...prev,
+          parentPhoneNumber: matchedParent.phoneNumber || "",
+          parentEmail: matchedParent.email || "",
+          parentAddress: matchedParent.address || "",
+        }));
+      }
+    } catch (error) {
+      console.error("Lỗi khi tìm phụ huynh:", error);
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -40,59 +79,101 @@ const StudentCreate = () => {
     setLoading(true);
     setSuccessMsg("");
     setErrorMsg("");
+
     try {
-      const parent = await API_SERVICE.parentAPI.search({ keyword: form.parentFullName });
-      if (parent.length === 0) {
-        setErrorMsg("Không tìm thấy phụ huynh. Vui lòng kiểm tra lại tên phụ huynh.");
-        setLoading(false);
-        return;
+      const searchResults = await API_SERVICE.parentAPI.search({
+        keyword: form.parentFullName.trim(),
+      });
+      let matchedParent = searchResults.find(
+        (p) =>
+          p.fullName === form.parentFullName.trim() &&
+          p.phoneNumber === form.parentPhoneNumber.trim() &&
+          p.email === form.parentEmail.trim() &&
+          p.address === form.parentAddress.trim()
+      );
+
+      let parentId;
+
+      if (matchedParent) {
+        parentId = matchedParent.parentId;
+      } else {
+        const newParentPayload = {
+          fullName: form.parentFullName.trim(),
+          phoneNumber: form.parentPhoneNumber.trim(),
+          email: form.parentEmail.trim(),
+          address: form.parentAddress.trim(),
+        };
+        const createdParent = await API_SERVICE.parentAPI.create(
+          newParentPayload
+        );
+        parentId = createdParent.parentId;
       }
+
       const payload = {
         fullName: form.fullName,
         dateOfBirth: form.dateOfBirth,
         className: form.className,
         gender: form.gender,
         studentNumber: form.studentNumber,
-        parentId: parent[0].parentId,
-        passwordHash: form.studentNumber,
+        parentId: parentId,
+        passwordHash:
+          form.password && form.password.trim() !== ""
+            ? form.password
+            : "123456",
       };
+
       await API_SERVICE.studentAPI.create(payload);
+
+      const students = await API_SERVICE.studentAPI.getAll({
+        keyword: payload.studentNumber,
+      });
+      const createdStudent = students.find(
+        (stu) => stu.studentNumber === payload.studentNumber
+      );
+      const studentId = createdStudent?.studentId;
+
+      if (studentId) {
+        try {
+          await API_SERVICE.healthProfileAPI.add({
+            studentId,
+            bloodType: "",
+            allergies: "",
+          });
+        } catch (e) {
+          console.error("Tạo health profile thất bại", e);
+        }
+      }
+
       setSuccessMsg("Tạo học sinh thành công!");
-      setNotif({
-        message: "Tạo học sinh thành công!",
-        type: "success",
-      });
-      setTimeout(() => {
-        navigate('/manager/student');
-      }, 1500);
+      setNotif({ message: "Tạo học sinh thành công!", type: "success" });
+      setTimeout(() => navigate("/manager/student"), 1500);
     } catch (error) {
-      const errorMessage = "Tạo học sinh thất bại. " + (error?.response?.data?.message || error.message);
+      const errorMessage =
+        "Tạo học sinh thất bại. " +
+        (error?.response?.data?.message || error.message);
       setErrorMsg(errorMessage);
-      setNotif({
-        message: errorMessage,
-        type: "error",
-      });
+      setNotif({ message: errorMessage, type: "error" });
     }
+
     setLoading(false);
   };
 
   const handleCancel = () => {
-    navigate('/manager/student');
+    navigate("/manager/student");
   };
 
   return (
     <div className="admin-main">
       <div className="admin-header">
         <h2>Thêm học sinh mới</h2>
-        <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Quay lại danh sách học sinh
-        </button>
       </div>
-      
+
       <div className="student-create-page-container">
         <form className="student-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Họ tên<span className="required">*</span></label>
+            <label>
+              Họ tên<span className="required">*</span>
+            </label>
             <input
               type="text"
               name="fullName"
@@ -103,7 +184,9 @@ const StudentCreate = () => {
             />
           </div>
           <div className="form-group">
-            <label htmlFor="dateOfBirth">Ngày sinh<span className="required">*</span></label>
+            <label htmlFor="dateOfBirth">
+              Ngày sinh<span className="required">*</span>
+            </label>
             <LocalizationProvider dateAdapter={AdapterDateFns}>
               <DatePicker
                 label="Ngày sinh"
@@ -112,15 +195,22 @@ const StudentCreate = () => {
                   setDateOfBirth(newValue);
                   setForm((prev) => ({
                     ...prev,
-                    dateOfBirth: newValue ? newValue.toISOString().split('T')[0] : ""
+                    dateOfBirth: newValue
+                      ? newValue.toISOString().split("T")[0]
+                      : "",
                   }));
                 }}
-                renderInput={(params) => <TextField {...params} required fullWidth />}
+                maxDate={new Date()}
+                renderInput={(params) => (
+                  <TextField {...params} required fullWidth />
+                )}
               />
             </LocalizationProvider>
           </div>
           <div className="form-group">
-            <label>Lớp<span className="required">*</span></label>
+            <label>
+              Lớp<span className="required">*</span>
+            </label>
             <input
               type="text"
               name="className"
@@ -132,7 +222,9 @@ const StudentCreate = () => {
             />
           </div>
           <div className="form-group">
-            <label>Giới tính<span className="required">*</span></label>
+            <label>
+              Giới tính<span className="required">*</span>
+            </label>
             <select
               name="gender"
               value={form.gender}
@@ -146,7 +238,9 @@ const StudentCreate = () => {
             </select>
           </div>
           <div className="form-group">
-            <label>Mã số học sinh<span className="required">*</span></label>
+            <label>
+              Mã số học sinh<span className="required">*</span>
+            </label>
             <input
               type="text"
               name="studentNumber"
@@ -157,19 +251,64 @@ const StudentCreate = () => {
               placeholder="VD: binhan1"
             />
           </div>
+          <div className="form-group">
+            <label>Mật khẩu (nếu bỏ trống sẽ mặc định là 123456)</label>
+            <input
+              type="password"
+              name="password"
+              value={form.password}
+              onChange={handleChange}
+              className="form-control"
+              placeholder="Nhập mật khẩu hoặc để trống"
+            />
+          </div>
           <hr />
           <h4>Thông tin phụ huynh</h4>
           <div className="form-group">
-            <label>Họ tên phụ huynh<span className="required">*</span></label>
-            <input
-              type="text"
-              name="parentFullName"
+            <label>
+              Họ tên phụ huynh<span className="required">*</span>
+            </label>
+            <Autocomplete
+              freeSolo
+              options={parentList.map((p) => p.fullName)}
               value={form.parentFullName}
-              onChange={handleChange}
-              required
-              className="form-control"
+              onChange={(event, newValue) => {
+                setForm((prev) => ({
+                  ...prev,
+                  parentFullName: newValue || "",
+                }));
+
+                const matchedParent = parentList.find(
+                  (p) => p.fullName === newValue
+                );
+                if (matchedParent) {
+                  setForm((prev) => ({
+                    ...prev,
+                    parentPhoneNumber: matchedParent.phoneNumber || "",
+                    parentEmail: matchedParent.email || "",
+                    parentAddress: matchedParent.address || "",
+                  }));
+                } else {
+                  setForm((prev) => ({
+                    ...prev,
+                    parentPhoneNumber: "",
+                    parentEmail: "",
+                    parentAddress: "",
+                  }));
+                }
+              }}
+              onInputChange={(event, newInputValue) => {
+                setForm((prev) => ({ ...prev, parentFullName: newInputValue }));
+              }}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  required
+                />
+              )}
             />
           </div>
+
           <div className="form-group">
             <label>Số điện thoại phụ huynh</label>
             <input
@@ -178,6 +317,11 @@ const StudentCreate = () => {
               value={form.parentPhoneNumber}
               onChange={handleChange}
               className="form-control"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              onInput={(e) =>
+                (e.target.value = e.target.value.replace(/[^0-9]/g, ""))
+              }
             />
           </div>
           <div className="form-group">
@@ -221,4 +365,4 @@ const StudentCreate = () => {
   );
 };
 
-export default StudentCreate; 
+export default StudentCreate;

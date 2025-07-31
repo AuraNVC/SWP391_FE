@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import TableWithPaging from "../components/TableWithPaging";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import "../styles/TableWithPaging.css";
+import { formatDate } from "../services/utils";
 
 const HealthCheckScheduleDashboard = () => {
   const [schedules, setSchedules] = useState([]);
@@ -16,6 +17,7 @@ const HealthCheckScheduleDashboard = () => {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const iconStyle = {
     view: { color: "#007bff" },
@@ -26,13 +28,17 @@ const HealthCheckScheduleDashboard = () => {
   useEffect(() => {
     fetchSchedules();
     setPage(1);
-  }, []);
+  }, [searchTerm]);
 
   const fetchSchedules = async () => {
     setLoading(true);
     try {
-      const res = await API_SERVICE.healthCheckScheduleAPI.getAll({ keyword: "" });
-      setSchedules(res);
+      const res = await API_SERVICE.healthCheckScheduleAPI.getAll({ keyword: searchTerm });
+      const formatted = res.map((schedule) => ({
+                            ...schedule,
+                            checkDate: formatDate(schedule.checkDate),
+                        }));
+      setSchedules(formatted);
       setPage(1);
     } catch (e) {
       setSchedules([]);
@@ -64,7 +70,14 @@ const HealthCheckScheduleDashboard = () => {
       <h2 className="dashboard-title">Quản lý Lịch khám sức khỏe</h2>
       <div className="admin-header">
         <button className="admin-btn" onClick={() => navigate("/manager/health-check-schedule/create")}>+ Tạo lịch khám mới</button>
-        <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
+        <input
+          className="admin-search"
+          type="text"
+          placeholder="Tìm kiếm lịch khám sức khỏe..."
+          value={searchTerm}
+          onChange={e => setSearchTerm(e.target.value)}
+          style={{ background: '#fff', color: '#222' }}
+        />
       </div>
       <div className="admin-table-container">
         <TableWithPaging

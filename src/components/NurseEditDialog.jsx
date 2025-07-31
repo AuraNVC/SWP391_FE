@@ -60,7 +60,7 @@ const NurseEditDialog = ({ nurse, onClose, onSuccess }) => {
     <div className="nurse-dialog-overlay" onClick={onClose}>
       <div className="nurse-dialog-content nurse-edit-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="nurse-dialog-header">
-          <h2>Edit Nurse</h2>
+          <h2>Sửa thông tin y tá</h2>
           <button className="nurse-dialog-close" onClick={onClose}>
             ×
           </button>
@@ -68,7 +68,7 @@ const NurseEditDialog = ({ nurse, onClose, onSuccess }) => {
         
         <form className="nurse-create-form" onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>Full Name<span className="required">*</span></label>
+            <label>Họ và tên<span className="required"></span></label>
             <input
               type="text"
               name="fullName"
@@ -79,7 +79,7 @@ const NurseEditDialog = ({ nurse, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Email<span className="required">*</span></label>
+            <label>Email<span className="required"></span></label>
             <input
               type="email"
               name="email"
@@ -90,7 +90,7 @@ const NurseEditDialog = ({ nurse, onClose, onSuccess }) => {
             />
           </div>
           <div className="form-group">
-            <label>Username<span className="required">*</span></label>
+            <label>Tên người dùng<span className="required"></span></label>
             <input
               type="text"
               name="username"
@@ -103,7 +103,7 @@ const NurseEditDialog = ({ nurse, onClose, onSuccess }) => {
           
           <div className="nurse-dialog-footer">
             <button type="submit" className="admin-btn" disabled={loading}>
-              {loading ? "Updating..." : "Update Nurse"}
+              {loading ? "Đang lưu..." : "Lưu" }
             </button>
             <button
               type="button"
@@ -111,7 +111,7 @@ const NurseEditDialog = ({ nurse, onClose, onSuccess }) => {
               onClick={onClose}
               disabled={loading}
             >
-              Cancel
+              Hủy
             </button>
           </div>
         </form>

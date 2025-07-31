@@ -16,7 +16,9 @@ const categoryMap = {
   1: "Dinh dưỡng",
   2: "Tâm lý",
   3: "Bệnh truyền nhiễm",
-  4: "Thể chất"
+  4: "Thể chất",
+  5: "Gia đình",
+  6: "Lợi ích sức khỏe"
 };
 const categories = Object.entries(categoryMap).map(([value, label]) => ({ value, label }));
 
@@ -95,10 +97,7 @@ const BlogCreate = () => {
   return (
     <div className="admin-main">
       <div className="admin-header">
-        <h2>Thêm blog mới</h2>
-        <button className="admin-btn cancel-btn" onClick={handleCancel}>
-          Quay lại danh sách blog
-        </button>
+        <h2>Thêm bài đăng mới</h2>
       </div>
       
       <div className="blog-create-page-container">
@@ -142,7 +141,7 @@ const BlogCreate = () => {
             </select>
           </div>
           <div className="form-group">
-            <label>Ảnh thumbnail</label>
+            <label>Ảnh</label>
             <input
               type="file"
               accept="image/*"

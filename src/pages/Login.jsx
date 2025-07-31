@@ -31,7 +31,7 @@ export default function Login({ setNotif }) {
           navigate("/");
           break;
         case "nurse":
-          navigate("/");
+          navigate("/nurse/medical-events");
           break;
         case "parent":
           navigate("/");
@@ -83,7 +83,7 @@ export default function Login({ setNotif }) {
         if (!(data && data.user.accessToken && data.user.id)) {
           throw new Error();
         }
-        redirectPath = "/manager/dashboard";
+        redirectPath = "/manager/student";
       } else if (role === "student") {
         data = await API_SERVICE.login.student({
           studentNumber: username,
@@ -101,7 +101,7 @@ export default function Login({ setNotif }) {
         if (!(data && data.user.accessToken && data.user.id)) {
           throw new Error();
         }
-        redirectPath = "/nurse/dashboard";
+        redirectPath = "/nurse/medical-events";
       } else if (role === "parent") {
         data = await API_SERVICE.login.parent({
           email: username,
@@ -119,7 +119,6 @@ export default function Login({ setNotif }) {
         token: data.user.accessToken,
         id: data.user.id,
       });
-      setNotif({ message: "Đăng nhập thành công!", type: "success" });
       navigate(redirectPath);
     } catch {
       setUsernameError("Tên đăng nhập hoặc mật khẩu không đúng.");

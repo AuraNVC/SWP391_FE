@@ -7,11 +7,11 @@ import { useNotification } from "../contexts/NotificationContext";
 import { useNavigate } from "react-router-dom";
 import FormViewDialog from "../components/FormViewDialog";
 import FormEditDialog from "../components/FormEditDialog";
+import { formatDate, formatFormType } from "../services/utils";
 
 const columns = [
     { title: "Mã biểu mẫu", dataIndex: "formId" },
     { title: "Tiêu đề", dataIndex: "title" },
-    { title: "Lớp", dataIndex: "className" },
     { title: "Loại", dataIndex: "type" },
     { title: "Ngày gửi", dataIndex: "sentDate" },
     { title: "Ngày tạo", dataIndex: "createdAt" },
@@ -27,11 +27,11 @@ const FormDashboard = () => {
     const [formList, setFormList] = useState([]);
     const [page, setPage] = useState(1);
     const [loading, setLoading] = useState(true);
-    const [deleteTarget, setDeleteTarget] = useState(null);
     const [viewForm, setViewForm] = useState(null);
     const [editForm, setEditForm] = useState(null);
     const { setNotif } = useNotification();
     const navigate = useNavigate();
+    const [searchTerm, setSearchTerm] = useState("");
 
     const handleViewDetail = (row) => {
         console.log("View form data:", row);
@@ -42,16 +42,11 @@ const FormDashboard = () => {
         setEditForm(row);
     };
 
-    const handleDelete = (row) => {
-        setDeleteTarget(row);
-    };
-
-    const confirmDelete = async () => {
-        if (deleteTarget) {
+    const handleDelete = async (row) => {
+        if (window.confirm(`Bạn có chắc chắn muốn xóa biểu mẫu "${row.title}"?`)) {
             try {
-                await API_SERVICE.formAPI.delete(deleteTarget.formId);
-                setFormList((prev) => prev.filter(f => f.formId !== deleteTarget.formId));
-                setDeleteTarget(null);
+                await API_SERVICE.formAPI.delete(row.formId);
+                setFormList((prev) => prev.filter(f => f.formId !== row.formId));
                 setNotif({
                     message: "Xóa biểu mẫu thành công!",
                     type: "success",
@@ -61,13 +56,8 @@ const FormDashboard = () => {
                     message: `Xóa biểu mẫu thất bại! ${error?.response?.data?.message || error.message}`,
                     type: "error",
                 });
-                setDeleteTarget(null);
             }
         }
-    };
-
-    const cancelDelete = () => {
-        setDeleteTarget(null);
     };
 
     const handleCreateNew = () => {
@@ -77,12 +67,18 @@ const FormDashboard = () => {
     const refreshFormList = async () => {
         setLoading(true);
         try {
-            const response = await API_SERVICE.formAPI.getAll({ keyword: "" });
-            setFormList(response);
+            const response = await API_SERVICE.formAPI.getAll({ keyword: searchTerm });
+            const formatted = response.map((form) => ({
+                ...form,
+                type: formatFormType(form.type),
+                sentDate: formatDate(form.sentDate),
+                createdAt: formatDate(form.createdAt),
+            }));
+            setFormList(formatted);
         } catch (error) {
             console.error("Error fetching form list:", error);
             setNotif({
-                message: "Failed to refresh form list",
+                message: "Không thể tải danh sách biểu mẫu",
                 type: "error",
             });
         }
@@ -91,7 +87,7 @@ const FormDashboard = () => {
 
     useEffect(() => {
         refreshFormList();
-    }, []);
+    }, [searchTerm]);
 
     return (
         <div className="admin-main">
@@ -100,11 +96,18 @@ const FormDashboard = () => {
                 <button className="admin-btn" onClick={handleCreateNew}>
                     + Thêm biểu mẫu mới
                 </button>
-                <input className="admin-search" type="text" placeholder="Tìm kiếm..." />
+                <input
+                  className="admin-search"
+                  type="text"
+                  placeholder="Tìm kiếm biểu mẫu..."
+                  value={searchTerm}
+                  onChange={e => setSearchTerm(e.target.value)}
+                  style={{ background: '#fff', color: '#222' }}
+                />
             </div>
             <div className="admin-table-container">
                 {loading ? (
-                    <div>Đang tải...</div>
+                    <div className="loading-spinner">Đang tải...</div>
                 ) : (
                     <TableWithPaging
                         columns={columns}
@@ -159,25 +162,6 @@ const FormDashboard = () => {
                     onClose={() => setEditForm(null)}
                     onSuccess={refreshFormList}
                 />
-            )}
-
-            {/* Delete Confirmation Dialog */}
-            {deleteTarget && (
-                <div className="form-delete-modal-overlay">
-                    <div className="form-delete-modal-content">
-                        <div className="form-delete-modal-title">
-                            <strong>Bạn có chắc chắn muốn xóa biểu mẫu "{deleteTarget.title}"?</strong>
-                        </div>
-                        <div className="form-delete-modal-actions">
-                            <button className="admin-btn btn-danger" onClick={confirmDelete}>
-                                Xóa
-                            </button>
-                            <button className="admin-btn btn-secondary" onClick={cancelDelete}>
-                                Hủy
-                            </button>
-                        </div>
-                    </div>
-                </div>
             )}
         </div>
     );
