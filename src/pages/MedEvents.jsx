@@ -68,7 +68,7 @@ const MedEvents = () => {
   const columns = [
     { 
       title: "ID", 
-      dataIndex: "medicalEventId", 
+      dataIndex: "medicalEventId",
       render: (id) => <span>{id}</span>
     },
     { 

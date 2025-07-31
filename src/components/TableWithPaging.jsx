@@ -67,9 +67,6 @@ export default function TableWithPaging({
     // Simple validation
     if (newPage < 1 || newPage > totalPages || newPage === currentPage) return;
     
-    // Log the page change
-    console.log("TableWithPaging: Changing page to", newPage);
-    
     // Call the onPageChange callback
     onPageChange(newPage);
   };
@@ -77,7 +74,6 @@ export default function TableWithPaging({
   // Ensure page is valid when data changes
   useEffect(() => {
     if (page > totalPages && totalPages > 0) {
-      console.log("TableWithPaging: Page", page, "exceeds total pages", totalPages, ", adjusting to", totalPages);
       onPageChange(totalPages);
     }
   }, [data, page, totalPages, onPageChange]);
@@ -87,11 +83,16 @@ export default function TableWithPaging({
       <table className="table table-striped">
         <thead>
           <tr>
-              <th key="header-stt">STT</th>
+              <th key="header-stt" style={{ width: '50px' }}>STT</th>
             {columns.map((col, colIdx) => (
-              <th key={`header-${col.key || col.dataIndex || colIdx}-${colIdx}`}>{col.title}</th>
+              <th 
+                key={`header-${col.key || col.dataIndex || colIdx}-${colIdx}`}
+                style={col.width ? { width: `${col.width}px` } : {}}
+              >
+                {col.title}
+              </th>
             ))}
-            {renderActions && <th key="header-actions-column">Hành động</th>}
+            {renderActions && <th key="header-actions-column" style={{ width: '30px' }}>Hành động</th>}
           </tr>
         </thead>
         <tbody>
@@ -110,14 +111,11 @@ export default function TableWithPaging({
                 <tr key={rowKey}>
                   <td key={`stt-${rowKey}`}>{startIdx + idx + 1}</td> 
                   {columns.map((col, colIdx) => (
-                    <td key={`cell-${col.key || col.dataIndex || colIdx}-${rowKey}`}>
+                    <td 
+                      key={`cell-${col.key || col.dataIndex || colIdx}-${rowKey}`}
+                      style={col.width ? { width: `${col.width}px` } : {}}
+                    >
                       {(() => {
-                        console.log(`Rendering cell for column ${col.dataIndex}:`, {
-                          value: row[col.dataIndex],
-                          row: row,
-                          hasRender: !!col.render
-                        });
-                        
                         if (col.render) {
                           return col.render(row[col.dataIndex], row, idx);
                         } else {
@@ -126,7 +124,7 @@ export default function TableWithPaging({
                       })()}
                     </td>
                   ))}
-                  {renderActions && <td key={`actions-${rowKey}`}>{renderActions(row, idx)}</td>}
+                  {renderActions && <td key={`actions-${rowKey}`} style={{ width: '30px' }}>{renderActions(row, idx)}</td>}
                 </tr>
               );
             })
